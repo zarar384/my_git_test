@@ -1,13 +1,5 @@
-﻿using System;
+﻿using static LeaveMeAloneFuncSkillForge.App;
 
-namespace my_git_test
-{
-    class Program
-    {
-        static void Main(string[] args)
-        {
-            Person person = new Person("Ivan","Elbanov",23);
-            person.Print();
-        }
-    }
-}
+Console.OutputEncoding = System.Text.Encoding.UTF8;
+
+RunApp();

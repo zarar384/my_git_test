@@ -1,8 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "hZMcdHEJ3V+8W+5k7+2ppINsqcEFl4aI1vyaxNATJSKapRBz58qFnJJa67kBKTd9S5+S1oDGanwfiwJZcLhJyg==",
+  "dgSpecHash": "E8wSwdhFyR8=",
   "success": true,
-  "projectFilePath": "G:\\Unity\\C#\\my_git_test\\my_git_test.csproj",
-  "expectedPackageFiles": [],
+  "projectFilePath": "D:\\NetCode\\LeaveMeAloneFuncSkillForge\\LeaveMeAloneFuncSkillForge.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\fel98\\.nuget\\packages\\bogus\\35.6.3\\bogus.35.6.3.nupkg.sha512"
+  ],
   "logs": []
 }

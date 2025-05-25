@@ -1,0 +1,34 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/my_git_test.sln
+
+# Build artifacts
+bin/
+obj/
+
+# VS Code settings folder
+.vscode/
+.vs/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.userprefs
+
+# Rider
+.idea/
+
+# Logs
+*.log
+
+# Secrets
+secrets.json
+
+# NuGet packages folder
+packages/
+
+# Publish output folder
+publish/
