@@ -1,9 +1,6 @@
-﻿using LeaveMeAloneFuncSkillForge.Data;
-using LeaveMeAloneFuncSkillForge.Domain;
-
-namespace LeaveMeAloneFuncSkillForge.Repositories
+﻿namespace LeaveMeAloneFuncSkillForge.Repositories
 {
-    public class FilmRepository
+    public class FilmRepository: IFilmRepository
     {
         private List<Film> _films;
 

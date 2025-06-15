@@ -1,5 +1,4 @@
 ﻿using Bogus;
-using LeaveMeAloneFuncSkillForge.Domain;
 
 namespace LeaveMeAloneFuncSkillForge.Data
 {
@@ -7,7 +6,8 @@ namespace LeaveMeAloneFuncSkillForge.Data
     {
         public static Faker<Film> FilmFaker = new Faker<Film>()
             .RuleFor(f => f.Title, f => f.Lorem.Sentence(3))
-            .RuleFor(f => f.Genre, f => f.PickRandom("Action", "Comedy", "Drama"));
+            .RuleFor(f => f.Genre, f => f.PickRandom("Action", "Comedy", "Drama"))
+            .RuleFor(f => f.BoxOfficeRevenue, f=>f.Random.Double(20000.00, 1000000.00));
 
         public static Faker<TaskData> TaskFaker = new Faker<TaskData>()
             .RuleFor(t => t.EstimatedHours, f => f.Random.Int(1, 80))

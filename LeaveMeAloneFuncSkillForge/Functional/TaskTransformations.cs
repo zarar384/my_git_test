@@ -1,6 +1,4 @@
-﻿using LeaveMeAloneFuncSkillForge.Domain;
-
-namespace LeaveMeAloneFuncSkillForge.Functional
+﻿namespace LeaveMeAloneFuncSkillForge.Functional
 {
     public static class TaskTransformations
     {
