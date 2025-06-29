@@ -1,4 +1,6 @@
-﻿namespace LeaveMeAloneFuncSkillForge.Functional
+﻿using LeaveMeAloneFuncSkillForge.DTOs;
+
+namespace LeaveMeAloneFuncSkillForge.Functional
 {
     public static class TaskTransformations
     {
@@ -17,5 +19,46 @@
                 NeedsImmediateAttention = source.IsUrgent ||
                     (source.DueDate - DateTime.Now).TotalDays < 2
             };
+
+        /// <summary>
+        /// Produces an overall project evaluation summary.
+        /// </summary>
+        public static Func<IEnumerable<TaskData>, ProjectEvaluationSummary> EvaluateProjectTasks = tasks =>
+            tasks.Aggregate(
+                new
+                {
+                    TotalEffortScore = 0.0,
+                    UrgentTaskCount = 0,
+                    MinTimeRemaining = TimeSpan.MaxValue,
+                    MaxTimeRemaining = TimeSpan.MinValue,
+                    ResponsiblePersons = new HashSet<string>(),
+                    TotalTasks = 0
+                },
+                (acc, task) =>
+                {
+                    var evaluation = MakeObject(task);
+
+                    acc.ResponsiblePersons.Add(evaluation.ResponsiblePerson);
+
+                    return new
+                    {
+                        TotalEffortScore = acc.TotalEffortScore + evaluation.TotalEffortScore,
+                        UrgentTaskCount = acc.UrgentTaskCount + (evaluation.NeedsImmediateAttention ? 1 : 0),
+                        MinTimeRemaining = evaluation.TimeRemaining < acc.MinTimeRemaining ? evaluation.TimeRemaining : acc.MinTimeRemaining,
+                        MaxTimeRemaining = evaluation.TimeRemaining > acc.MaxTimeRemaining ? evaluation.TimeRemaining : acc.MaxTimeRemaining,
+                        ResponsiblePersons = acc.ResponsiblePersons,
+                        TotalTasks = acc.TotalTasks + 1
+                    };
+                })
+            is var result ? new ProjectEvaluationSummary
+            {
+                AverageEffortScore = result.TotalTasks == 0 ? 0 : result.TotalEffortScore / result.TotalTasks,
+                UrgentTaskCount = result.UrgentTaskCount,
+                UrgentTaskRatio = result.TotalTasks == 0 ? 0 : (double)result.UrgentTaskCount / result.TotalTasks,
+                MinTimeRemaining = result.MinTimeRemaining,
+                MaxTimeRemaining = result.MaxTimeRemaining,
+                ResponsiblePersons = result.ResponsiblePersons,
+                TotalTasks = result.TotalTasks
+            } : null;
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace LeaveMeAloneFuncSkillForge.Domain
+﻿namespace LeaveMeAloneFuncSkillForge.DTOs
 {
     public class TaskEvaluationResult
     {

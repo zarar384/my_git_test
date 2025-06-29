@@ -9,5 +9,16 @@
             this Func<TInput, TMiddle> f,
             Func<TMiddle, TOutput> g) =>
             x => g(f(x));
+
+        public static IEnumerable<(int x, int y)> GenerateGridCoord(int width, int height, bool reverse = false) =>
+            (reverse
+                ? Enumerable.Range(0, width).Select(i => width - i)         // [width, ..., 1]
+                : Enumerable.Range(1, width))                               // [1, ..., width]
+            .SelectMany(x =>
+                (reverse
+                    ? Enumerable.Range(0, height).Select(i => height - i)   // [height, ..., 1]
+                    : Enumerable.Range(1, height))                          // [1, ..., height]
+                .Select(y => (X: x, Y: y))
+            );
     }
 }
