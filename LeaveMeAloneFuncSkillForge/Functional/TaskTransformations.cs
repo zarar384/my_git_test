@@ -60,5 +60,15 @@ namespace LeaveMeAloneFuncSkillForge.Functional
                 ResponsiblePersons = result.ResponsiblePersons,
                 TotalTasks = result.TotalTasks
             } : null;
+
+        /// <summary>
+        /// Recursively finds the index of the first overdue task (by TimeRemaining <= 0)
+        /// </summary>
+        public static int? GetFirstOverdueTaskIndex(TaskEvaluationResult[] evaluations, int currentIndex =0) =>
+            currentIndex >= evaluations.Length
+            ? (int?)null
+            : evaluations[currentIndex].TimeRemaining <= TimeSpan.Zero
+                ? currentIndex
+                : GetFirstOverdueTaskIndex(evaluations, currentIndex + 1);
     }
 }

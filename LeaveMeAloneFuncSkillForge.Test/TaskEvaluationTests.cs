@@ -1,4 +1,5 @@
 ﻿using LeaveMeAloneFuncSkillForge.Domain;
+using LeaveMeAloneFuncSkillForge.DTOs;
 using LeaveMeAloneFuncSkillForge.Functional;
 
 namespace LeaveMeAloneFuncSkillForge.Test
@@ -104,6 +105,25 @@ namespace LeaveMeAloneFuncSkillForge.Test
 
             // Urgent task ratio (urgent tasks / total tasks)
             Assert.Equal(2.0 / 3, summary.UrgentTaskRatio, 5);
+        }
+
+        [Fact]
+        public void GetFirstOverdueTaskIndex_ReturnsCorrectIndex()
+        {
+            // Arrange
+            var evaluations = new[]
+            {
+                new TaskEvaluationResult { TimeRemaining = TimeSpan.FromDays(5) },
+                new TaskEvaluationResult { TimeRemaining = TimeSpan.FromHours(1) },
+                new TaskEvaluationResult { TimeRemaining = TimeSpan.Zero },         // overdue
+                new TaskEvaluationResult { TimeRemaining = TimeSpan.FromDays(-1) }, // overdue
+            };
+
+            // Act
+            var result = TaskTransformations.GetFirstOverdueTaskIndex(evaluations);
+
+            // Assert
+            Assert.Equal(2, result);
         }
     }
 }
