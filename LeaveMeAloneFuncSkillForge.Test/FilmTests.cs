@@ -48,5 +48,41 @@ namespace LeaveMeAloneFuncSkillForge.Test
             var result = output.ToString();
             Assert.Contains("1: Film I", result);
         }
+
+        [Fact]
+        public void GetTop3RevenueFilmsByGenreAboveAverage_ReturnsCorrectFilms()
+        {
+            // Arrange
+            var films = new List<Film>
+            {
+                new Film { Title = "A", Genre = "Action", BoxOfficeRevenue = 100 },
+                new Film { Title = "B", Genre = "Action", BoxOfficeRevenue = 200 },
+                new Film { Title = "C", Genre = "Action", BoxOfficeRevenue = 300 },
+                new Film { Title = "D", Genre = "Action", BoxOfficeRevenue = 400 },
+                new Film { Title = "E", Genre = "Action", BoxOfficeRevenue = 500 },
+                new Film { Title = "F", Genre = "Drama", BoxOfficeRevenue = 150 },
+                new Film { Title = "G", Genre = "Drama", BoxOfficeRevenue = 50 },
+                new Film { Title = "H", Genre = "Drama", BoxOfficeRevenue = 250 },
+            };
+
+            // Act
+            var result = FilmFilters.GetTopRevenueFilmsByGenreAboveAverage(films, 3).ToList();
+
+            // Assert
+            Assert.Equal(2, result.Count); // 2 genres: Action, Drama 
+
+            var actionGenre = result.FirstOrDefault(r => r.Genre == "Action");
+            Assert.NotNull(actionGenre);
+            Assert.Equal(2, actionGenre.TopFilms.Count()); // top 2 above average by genre Action
+
+            var expectedActionTitles = new[] { "E", "D"};
+            Assert.Equal(expectedActionTitles, actionGenre.TopFilms.Select(f => f.Title));
+
+            var dramaGenre = result.FirstOrDefault(r => r.Genre == "Drama");
+            Assert.NotNull(dramaGenre);
+            Assert.Equal(1, dramaGenre.TopFilms.Count()); // only H above average: 150
+
+            Assert.Equal("H", dramaGenre.TopFilms.First().Title);
+        }
     }
 }
