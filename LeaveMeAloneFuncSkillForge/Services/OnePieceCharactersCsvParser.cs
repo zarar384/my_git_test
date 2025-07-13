@@ -14,7 +14,32 @@
             _filePath = filePath;
         }
 
-        public void Run()
+        public List<OnePieceCharacterDto> GetDataFromCsv()
+        {
+            var result = File.ReadAllText(_filePath)
+                    .Split(Environment.NewLine)
+                    .Skip(1)
+                    .Where(line => !string.IsNullOrWhiteSpace(line))
+                    .Select(x => x.Split(",").ToArray())
+                    .Select(x => new OnePieceCharacterDto
+                    {
+                       Name = x[0],
+                       Role = x[1],
+                       DevilFruit = x[2],
+                       CrewName = x[3],
+                       Bounty = long.Parse(x[4]),
+                       Damage = int.Parse(x[5]),
+                       CritChance = int.Parse(x[6]),
+                       DodgeChance = int.Parse(x[7]),
+                       Rarity = x[8],
+                       SpecialMove = x[9]
+                    })
+                    .ToList();
+
+            return result;
+        }
+
+        public void CalculateReport()
         {
             //var text = File.ReadAllText(_filePath);
 
