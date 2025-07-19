@@ -5,15 +5,14 @@ namespace LeaveMeAloneFuncSkillForge
     {
         public static void RunApp()
         {
-            var csvParser = new OnePieceCharactersCsvParser();
-            var onePieceCharacters = csvParser.GetDataFromCsv();
+            var result = SPSMatchService.PlayGames(
+                myStrategy: Stategies.CounterLastMove,
+                theirStraategy: Stategies.MirrorLastMove,
+                rounds: 5,
+                resolve: SPSMatchFunc.CalculateMatchResult
+                );
 
-            onePieceCharacters.ForEach(character =>
-            {
-                var combatPower = OnePieceFunc.EvaluateCharacterCombatPower(character);
-
-                Console.WriteLine(combatPower);
-            });
+            Console.WriteLine(SPSMatchFunc.FormatHistory(result));
         }
     }
 }

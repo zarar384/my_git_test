@@ -6,7 +6,7 @@
 
         public OnePieceCharactersCsvParser(string? filePath = null)
         {
-            if (filePath == null) 
+            if (filePath == null)
             {
                 filePath = Path.Combine("Resources", "OnePieceCharacters.csv");
             }
@@ -23,16 +23,16 @@
                     .Select(x => x.Split(",").ToArray())
                     .Select(x => new OnePieceCharacterDto
                     {
-                       Name = x[0],
-                       Role = x[1],
-                       DevilFruit = x[2],
-                       CrewName = x[3],
-                       Bounty = long.Parse(x[4]),
-                       Damage = int.Parse(x[5]),
-                       CritChance = int.Parse(x[6]),
-                       DodgeChance = int.Parse(x[7]),
-                       Rarity = x[8],
-                       SpecialMove = x[9]
+                        Name = x[0],
+                        Role = x[1],
+                        DevilFruit = x[2],
+                        CrewName = x[3],
+                        Bounty = long.Parse(x[4]),
+                        Damage = int.Parse(x[5]),
+                        CritChance = int.Parse(x[6]),
+                        DodgeChance = int.Parse(x[7]),
+                        Rarity = x[8],
+                        SpecialMove = x[9]
                     })
                     .ToList();
 
@@ -95,10 +95,10 @@
                     .Split(Environment.NewLine)
                     .Skip(1)
                     .Where(line => !string.IsNullOrWhiteSpace(line))
-                    .Select(x=>x.Split(",").ToArray())
+                    .Select(x => x.Split(",").ToArray())
                     .GroupBy(x => x[3]) // byCrew
-                    .Select(x=>
-                x.Aggregate((Crew: x.Key, Count: 0, TotalBounty: 0L, TotalDamage: 0, TotalCrit: 0), 
+                    .Select(x =>
+                x.Aggregate((Crew: x.Key, Count: 0, TotalBounty: 0L, TotalDamage: 0, TotalCrit: 0),
                 (acc, val) => (
                         acc.Crew,
                         acc.Count + 1,
@@ -107,7 +107,7 @@
                         acc.TotalCrit + int.Parse(val[6])
                     )
                 )
-              ).Select(x=> $"{x.Crew}\t {x.Count}\t {x.TotalBounty}\t {(x.Count > 0 ? (double)x.TotalDamage / x.Count : 0)}\t {(x.Count > 0 ? (double)x.TotalCrit / x.Count : 0)}");
+              ).Select(x => $"{x.Crew}\t {x.Count}\t {x.TotalBounty}\t {(x.Count > 0 ? (double)x.TotalDamage / x.Count : 0)}\t {(x.Count > 0 ? (double)x.TotalCrit / x.Count : 0)}");
 
             var reportBody = string.Join(Environment.NewLine, reportTextLines);
             var reportHeader = "Crew Name\t Character Count\t Total Bounty\t Average Damage\t Average Crit Chance";
@@ -115,6 +115,19 @@
             var finalCrewReport = $"{reportHeader}{Environment.NewLine}{reportBody}";
 
             Console.WriteLine(finalCrewReport);
+        }
+
+        public void RunTest()
+        {
+            var csvParser = new OnePieceCharactersCsvParser();
+            var onePieceCharacters = csvParser.GetDataFromCsv();
+
+            onePieceCharacters.ForEach(character =>
+            {
+                var combatPower = OnePieceFunc.EvaluateCharacterCombatPower(character);
+
+                Console.WriteLine(combatPower);
+            });
         }
     }
 

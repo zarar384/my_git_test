@@ -6,3 +6,4 @@ global using global::LeaveMeAloneFuncSkillForge.Utils;
 global using global::LeaveMeAloneFuncSkillForge.DTOs;
 global using global::LeaveMeAloneFuncSkillForge.Repositories.Interfaces;
 global using global::LeaveMeAloneFuncSkillForge.Services;
+global using global::LeaveMeAloneFuncSkillForge.Common;
