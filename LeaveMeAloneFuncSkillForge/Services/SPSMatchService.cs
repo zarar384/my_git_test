@@ -1,4 +1,6 @@
-﻿namespace LeaveMeAloneFuncSkillForge.Services
+﻿using LeaveMeAloneFuncSkillForge.Interfaces;
+
+namespace LeaveMeAloneFuncSkillForge.Services
 {
     public delegate SPS Strategy(IEnumerable<MatchResult> history);
 
