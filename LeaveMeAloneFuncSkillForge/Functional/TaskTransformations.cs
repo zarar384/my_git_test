@@ -17,7 +17,8 @@ namespace LeaveMeAloneFuncSkillForge.Functional
                     ? source.AssignedDeveloper
                     : source.BackupDeveloper,
                 NeedsImmediateAttention = source.IsUrgent ||
-                    (source.DueDate - DateTime.Now).TotalDays < 2
+                    (source.DueDate - DateTime.Now).TotalDays < 2,
+                IsQualityTask = source.IsValid()
             };
 
         /// <summary>
@@ -70,5 +71,23 @@ namespace LeaveMeAloneFuncSkillForge.Functional
             : evaluations[currentIndex].TimeRemaining <= TimeSpan.Zero
                 ? currentIndex
                 : GetFirstOverdueTaskIndex(evaluations, currentIndex + 1);
+
+        /// <summary>
+        /// Task validation rules
+        /// </summary>
+        public static readonly Func<TaskData, bool>[] QualityRules =
+        {
+            x => x.EstimatedHours > 0,
+            x => x.ComplexityLevel >= 1 && x.ComplexityLevel <= 10,
+            x => x.DueDate > x.CreatedDate,
+            x => !string.IsNullOrWhiteSpace(x.AssignedDeveloper),
+            x => !string.IsNullOrWhiteSpace(x.BackupDeveloper)
+        };
+
+        public static bool IsInvalid(this TaskData task) =>
+            !QualityRules.Any(rule => rule(task));
+
+        public static bool IsValid(this TaskData task) =>
+            !task.IsInvalid();
     }
 }

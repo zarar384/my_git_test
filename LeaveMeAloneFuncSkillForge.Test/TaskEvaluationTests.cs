@@ -125,5 +125,27 @@ namespace LeaveMeAloneFuncSkillForge.Test
             // Assert
             Assert.Equal(2, result);
         }
+
+        [Fact]
+        public void Task_IsValid_When_AllQualityRulesPass()
+        {
+            // Arrange 
+            var task = new TaskData
+            {
+                EstimatedHours = 5,
+                ComplexityLevel = 5,
+                IsUrgent = false,
+                AssignedDeveloper = "Alice",
+                BackupDeveloper = "Bob",
+                DueDate = DateTime.Now.AddDays(5),
+                CreatedDate = DateTime.Now.AddDays(-1)
+            };
+
+            // Act
+            var isValid = task.IsValid();
+
+            // Assert
+            Assert.True(isValid);
+        }
     }
 }
