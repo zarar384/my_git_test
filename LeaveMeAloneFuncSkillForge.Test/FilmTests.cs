@@ -4,6 +4,7 @@ using LeaveMeAloneFuncSkillForge.Repositories;
 using LeaveMeAloneFuncSkillForge.Repositories.Interfaces;
 using LeaveMeAloneFuncSkillForge.Services;
 using Moq;
+using System.Diagnostics;
 
 namespace LeaveMeAloneFuncSkillForge.Test
 {
@@ -83,6 +84,34 @@ namespace LeaveMeAloneFuncSkillForge.Test
             Assert.Equal(1, dramaGenre.TopFilms.Count()); // only H above average: 150
 
             Assert.Equal("H", dramaGenre.TopFilms.First().Title);
+        }
+
+        [Fact]
+        public void HeavyDescriptor_ShouldBeEvaluatedOnlyWhenCalled()
+        {
+            // Arrange
+            var film = new Film
+            {
+                Title = "Punch-Drunk Love",
+                Genre = "Drama",
+                BoxOfficeRevenue = 1234567,
+            };
+
+            // Act
+            var analyzer = new FilmAnalyzer(new List<Film> { film });
+            var descriptorsField = typeof(FilmAnalyzer).GetField("_descriptors", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var descriptors = (IEnumerable<Func<Film, string>>)descriptorsField.GetValue(analyzer);
+
+            var heavyFunc = descriptors.Last(); // with Thread.Sleep(1000);
+
+            // set timer
+            var stopwatch = Stopwatch.StartNew();
+            var result = heavyFunc(film);
+            stopwatch.Stop();
+
+            // Assert
+            Assert.Contains("Summary ready for", result);
+            Assert.True(stopwatch.ElapsedMilliseconds >= 999);
         }
     }
 }
