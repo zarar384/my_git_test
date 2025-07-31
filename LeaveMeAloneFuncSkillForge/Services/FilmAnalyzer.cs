@@ -23,7 +23,7 @@
             yield return film => {
                 Console.WriteLine($"Evaluating long computation for {film.Title}...");
                 Thread.Sleep(1000); // simulation of hard operation
-                return $"🎞️ Summary ready for: {film.Title}";
+                return $"Summary ready for: {film.Title}";
             };
         }
     }

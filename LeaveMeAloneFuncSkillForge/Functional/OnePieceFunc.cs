@@ -14,7 +14,7 @@
                     Rarity: "Legendary" or "Mythic", // rarity is Legendary or Mythic
                     SpecialMove: not null and not ""  // has a special move
                 } =>
-                    $"🔥 {character.Name} is a top-tier Devil Fruit user! " +
+                    $"{character.Name} is a top-tier Devil Fruit user! " +
                     $"With a bounty of {character.Bounty:N0} and the devastating move '{character.SpecialMove}', " +
                     $"their damage is calculated at {CalculateDamage(character)} with critical chance at {CalculateCritChance(character)}%. " +
                     $"Dodge ability stands at {CalculateDodgeChance(character)}%.",
@@ -25,7 +25,7 @@
                     Bounty: >= 500_000_000,
                     Rarity: "Epic" or "Rare"
                 } =>
-                    $"⚔️ {character.Name} is a formidable fighter with a bounty of {character.Bounty:N0} and no Devil Fruit. " +
+                    $"{character.Name} is a formidable fighter with a bounty of {character.Bounty:N0} and no Devil Fruit. " +
                     $"Damage potential: {CalculateDamage(character)}, Crit Chance: {CalculateCritChance(character)}%, Dodge Chance: {CalculateDodgeChance(character)}%.",
 
                 // Characters with SpecialMove but low bounty, evaluated as tactical fighters
@@ -34,7 +34,7 @@
                     Bounty: < 500_000_000,
                     Rarity: "Uncommon" or "Common"
                 } =>
-                    $"🛡️ Tactical fighter {character.Name} uses '{character.SpecialMove}' skillfully. " +
+                    $"Tactical fighter {character.Name} uses '{character.SpecialMove}' skillfully. " +
                     $"Damage: {CalculateDamage(character)}, Crit: {CalculateCritChance(character)}%, Dodge: {CalculateDodgeChance(character)}%.",
 
                 // Devil Fruit users with medium bounty and uncommon rarity but without special move
@@ -44,7 +44,7 @@
                     Rarity: "Uncommon" or "Rare",
                     SpecialMove: null or ""
                 } =>
-                    $"🍎 {character.Name} harnesses the Devil Fruit power effectively. " +
+                    $"{character.Name} harnesses the Devil Fruit power effectively. " +
                     $"Damage output: {CalculateDamage(character)}, Crit Chance: {CalculateCritChance(character)}%, Dodge Chance: {CalculateDodgeChance(character)}%.",
 
                 // no special powers or low bounty
