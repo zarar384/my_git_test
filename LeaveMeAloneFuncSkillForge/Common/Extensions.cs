@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace LeaveMeAloneFuncSkillForge.Common
+﻿namespace LeaveMeAloneFuncSkillForge.Common
 {
     public static class Extensions
     {
@@ -20,9 +18,22 @@ namespace LeaveMeAloneFuncSkillForge.Common
             params (Func<TInput, bool>, // or using KeyValuePair
             Func<TInput, TOutput>)[] predicates)
         {
-             var match = predicates.FirstOrDefault(x => x.Item1(@this));
-             var returnValue = match.Item2 != null? match.Item2(@this) : default;
-             return new MatchValueOrDefault<TInput, TOutput>(returnValue, @this);
+            var match = predicates.FirstOrDefault(x => x.Item1(@this));
+            var returnValue = match.Item2 != null ? match.Item2(@this) : default;
+            return new MatchValueOrDefault<TInput, TOutput>(returnValue, @this);
+        }
+
+        public static Func<TKey, TValue> ToLookup<TKey, TValue>(
+            this IDictionary<TKey, TValue> @this)
+        {
+            return x => @this.TryGetValue(x, out TValue? value) ? value : default;
+        }
+
+        public static Func<TKey, TValue> ToLookup<TKey, TValue>(
+            this IDictionary<TKey, TValue> @this,
+            TValue defaultVal)
+        {
+            return x => @this.ContainsKey(x) ? @this[x] : default;
         }
     }
 }

@@ -1,10 +1,12 @@
-﻿using LeaveMeAloneFuncSkillForge.Domain;
+﻿using LeaveMeAloneFuncSkillForge.Common;
+using LeaveMeAloneFuncSkillForge.Domain;
 using LeaveMeAloneFuncSkillForge.Functional;
 using LeaveMeAloneFuncSkillForge.Repositories;
 using LeaveMeAloneFuncSkillForge.Repositories.Interfaces;
 using LeaveMeAloneFuncSkillForge.Services;
 using Moq;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace LeaveMeAloneFuncSkillForge.Test
 {
@@ -17,9 +19,9 @@ namespace LeaveMeAloneFuncSkillForge.Test
             var filmRepository = new FilmRepository();
             var films = filmRepository.GetAll();
             //films.PrintTable();
-            
+
             // Act
-            var actiopnFilms = FilmFilters.GetFilmsByGenre(films, "Action");
+            var actiopnFilms = FilmFuncs.GetFilmsByGenre(films, "Action");
 
             // Assert
             Assert.NotEmpty(actiopnFilms);
@@ -34,7 +36,7 @@ namespace LeaveMeAloneFuncSkillForge.Test
             Console.SetOut(output);
 
             var mockRepo = new Mock<IFilmRepository>();
-            mockRepo.Setup(r => r.GetFilmsByGenre("Drama")).Returns(new List<Film> 
+            mockRepo.Setup(r => r.GetFilmsByGenre("Drama")).Returns(new List<Film>
             {
                 new Film { Title = "Film I", BoxOfficeRevenue = 200 },
                 new Film { Title = "Film HATE", BoxOfficeRevenue = 300 },
@@ -67,7 +69,7 @@ namespace LeaveMeAloneFuncSkillForge.Test
             };
 
             // Act
-            var result = FilmFilters.GetTopRevenueFilmsByGenreAboveAverage(films, 3).ToList();
+            var result = FilmFuncs.GetTopRevenueFilmsByGenreAboveAverage(films, 3).ToList();
 
             // Assert
             Assert.Equal(2, result.Count); // 2 genres: Action, Drama 
@@ -76,7 +78,7 @@ namespace LeaveMeAloneFuncSkillForge.Test
             Assert.NotNull(actionGenre);
             Assert.Equal(2, actionGenre.TopFilms.Count()); // top 2 above average by genre Action
 
-            var expectedActionTitles = new[] { "E", "D"};
+            var expectedActionTitles = new[] { "E", "D" };
             Assert.Equal(expectedActionTitles, actionGenre.TopFilms.Select(f => f.Title));
 
             var dramaGenre = result.FirstOrDefault(r => r.Genre == "Drama");
@@ -112,6 +114,34 @@ namespace LeaveMeAloneFuncSkillForge.Test
             // Assert
             Assert.Contains("Summary ready for", result);
             Assert.True(stopwatch.ElapsedMilliseconds >= 999);
+        }
+
+        [Fact]
+        public void GetFormattedFilmInfos_ReturnsFormattedList_WithDefaultsForUnknown()
+        {
+            // Arrange
+            var originalCulture = Thread.CurrentThread.CurrentCulture;
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+
+            var films = new Dictionary<string, Film>
+            {
+                ["Inception"] = new Film { Title = "Inception", Genre = "Sci-Fi", BoxOfficeRevenue = 829.9 },
+                ["The Godfather"] = new Film { Title = "The Godfather", Genre = "Crime", BoxOfficeRevenue = 246.1 },
+            };
+
+            var defaultFilm = new Film { Title = "Unknown", Genre = "Unknown", BoxOfficeRevenue = 0.0 };
+
+            var safeLookup = films.ToLookup(defaultFilm);
+            var titlesToLookup = new List<string> { "Inception", "Avatar", "The Godfather" };
+
+            // Act
+            var formatter = FilmFuncs.GetFormattedFilmInfos(safeLookup);
+            var result = formatter(titlesToLookup).ToList();
+
+            // Assert
+            Assert.Contains("Inception (Sci-Fi) — $829.9M", result);
+            Assert.Contains("The Godfather (Crime) — $246.1M", result);
+            Assert.Equal(2, result.Count);
         }
     }
 }
