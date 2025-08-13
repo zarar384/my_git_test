@@ -35,5 +35,17 @@
         {
             return x => @this.ContainsKey(x) ? @this[x] : default;
         }
+
+        public static int ToIntOrDefault(this object @this, int defaultValue = 0) =>
+            int.TryParse(@this?.ToString() ?? string.Empty, out var parserValue)
+                ? parserValue
+                : defaultValue;
+
+        public static string ToStringOrDefault(
+            this object @this, 
+            string defaultValue = "") =>
+            string.IsNullOrWhiteSpace(@this?.ToString() ?? string.Empty)
+                ? defaultValue
+                : @this?.ToString() ?? string.Empty;
     }
 }
