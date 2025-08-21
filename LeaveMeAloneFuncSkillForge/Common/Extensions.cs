@@ -42,10 +42,22 @@
                 : defaultValue;
 
         public static string ToStringOrDefault(
-            this object @this, 
+            this object @this,
             string defaultValue = "") =>
             string.IsNullOrWhiteSpace(@this?.ToString() ?? string.Empty)
                 ? defaultValue
                 : @this?.ToString() ?? string.Empty;
+
+        public static bool AllAdjacent<T>(
+            this IEnumerable<T> source,
+            Func<T, T, bool> evaluator) =>
+            source?.Zip(source.Skip(1), (prev, next) => evaluator(prev, next))
+                .All(x => x) ?? true;
+
+        public static bool AnyAdjacent<T>(
+            this IEnumerable<T> source,
+            Func<T, T, bool> evaluator) =>
+            source?.Zip(source.Skip(1), (prev, next) => evaluator(prev, next))
+                .Any(x => x) ?? false;
     }
 }
