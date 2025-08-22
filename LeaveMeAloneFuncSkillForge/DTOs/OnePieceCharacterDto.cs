@@ -12,5 +12,6 @@
         public int DodgeChance { get; set; }
         public string Rarity { get; set; }
         public string SpecialMove { get; set; }
+        public double HP { get; set; } = 100;
     }
 }

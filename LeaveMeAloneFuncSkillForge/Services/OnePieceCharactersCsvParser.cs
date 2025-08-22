@@ -124,7 +124,7 @@
 
             onePieceCharacters.ForEach(character =>
             {
-                var combatPower = OnePieceFunc.EvaluateCharacterCombatPower(character);
+                var combatPower = OnePieceFunc.GetBaseCombatStats(character);
 
                 Console.WriteLine(combatPower);
             });

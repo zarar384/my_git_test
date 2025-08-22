@@ -59,5 +59,13 @@
             Func<T, T, bool> evaluator) =>
             source?.Zip(source.Skip(1), (prev, next) => evaluator(prev, next))
                 .Any(x => x) ?? false;
+
+        public static T AggregateUntil<T>(
+            this T @this,
+            Func<T, bool> endCondition,
+            Func<T,T> update)=>
+            endCondition(@this)
+            ? @this
+            : AggregateUntil(update(@this), endCondition, update);
     }
 }
