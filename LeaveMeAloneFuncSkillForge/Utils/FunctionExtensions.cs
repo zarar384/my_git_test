@@ -20,5 +20,12 @@
                     : Enumerable.Range(1, height))                          // [1, ..., height]
                 .Select(y => (X: x, Y: y))
             );
+
+        public static T Map<T>(this T @this, params Func<T, T>[] transforamtions) =>
+            // apply each functions to the current value in sequence
+            transforamtions.Aggregate(@this, (current, transform) => transform(current)); 
+
+        public static TOut Map<TIn, TOut>(this TIn @this, Func<TIn, TOut> transformation) =>
+            transformation(@this);
     }
 }
