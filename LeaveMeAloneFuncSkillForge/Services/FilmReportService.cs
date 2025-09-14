@@ -21,6 +21,26 @@ namespace LeaveMeAloneFuncSkillForge.Services
     
     public class FilmReportService
     {
+        public Report GenerateGenreCountReport(IEnumerable<Film> films)
+        {
+            return GenerateReport(
+                films,
+                f => f.Genre,
+                g => g.Count().ToString(),
+                "Film Count by Genre"
+            );
+        }
+
+        public Report GenerateRevenueByGenreReport(IEnumerable<Film> films)
+        {
+            return GenerateReport(
+                films,
+                f => f.Genre,
+                g => g.Sum(f => f.BoxOfficeRevenue).ToString("C"),
+                "Total Box Office Revenue by Genre"
+            );
+        }
+
         public Report GenerateReport<T>(
             IEnumerable<Film> films,
             Func<Film, T> groupBySelector,
@@ -41,6 +61,11 @@ namespace LeaveMeAloneFuncSkillForge.Services
                 Title = title,
                 Rows = summary
             };
+
+            if (!report.Rows.Any())
+            {
+                // Handle empty case
+            }
 
             return report;
         }
