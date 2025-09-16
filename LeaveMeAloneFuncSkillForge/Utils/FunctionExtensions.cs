@@ -27,5 +27,12 @@
 
         public static TOut Map<TIn, TOut>(this TIn @this, Func<TIn, TOut> transformation) =>
             transformation(@this);
+
+        public static TOut Fork<TIn, T1, T2, TOut>(
+            this TIn @this,
+            Func<TIn, T1> f1,
+            Func<TIn, T2> f2,
+            Func<T1, T2, TOut> join) =>
+            join(f1(@this), f2(@this));
     }
 }
