@@ -1,4 +1,6 @@
-﻿namespace LeaveMeAloneFuncSkillForge.Domain
+﻿using LeaveMeAloneFuncSkillForge.Utils;
+
+namespace LeaveMeAloneFuncSkillForge.Domain
 {
     public class TaskData
     {
@@ -8,7 +10,7 @@
         public string AssignedDeveloper { get; set; }
         public string BackupDeveloper { get; set; }
         public DateTime DueDate { get; set; }
-        public DateTime CreatedDate { get; set; }
+        public DateTime CreatedDate { get; set; }       
     }
 
 }

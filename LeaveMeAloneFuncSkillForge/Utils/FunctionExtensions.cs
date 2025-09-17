@@ -34,5 +34,11 @@
             Func<TIn, T2> f2,
             Func<T1, T2, TOut> join) =>
             join(f1(@this), f2(@this));
+
+        public static TOut Alt<TIn, TOut>(
+            this TIn @this,
+            params Func<TIn, TOut>[] funcs) =>
+            funcs.Select(f => f(@this))
+                 .FirstOrDefault(x => x != null);
     }
 }
