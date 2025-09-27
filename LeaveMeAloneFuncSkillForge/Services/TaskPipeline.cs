@@ -35,5 +35,22 @@ namespace LeaveMeAloneFuncSkillForge.Services
 
         public static ProjectEvaluationSummary Summarize(IEnumerable<TaskData> tasks) =>
             tasks.Map(TaskTransformations.EvaluateProjectTasks);
+
+        public static Func<TaskData, string> FullPipeline = task =>
+                TaskFuncs.CalcEffort(task)
+            .Tap(effort => Console.WriteLine($"[Tap]: Effort={effort}"))
+            .Map(effort => (
+                Effort: effort,
+                Risk: TaskFuncs.CalcRisk(task)
+            ))
+            .Tap(tuple => Console.WriteLine($"[Tap]: Risk={tuple.Risk.RiskCategory} ({tuple.Risk.RiskScore:F1})"))
+            .Map(tuple => (
+                tuple.Effort,
+                tuple.Risk,
+                Quality: TaskFuncs.CheckQuality(task)
+            ))
+            .Tap(tuple => Console.WriteLine($"[Tap]: Quality={tuple.Quality}"))
+            .Map(tuple => TaskFuncs.FormatSummary(tuple)
+        );
     }
 }

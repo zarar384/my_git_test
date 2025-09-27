@@ -55,5 +55,69 @@ namespace LeaveMeAloneFuncSkillForge.Test
             Assert.True(summary.AverageEffortScore > 0);
             Assert.True(summary.ResponsiblePersons.Count >= 2);
         }
+
+        [Fact]
+        public void FullPipeline_ShouldReturnFormattedSummary_AndTapWorks()
+        {
+            // Arrange
+            var task = new TaskData
+            {
+                EstimatedHours = 10,
+                ComplexityLevel = 5,
+                IsUrgent = false,
+                AssignedDeveloper = "Alice",
+                BackupDeveloper = "Bob",
+                CreatedDate = DateTime.Now,
+                DueDate = DateTime.Now.AddDays(3)
+            };
+
+            var consoleOutput = new StringWriter();
+            Console.SetOut(consoleOutput);
+
+            // Act
+            var summary = TaskPipeline.FullPipeline(task);
+
+            // Assert
+            Assert.Contains("Effort=50", summary);
+            Assert.Contains("Risk=", summary);
+            Assert.Contains("Quality=True", summary);
+
+            // Assert Verify Tap outputs
+            var output = consoleOutput.ToString();
+            Assert.Contains("[Tap]: Effort=50", output);
+            Assert.Contains("[Tap]: Risk=", output);
+            Assert.Contains("[Tap]: Quality=True", output);
+        }
+
+        [Fact]
+        public void FullPipeline_ShouldHandleInvalidTask_QualityFalse()
+        {
+            // Arrange
+            var task = new TaskData
+            {
+                EstimatedHours = 0, // invalid
+                ComplexityLevel = 15, // invalid
+                IsUrgent = false,
+                AssignedDeveloper = "",
+                BackupDeveloper = "",
+                CreatedDate = DateTime.Now,
+                DueDate = DateTime.Now.AddDays(-1)
+            };
+
+            var consoleOutput = new System.IO.StringWriter();
+            Console.SetOut(consoleOutput);
+
+            // Act
+            var result = TaskPipeline.FullPipeline(task);
+
+            // Assert
+            Assert.Contains("Quality=False", result);
+
+            // Assert invalid outputs from Tap
+            var output = consoleOutput.ToString();
+            Assert.Contains("[Tap]: Effort=0", output);
+            Assert.Contains("[Tap]: Risk=", output);
+            Assert.Contains("[Tap]: Quality=False", output);
+        }
     }
 }

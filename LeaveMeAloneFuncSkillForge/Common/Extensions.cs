@@ -99,5 +99,11 @@
 
         public static string ToFormattedString<T>(this List<T> list, string separator = ", ")
             => list == null ? string.Empty : string.Join(separator, list);
+
+        public static T Tap<T>(this T @this, Action<T> action)
+        {
+            action(@this);
+            return @this;
+        }
     }
 }
