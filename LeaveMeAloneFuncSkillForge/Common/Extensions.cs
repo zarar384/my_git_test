@@ -67,5 +67,16 @@
             endCondition(@this)
             ? @this
             : AggregateUntil(update(@this), endCondition, update);
+
+        /// <summary>
+        /// Concatenates two functions into one
+        /// 1. the first result is f1 (TIn => TOut1),
+        /// 2. then the result of f1 is passed to f2 (TOut1 => TOut2),
+        /// 3. returns a new function (TIn => TOut2).
+        /// </summary>
+        public static Func<TIn, TOut2> Compose<TIn, TOut1, TOut2>(
+             this Func<TIn, TOut1> f1,
+             Func<TOut1, TOut2> f2)
+             => x => f2(f1(x));
     }
 }

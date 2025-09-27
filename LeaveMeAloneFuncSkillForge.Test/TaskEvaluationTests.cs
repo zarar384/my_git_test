@@ -147,5 +147,30 @@ namespace LeaveMeAloneFuncSkillForge.Test
             // Assert
             Assert.True(isValid);
         }
+
+        [Fact]
+        public void Task_FullSummary_ReturnsCorrectFormat()
+        {
+            // Arrange
+            var task = new TaskData
+            {
+                EstimatedHours = 10,
+                ComplexityLevel = 4,
+                IsUrgent = true,
+                AssignedDeveloper = "Dev A",
+                BackupDeveloper = "Backup A",
+                CreatedDate = DateTime.Now.AddDays(-3),
+                DueDate = DateTime.Now.AddDays(2)
+            };
+
+            // Act
+            var summary = TaskFuncs.FullSummary(task);
+
+            // Assert
+            // Effort=40, Risk=Low (20,0), Quality=True
+            Assert.Contains("Effort=40", summary);
+            Assert.Contains("Risk=", summary);
+            Assert.Contains("Quality=True", summary);
+        }
     }
 }
