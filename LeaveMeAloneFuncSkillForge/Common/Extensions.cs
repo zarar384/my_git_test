@@ -78,5 +78,26 @@
              this Func<TIn, TOut1> f1,
              Func<TOut1, TOut2> f2)
              => x => f2(f1(x));
+
+        /// <summary>
+        /// Runs ftransformer (Select, Where chain..) ande then aggregator (Aggregate, Join, ToList..)
+        /// </summary>
+        public static TFinalOut Transduce<TIn, TMid, TFinalOut>(
+            this IEnumerable<TIn> source,
+            Func<IEnumerable<TIn>, IEnumerable<TMid>> transformer,
+            Func<IEnumerable<TMid>, TFinalOut> aggregator) 
+                => aggregator(transformer(source)
+            );
+
+        /// <summary>
+        /// Convert transformer + aggregator into a reusable function (transducer)
+        /// </summary>
+        public static Func<IEnumerable<TIn>, TFinalOut> ToTransducer<TIn, TMid, TFinalOut>(
+            this Func<IEnumerable<TIn>, IEnumerable<TMid>> transformer,
+            Func<IEnumerable<TMid>, TFinalOut> aggregator) 
+                => items => aggregator(transformer(items));
+
+        public static string ToFormattedString<T>(this List<T> list, string separator = ", ")
+            => list == null ? string.Empty : string.Join(separator, list);
     }
 }
