@@ -40,5 +40,19 @@
             params Func<TIn, TOut>[] funcs) =>
             funcs.Select(f => f(@this))
                  .FirstOrDefault(x => x != null);
+
+        /// <summary>
+        /// Executes the action only if the condition is false; useful for null checks or guarding side effects.
+        /// </summary>
+        public static void Unless<T>(
+            this T @this, 
+            Func<T, bool> condition, 
+            Action<T> action)
+        {
+            if (!condition(@this))
+            {
+                action(@this);
+            }
+        }
     }
 }
