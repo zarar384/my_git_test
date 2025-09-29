@@ -54,5 +54,23 @@
                 action(@this);
             }
         }
+
+        public static IEnumerable<T> ReplaceAt<T>
+            (this IEnumerable<T> source, 
+            int index, 
+            T replacement) =>
+            source.Select((item, idx) => idx == index ? replacement : item);
+
+        public static IEnumerable<T> ReplaceAt<T>
+            (this IEnumerable<T> source, 
+            int index,
+            Func<T,T> replacementFunc) =>
+            source.Select((x, i) => i == index ? replacementFunc(x) : x);
+
+        public static IEnumerable<T> ReplaceWhere<T>
+            (this IEnumerable<T> source, 
+            Func<T, bool> predicate,
+            Func<T, T> replacement) =>
+            source.Select(x => predicate(x) ? replacement(x) : x);
     }
 }
