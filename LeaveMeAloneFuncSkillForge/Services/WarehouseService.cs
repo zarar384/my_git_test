@@ -2,7 +2,7 @@
 
 namespace LeaveMeAloneFuncSkillForge.Services
 {
-    public static class WarehouseProcessor
+    public static class WarehouseService
     {
         /// <summary>
         /// Calculates task complexity based on type and properties
@@ -39,6 +39,25 @@ namespace LeaveMeAloneFuncSkillForge.Services
             );
 
             return tasks.Transduce(transformer, aggregator);
+        }
+
+        public static WarehouseTaskResult ExecuteTask(WarehouseTask task)
+        {
+            try
+            {
+                return task switch
+                {
+                    LoadPallet lp => new TaskCompleted(lp.TaskId, $"Pallet {lp.PalletId} loaded at {lp.Location}"),
+                    PickOrder po when po.Quantity > 0 => new TaskCompleted(po.TaskId, $"Picked {po.Quantity} of {po.ProductCode} for order {po.OrderId}"),
+                    PickOrder po => new TaskFailed(po.TaskId, "Quantity must be greater than zero"),
+                    InventoryCheck ic => new TaskCompleted(ic.TaskId, $"Inventory checked in section {ic.Section} at {ic.CheckedAt}"),
+                    _ => new TaskFailed(task.TaskId, "Unknown task")
+                };
+            }
+            catch (Exception ex)
+            {
+                return new TaskError(task.TaskId, ex);
+            }
         }
     }
 }
