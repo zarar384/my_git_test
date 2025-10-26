@@ -7,7 +7,7 @@ namespace LeaveMeAloneFuncSkillForge
     {
         public static void RunApp()
         {
-            DataSharingSynchronizationL.Run();
+            ConcurrentCollectionsL.Run();
         }
     }
 }
