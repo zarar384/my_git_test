@@ -1,3 +1,4 @@
 # READ ME BEFORE STARTING
 
-Alright, good luck ;)
+Do not lose hope - Jesus is watching over you at every moment.
+![](https://imgur.com/qtw05LW)
