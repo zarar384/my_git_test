@@ -7,7 +7,7 @@ namespace LeaveMeAloneFuncSkillForge
     {
         public static void RunApp()
         {
-            TaskCoordinationL.Run();
+            ParallelLoopsL.Run();
         }
     }
 }
