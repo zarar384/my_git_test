@@ -1,13 +1,14 @@
 ﻿
 using LeaveMeAloneFuncSkillForge.Playground;
+using System.Threading.Tasks;
 
 namespace LeaveMeAloneFuncSkillForge
 {
     public static class App
     {
-        public static void RunApp()
+        public static async Task RunApp()
         {
-            ParallelLinqL.Run();
+           await AsyncPL.Run();
         }
     }
 }
