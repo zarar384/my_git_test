@@ -1,4 +1,4 @@
-﻿namespace LeaveMeAloneFuncSkillForge.Domain.DiscriminatedUnions
+﻿namespace LeaveMeAloneFuncSkillForge.DiscriminatedUnions
 {
     public abstract record WarehouseTask
     {

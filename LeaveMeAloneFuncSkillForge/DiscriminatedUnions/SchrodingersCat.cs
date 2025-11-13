@@ -1,4 +1,4 @@
-﻿namespace LeaveMeAloneFuncSkillForge.Domain.DiscriminatedUnions
+﻿namespace LeaveMeAloneFuncSkillForge.DiscriminatedUnions
 {
     /// <summary>
     /// Simple demo for illustrate Discriminated Union type.

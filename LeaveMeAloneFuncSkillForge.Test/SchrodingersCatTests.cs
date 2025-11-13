@@ -1,4 +1,4 @@
-﻿using LeaveMeAloneFuncSkillForge.Domain.DiscriminatedUnions;
+﻿using LeaveMeAloneFuncSkillForge.DiscriminatedUnions;
 using System;
 namespace LeaveMeAloneFuncSkillForge.Test
 {
