@@ -2,16 +2,20 @@
 {
     public class FilmRepository: IFilmRepository
     {
-        private List<Film> _films;
+        public IEnumerable<Film> Films { get; }
 
         public FilmRepository(int initialCount = 20)
         {
-            _films = FakeDatabase.FilmFaker.Generate(initialCount);
+            Films = FakeDatabase.FilmFaker.Generate(initialCount);
         }
 
-        public IEnumerable<Film> GetAll() => _films;
+
+        public IEnumerable<Film> GetAll() => Films;
+
+        public Film GetFilmByTitle(string title)
+         => Films.SingleOrDefault(f => f.Title == title)!;
 
         public IEnumerable<Film> GetFilmsByGenre(string genre) =>
-            _films.Where(f => f.Genre == genre);
+            Films.Where(f => f.Genre == genre);
     }
 }
