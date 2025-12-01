@@ -18,4 +18,15 @@
     {
 
     }
+
+    // v 2.0 of Maybe DU
+    public sealed class Error<T> : Maybe<T>
+    {
+        public Error(Exception e)
+        {
+            this.CapturedError = e;
+        }
+
+        public Exception CapturedError { get; init; }
+    }
 }
