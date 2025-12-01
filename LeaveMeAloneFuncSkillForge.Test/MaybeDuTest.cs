@@ -91,7 +91,8 @@ namespace LeaveMeAloneFuncSkillForge.Test
             Assert.Equal("Something bad", ((Error<Film>)result).CapturedError.Message);
         }
 
-        private Maybe<Film> GetFilmFirstFilmByGenre(string genre, IFilmRepository filmRepository)
+        private Maybe<Film> GetFilmFirstFilmByGenre(string genre, 
+            IFilmRepository filmRepository)
         {
             Maybe<Film> maybeFilm = filmRepository.GetFilmsByGenre(genre)
                 .FirstOrDefault() is { } film
@@ -100,9 +101,8 @@ namespace LeaveMeAloneFuncSkillForge.Test
             return maybeFilm;
         }
 
-        private Maybe<Film> GetFilmFirstFilmByGenre_ExceptionSafe(
-           string genre,
-           IFilmRepository filmRepository)
+        private Maybe<Film> GetFilmFirstFilmByGenre_ExceptionSafe(string genre, 
+            IFilmRepository filmRepository)
         {
             try
             {
