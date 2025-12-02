@@ -1,4 +1,7 @@
-﻿namespace LeaveMeAloneFuncSkillForge.Common
+﻿using LeaveMeAloneFuncSkillForge.DiscriminatedUnions;
+using System.Net.Http.Headers;
+
+namespace LeaveMeAloneFuncSkillForge.Common
 {
     public static class Extensions
     {
@@ -63,7 +66,7 @@
         public static T AggregateUntil<T>(
             this T @this,
             Func<T, bool> endCondition,
-            Func<T,T> update)=>
+            Func<T, T> update) =>
             endCondition(@this)
             ? @this
             : AggregateUntil(update(@this), endCondition, update);
@@ -85,7 +88,7 @@
         public static TFinalOut Transduce<TIn, TMid, TFinalOut>(
             this IEnumerable<TIn> source,
             Func<IEnumerable<TIn>, IEnumerable<TMid>> transformer,
-            Func<IEnumerable<TMid>, TFinalOut> aggregator) 
+            Func<IEnumerable<TMid>, TFinalOut> aggregator)
                 => aggregator(transformer(source)
             );
 
@@ -94,7 +97,7 @@
         /// </summary>
         public static Func<IEnumerable<TIn>, TFinalOut> ToTransducer<TIn, TMid, TFinalOut>(
             this Func<IEnumerable<TIn>, IEnumerable<TMid>> transformer,
-            Func<IEnumerable<TMid>, TFinalOut> aggregator) 
+            Func<IEnumerable<TMid>, TFinalOut> aggregator)
                 => items => aggregator(transformer(items));
 
         public static string ToFormattedString<T>(this List<T> list, string separator = ", ")
@@ -105,5 +108,36 @@
             action(@this);
             return @this;
         }
+
+        public static Either<TLeft, TRight2> Bind<TLeft, TRight, TRight2>(
+            this Either<TLeft, TRight> either,
+            Func<TRight, Either<TLeft, TRight2>> func)
+            => either switch
+            {
+                Left<TLeft, TRight> left => new Left<TLeft, TRight2>(left.Value),
+                Right<TLeft, TRight> right => func(right.Value),
+                _ => throw new InvalidOperationException("Unknown Either type")
+            };
+
+        public static Either<TLeft, TRight2> Map<TLeft, TRight, TRight2>(
+            this Either<TLeft, TRight> either,
+            Func<TRight, TRight2> func)
+            => either.Bind(r => new Right<TLeft, TRight2>(func(r)));
+
+        public static Maybe<TRight2> Bind<TRight, TRight2>(
+            this Maybe<TRight> maybe,
+            Func<TRight, Maybe<TRight2>> func)
+            => maybe switch
+            {
+                Something<TRight> something => func(something.Value),
+                Nothing<TRight> => new Nothing<TRight2>(),
+                Error<TRight> error => new Error<TRight2>(error.CapturedError),
+                _ => throw new InvalidOperationException("Unknown Maybe type")
+            };
+
+        public static Maybe<TRight2> Map<TRight, TRight2>(
+            this Maybe<TRight> maybe,
+            Func<TRight, TRight2> func)
+            => maybe.Bind(r => new Something<TRight2>(func(r)));
     }
 }

@@ -51,5 +51,40 @@ namespace LeaveMeAloneFuncSkillForge.Services
                 );
             }
         }
+
+        /// <summary>
+        /// Retrieves top N films of a given genre with positive revenue,
+        /// returns Either with ErrorInfo on failure or FilmInfoDto list on success.
+        /// </summary>
+        public Either<ErrorInfo, IEnumerable<FilmInfoDto>> GetTopFilmInfo(string genre, int topN) =>
+            // Validate genre
+            Validation.ValidateGenre(genre)
+                .Bind(validGenre =>
+                    // Validate topN
+                    Validation.ValidateTopN(topN)
+                        .Bind(validTopN =>
+                            // Get films by genre
+                            GetFilmsByGenreSorted(validGenre)
+                                // Map each film to Maybe<FilmInfoDto>
+                                .Map(films =>
+                                    films
+                                        .Select(f => f.BoxOfficeRevenue > 0
+                                            ? new Something<Film>(f) as Maybe<Film>
+                                            : new Nothing<Film>())
+                                        .Select(m => m.Map(f => new FilmInfoDto(f.Title, f.BoxOfficeRevenue)))
+                                        .OfType<Something<FilmInfoDto>>() // keep only successful results
+                                        .Select(s => s.Value)
+                                        .Take(validTopN)
+                                )
+                                // Convert empty result to Left, otherwise Right
+                                .Bind<ErrorInfo, IEnumerable<FilmInfoDto>, IEnumerable<FilmInfoDto>>(dto =>
+                                    dto.Any()
+                                        ? new Right<ErrorInfo, IEnumerable<FilmInfoDto>>(dto)
+                                        : new Left<ErrorInfo, IEnumerable<FilmInfoDto>>(
+                                            new ErrorInfo("NoValidFilms", "No films with valid revenue")
+                                          )
+                                )
+                        )
+                );
     }
 }
