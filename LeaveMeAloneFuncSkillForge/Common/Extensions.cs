@@ -1,5 +1,4 @@
 ﻿using LeaveMeAloneFuncSkillForge.DiscriminatedUnions;
-using System.Net.Http.Headers;
 
 namespace LeaveMeAloneFuncSkillForge.Common
 {
