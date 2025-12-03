@@ -108,6 +108,15 @@ namespace LeaveMeAloneFuncSkillForge.Common
             return @this;
         }
 
+        /// <summary>
+        /// Bind for Either: continues the chain if Right, propagates Left otherwise.
+        /// </summary>
+        /// <typeparam name="TLeft">Type of the Left (error) value.</typeparam>
+        /// <typeparam name="TRight">Type of the Right (success) value in the input Either.</typeparam>
+        /// <typeparam name="TRight2">Type of the Right (success) value in the resulting Either.</typeparam>
+        /// <param name="either">The Either to operate on.</param>
+        /// <param name="func">Function to apply if Right; must return Either<TLeft, TRight2>.</param>
+        /// <returns>New Either with TRight2 if Right, original Left if Left.</returns>
         public static Either<TLeft, TRight2> Bind<TLeft, TRight, TRight2>(
             this Either<TLeft, TRight> either,
             Func<TRight, Either<TLeft, TRight2>> func)
@@ -118,11 +127,28 @@ namespace LeaveMeAloneFuncSkillForge.Common
                 _ => throw new InvalidOperationException("Unknown Either type")
             };
 
+        /// <summary>
+        /// Map for Either: transforms Right value while keeping Left unchanged.
+        /// </summary>
+        /// <typeparam name="TLeft">Type of the Left (error) value.</typeparam>
+        /// <typeparam name="TRight">Type of the Right value in the input Either.</typeparam>
+        /// <typeparam name="TRight2">Type of the Right value after mapping.</typeparam>
+        /// <param name="either">The Either to map.</param>
+        /// <param name="func">Function to transform the Right value.</param>
+        /// <returns>New Either with transformed Right or original Left.</returns>
         public static Either<TLeft, TRight2> Map<TLeft, TRight, TRight2>(
             this Either<TLeft, TRight> either,
             Func<TRight, TRight2> func)
             => either.Bind(r => new Right<TLeft, TRight2>(func(r)));
 
+        /// <summary>
+        /// Bind for Maybe: continues the chain if Something, propagates Nothing or Error otherwise.
+        /// </summary>
+        /// <typeparam name="TRight">Type of the value inside the input Maybe.</typeparam>
+        /// <typeparam name="TRight2">Type of the value inside the resulting Maybe.</typeparam>
+        /// <param name="maybe">The Maybe to operate on.</param>
+        /// <param name="func">Function to apply if Something; must return Maybe<TRight2>.</param>
+        /// <returns>New Maybe with TRight2 if Something, original Nothing or Error otherwise.</returns>
         public static Maybe<TRight2> Bind<TRight, TRight2>(
             this Maybe<TRight> maybe,
             Func<TRight, Maybe<TRight2>> func)
@@ -134,9 +160,38 @@ namespace LeaveMeAloneFuncSkillForge.Common
                 _ => throw new InvalidOperationException("Unknown Maybe type")
             };
 
+        // A stricter, fully functional Bind implementation
+        public static Maybe<TOut> BindStrict<TIn, TOut>(
+            this Maybe<TIn> @this,
+            Func<TIn, Maybe<TOut>> func)
+        {
+            try
+            {
+                var returnValue = @this switch
+                {
+                    Something<TIn> something => func(something.Value),
+                    _ => new Nothing<TOut>()
+                };
+                return returnValue;
+            }
+            catch (Exception ex)
+            {
+                return new Nothing<TOut>();
+            }
+        }
+
+        /// <summary>
+        /// Map for Maybe: transforms Something value while keeping Nothing or Error unchanged.
+        /// </summary>
+        /// <typeparam name="TRight">Type of the value inside the input Maybe.</typeparam>
+        /// <typeparam name="TRight2">Type of the value after mapping.</typeparam>
+        /// <param name="maybe">The Maybe to map.</param>
+        /// <param name="func">Function to transform the Something value.</param>
+        /// <returns>New Maybe with transformed Something, original Nothing or Error otherwise.</returns>
         public static Maybe<TRight2> Map<TRight, TRight2>(
             this Maybe<TRight> maybe,
             Func<TRight, TRight2> func)
             => maybe.Bind(r => new Something<TRight2>(func(r)));
+
     }
 }

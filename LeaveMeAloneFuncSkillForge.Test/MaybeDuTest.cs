@@ -1,5 +1,6 @@
 ﻿using LeaveMeAloneFuncSkillForge.DiscriminatedUnions;
 using LeaveMeAloneFuncSkillForge.Domain;
+using LeaveMeAloneFuncSkillForge.Common;
 using LeaveMeAloneFuncSkillForge.Repositories.Interfaces;
 using Moq;
 
@@ -116,6 +117,61 @@ namespace LeaveMeAloneFuncSkillForge.Test
             {
                 return new Error<Film>(ex);
             }
-        }        
+        }
+
+        [Fact]
+        public void BindStrict_ShouldPropagateSuccessThroughChain()
+        {
+            // Arrange
+            var input = new Something<string>("42");
+
+            // Act
+            var result = input
+                    .BindStrict(EnsureNotEmpty)
+                    .BindStrict(ParseToInt)
+                    .BindStrict(ComputeHalf)
+                    .BindStrict(FormatResult);
+
+            // Assert
+            Assert.True(result is Something<string>);
+            Assert.Equal("Result is 21", ((Something<string>)result).Value);
+        }
+
+        [Fact]
+        public void BindStrict_ShouldReturnNothingWhenAnyStepFails()
+        {
+            // Arrange
+            var input = new Something<string>("not number");
+
+            // Act
+            var result =input
+                    .BindStrict(EnsureNotEmpty)
+                    .BindStrict(ParseToInt)      // fails here => Nothing<int>
+                    .BindStrict(ComputeHalf)     // skipped 
+                    .BindStrict(FormatResult);   // skipped 
+
+            // Assert
+            Assert.True(result is Nothing<string>);
+        }
+
+
+        // Example of chaining Maybe operations
+        private Maybe<string> EnsureNotEmpty(string s) =>
+            string.IsNullOrWhiteSpace(s)
+            ? new Nothing<string>()
+            : new Something<string>(s);
+
+        private Maybe<int> ParseToInt(string s) =>
+            int.TryParse(s, out var n)
+                ? new Something<int>(n)
+                : new Nothing<int>();
+
+        private Maybe<double> ComputeHalf(int x) =>
+            x != 0
+                ? new Something<double>(x / 2.0)
+                : new Nothing<double>();
+
+        private Maybe<string> FormatResult(double d) =>
+            new Something<string>($"Result is {d}");
     }
 }
