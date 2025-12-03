@@ -1,5 +1,6 @@
 ﻿using LeaveMeAloneFuncSkillForge.DiscriminatedUnions;
 using LeaveMeAloneFuncSkillForge.Domain;
+using LeaveMeAloneFuncSkillForge.DTOs;
 using LeaveMeAloneFuncSkillForge.Common;
 using LeaveMeAloneFuncSkillForge.Repositories.Interfaces;
 using Moq;
@@ -127,10 +128,10 @@ namespace LeaveMeAloneFuncSkillForge.Test
 
             // Act
             var result = input
-                    .BindStrict(EnsureNotEmpty)
-                    .BindStrict(ParseToInt)
-                    .BindStrict(ComputeHalf)
-                    .BindStrict(FormatResult);
+                    .BindSafe(EnsureNotEmpty)
+                    .BindSafe(ParseToInt)
+                    .BindSafe(ComputeHalf)
+                    .BindSafe(FormatResult);
 
             // Assert
             Assert.True(result is Something<string>);
@@ -145,15 +146,94 @@ namespace LeaveMeAloneFuncSkillForge.Test
 
             // Act
             var result =input
-                    .BindStrict(EnsureNotEmpty)
-                    .BindStrict(ParseToInt)      // fails here => Nothing<int>
-                    .BindStrict(ComputeHalf)     // skipped 
-                    .BindStrict(FormatResult);   // skipped 
+                    .BindSafe(EnsureNotEmpty)
+                    .BindSafe(ParseToInt)      // fails here => Nothing<int>
+                    .BindSafe(ComputeHalf)     // skipped 
+                    .BindSafe(FormatResult);   // skipped 
 
             // Assert
             Assert.True(result is Nothing<string>);
         }
 
+        [Fact]
+        public void ComplexBindStrict_UserRegistrationPipeline_FinalMaybeAndLogsCorrectly()
+        {
+            // Arrange
+            var log = new List<string>();
+
+            // user input, could come from API request
+            var input = new Something<UserInputDto>(new UserInputDto
+            {
+                Username = "john_doe",
+                Password = "password123",
+                Email = "john@example.com"
+            });
+
+            // Act
+            var result = input
+                // validate input
+                .BindStrict(x =>
+                {
+                    if (string.IsNullOrWhiteSpace(x.Username) || string.IsNullOrWhiteSpace(x.Password))
+                        throw new ArgumentException("Username or password is empty");
+                    return x;
+                })
+                .OnSomething(x => log.Add($"Validated input for user: {x.Username}"))
+                .OnNothing(() => log.Add("Input validation failed"))
+                .OnError(ex => log.Add($"Validation error: {ex.Message}"))
+
+                // check if username exists
+                .BindStrict(x =>
+                {
+                    var existingUsers = new HashSet<string> { "alice", "bob" };
+                    if (existingUsers.Contains(x.Username)) return x;
+                    return x;
+                })
+                .OnSomething(x => log.Add($"Username {x.Username} is available"))
+                .OnNothing(() => log.Add($"Username already exists"))
+                .OnError(ex => log.Add($"Error checking username: {ex.Message}"))
+
+                // hash password
+                .BindStrict(x =>
+                {
+                    x.Password = $"hashed_{x.Password}";
+                    return x;
+                })
+                .OnSomething(x => log.Add($"Password hashed for {x.Username}"))
+                .OnNothing(() => log.Add("Skipping password hash"))
+                .OnError(ex => log.Add($"Error hashing password: {ex.Message}"))
+
+                // save user
+                .BindStrict(x =>
+                {
+                    if (x.Username == "fail_save") throw new Exception("Database error");
+                    return x;
+                })
+                .OnSomething(x => log.Add($"User {x.Username} saved to database"))
+                .OnNothing(() => log.Add("User not saved"))
+                .OnError(ex => log.Add($"Save error: {ex.Message}"))
+
+                // send welcome email
+                .BindStrict(x =>
+                {
+                    if (x.Email.EndsWith("@example.com")) throw new Exception("Email delivery failed");
+                    return x;
+                })
+                .OnSomething(x => log.Add($"Welcome email sent to {x.Email}"))
+                .OnNothing(() => log.Add("Email not sent"))
+                .OnError(ex => log.Add($"Email error: {ex.Message}"));
+
+            // Assert
+            // final Maybe is UnhandledError because sending email fails for @example.com
+            Assert.IsType<UnhandledError<UserInputDto>>(result);
+
+            // that log contains expected entries
+            Assert.Contains(log, l => l.Contains("Validated input"));
+            Assert.Contains(log, l => l.Contains("Username john_doe is available"));
+            Assert.Contains(log, l => l.Contains("Password hashed"));
+            Assert.Contains(log, l => l.Contains("User john_doe saved to database"));
+            Assert.Contains(log, l => l.Contains("Email error: Email delivery failed"));
+        }
 
         // Example of chaining Maybe operations
         private Maybe<string> EnsureNotEmpty(string s) =>

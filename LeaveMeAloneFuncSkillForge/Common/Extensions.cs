@@ -160,8 +160,8 @@ namespace LeaveMeAloneFuncSkillForge.Common
                 _ => throw new InvalidOperationException("Unknown Maybe type")
             };
 
-        // A stricter, fully functional Bind implementation
-        public static Maybe<TOut> BindStrict<TIn, TOut>(
+        // a safe version of Bind that catches exceptions and returns Nothing<TOut>
+        public static Maybe<TOut> BindSafe<TIn, TOut>(
             this Maybe<TIn> @this,
             Func<TIn, Maybe<TOut>> func)
         {
@@ -180,6 +180,42 @@ namespace LeaveMeAloneFuncSkillForge.Common
             }
         }
 
+        // a strict version of Bind
+        public static Maybe<TOut> BindStrict<TIn, TOut>(
+            this Maybe<TIn> @this,
+            Func<TIn, TOut> func)
+        {
+            try
+            {
+                Maybe<TOut> updatedValue = @this switch
+                {
+                    // apply func if Something has a non-default value
+                    Something<TIn> s when !EqualityComparer<TIn>.Default.Equals(s.Value, default) =>
+                        new Something<TOut>(func(s.Value)),
+
+                    // apply func if TIn is a primitive type (int, bool..)
+                    Something<TIn> s when s.GetType().GetGenericArguments()[0].IsPrimitive =>
+                        new Something<TOut>(func(s.Value)),
+
+                    Something<TIn> _ => new UnhandledNothing<TOut>(),
+
+                    UnhandledNothing<TIn> _ => new UnhandledNothing<TOut>(),
+
+                    UnhandledError<TIn> e => new UnhandledError<TOut>(e.CapturedError),
+
+                    Error<TIn> e => new Error<TOut>(e.CapturedError),
+
+                    _ => new Error<TOut>(new Exception("New Maybe state that isn't coded for!: " + @this.GetType()))
+                };
+
+                return updatedValue;
+            }
+            catch (Exception ex)
+            {
+                return new UnhandledError<TOut>(ex);
+            }
+        }
+
         /// <summary>
         /// Map for Maybe: transforms Something value while keeping Nothing or Error unchanged.
         /// </summary>
@@ -193,5 +229,43 @@ namespace LeaveMeAloneFuncSkillForge.Common
             Func<TRight, TRight2> func)
             => maybe.Bind(r => new Something<TRight2>(func(r)));
 
+        #region Maybe logging helpers
+        public static Maybe<T> OnSomething<T>(this Maybe<T> @this, Action<T> action)
+        {
+            if (@this is Something<T> something)
+            {
+                action(something.Value);
+            }
+            return @this;
+        }
+
+        public static Maybe<T> OnNothing<T>(this Maybe<T> @this, Action action)
+        {
+            //if (@this is Nothing<T>)
+            //{
+            //    action();
+            //}
+            if(@this is UnhandledNothing<T>)
+            {
+                action();
+            }
+            return @this;
+        }
+
+        public static Maybe<T> OnError<T>(this Maybe<T> @this, Action<Exception> action)
+        {
+            //if (@this is Error<T> error)
+            //{
+            //    action(error.CapturedError);
+            //}
+            if (@this is UnhandledError<T> unhandledError)
+            {
+                action(unhandledError.CapturedError);
+            }
+            return @this;
+        }
+
+
+        #endregion
     }
 }
