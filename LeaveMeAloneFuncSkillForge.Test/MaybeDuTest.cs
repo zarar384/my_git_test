@@ -306,6 +306,55 @@ namespace LeaveMeAloneFuncSkillForge.Test
             Assert.Equal("Initial error", error.CapturedError.Message);
         }
 
+        // Left Identity Law
+        // Wrapping a value and then binding a function is the same as just applying the function directly.
+        [Fact]
+        public void LeftIdentityLaw_ShouldReturnSameAsDirectFunction()
+        {
+            var input = "42";
+
+            var direct = ParseToInt(input) as Something<int>;
+            var viaMonad = new Something<string>(input).Bind(ParseToInt) as Something<int>;
+
+            Assert.Equal(direct.Value, viaMonad.Value);
+        }
+
+        // Right Identity Law
+        // Binding the identity function returns the original monad/value unchanged.
+        [Fact]
+        public void RightIdentityLaw_ShouldReturnOriginalValue()
+        {
+            var input = "100";
+            Func<string, Maybe<string>> identity = s => new Something<string>(s);
+
+            var result = new Something<string>(input).Bind(identity) as Something<string>;
+
+            Assert.Equal(input, result.Value);
+        }
+
+        // Associativity Law
+        // The order of nested binds does not matter; results are the same.
+        [Fact]
+        public void AssociativityLaw_ShouldProduceSameResultRegardlessOfNesting()
+        {
+            var input = "50";
+
+            Func<string, Maybe<int>> parse = ParseToInt;
+            Func<int, Maybe<double>> half = ComputeHalf;
+            Func<double, Maybe<string>> format = FormatResult;
+
+            var versionOne = new Something<string>(input)
+                .Bind(parse)
+                .Bind(half)
+                .Bind(format) as Something<string>;
+
+            var versionTwo = new Something<string>(input)
+                .Bind(x => parse(x).Bind(half))
+                .Bind(format) as Something<string>;
+
+            Assert.Equal(versionOne.Value, versionTwo.Value);
+        }
+
         // Example of chaining Maybe operations
         private Maybe<string> EnsureNotEmpty(string s) =>
             string.IsNullOrWhiteSpace(s)
