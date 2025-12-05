@@ -217,7 +217,7 @@ namespace LeaveMeAloneFuncSkillForge.Common
         }
 
         // a strict version of Bind for nested Maybes
-        public static Maybe<TOut> BindStrictNested<TIn, TOut>(
+        public static Maybe<TOut> BindStrict<TIn, TOut>(
             this Maybe<Maybe<TIn>> @this,
             Func<TIn, TOut> func)
         {
@@ -274,7 +274,7 @@ namespace LeaveMeAloneFuncSkillForge.Common
         }
 
         // an async strict version of Bind for nested Maybes
-        public static async Task<Maybe<TOut>> BindStrictNestedAsync<TIn, TOut>(
+        public static async Task<Maybe<TOut>> BindStrictAsync<TIn, TOut>(
             this Maybe<Maybe<TIn>> @this,
             Func<TIn, Task<TOut>> func)
         {

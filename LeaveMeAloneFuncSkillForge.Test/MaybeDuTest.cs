@@ -121,7 +121,7 @@ namespace LeaveMeAloneFuncSkillForge.Test
         }
 
         [Fact]
-        public void BindStrict_ShouldPropagateSuccessThroughChain()
+        public void BindSafe_ShouldPropagateSuccessThroughChain()
         {
             // Arrange
             var input = new Something<string>("42");
@@ -139,7 +139,7 @@ namespace LeaveMeAloneFuncSkillForge.Test
         }
 
         [Fact]
-        public void BindStrict_ShouldReturnNothingWhenAnyStepFails()
+        public void BindSafe_ShouldReturnNothingWhenAnyStepFails()
         {
             // Arrange
             var input = new Something<string>("not number");
@@ -254,7 +254,7 @@ namespace LeaveMeAloneFuncSkillForge.Test
 
             // Act
             var result = input
-                .BindStrictNested(x =>
+                .BindStrict(x =>
                 {
                     log.Add("Stage1: validate");
                     if (string.IsNullOrWhiteSpace(x.Username))
@@ -276,7 +276,7 @@ namespace LeaveMeAloneFuncSkillForge.Test
                 .OnError(e => log.Add($"Result: Error - {e.Message}"));
 
             // Assert
-            // final Maybe is Error because username check fails - already exists
+            // final Maybe is UnhandledError because username check fails - already exists
             Assert.IsType<UnhandledError<UserInputDto>>(result);
             var error = (Error<UserInputDto>)result;
             Assert.Equal("User exists", error.CapturedError.Message);
@@ -288,6 +288,23 @@ namespace LeaveMeAloneFuncSkillForge.Test
             Assert.Equal("Result: Error - User exists", log[3]);
         }
 
+        [Fact]
+        public void BindStrict_ShouldReturnError_WhenInputIsError()
+        {
+            // Arrange
+            var input = new Error<string>(new InvalidOperationException("Initial error"));
+
+            // Act
+            var result = input.BindStrict(x =>
+            {
+                return x.ToUpper();
+            });
+
+            // Assert
+            Assert.IsType<Error<string>>(result);
+            var error = (Error<string>)result;
+            Assert.Equal("Initial error", error.CapturedError.Message);
+        }
 
         // Example of chaining Maybe operations
         private Maybe<string> EnsureNotEmpty(string s) =>
