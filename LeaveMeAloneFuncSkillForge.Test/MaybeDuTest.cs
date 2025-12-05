@@ -235,6 +235,60 @@ namespace LeaveMeAloneFuncSkillForge.Test
             Assert.Contains(log, l => l.Contains("Email error: Email delivery failed"));
         }
 
+
+        [Fact]
+        public void Complex_BindStrictNested_WithMultipleStages_WorksCorrectly()
+        {
+            // Arrange
+            var log = new List<string>();
+
+            Maybe<Maybe<UserInputDto>> input =
+                new Something<Maybe<UserInputDto>>(
+                    new Something<UserInputDto>(
+                        new UserInputDto
+                        {
+                            Username = "john_doe",
+                            Password = "secret123",
+                            Email = "john@example.com"
+                        }));
+
+            // Act
+            var result = input
+                .BindStrictNested(x =>
+                {
+                    log.Add("Stage1: validate");
+                    if (string.IsNullOrWhiteSpace(x.Username))
+                        throw new ArgumentException("Username missing");
+
+                    log.Add("Stage2: hash password");
+                    x.Password = $"hashed_{x.Password}";
+
+                    log.Add("Stage3: check username");
+                    if (x.Username == "john_doe") throw new Exception("User exists");
+
+                    log.Add("Stage4: final adjustments");
+                    x.Email = x.Email.ToLower();
+
+                    return x;
+                })
+                .OnSomething(x => log.Add("Result: Something"))
+                .OnNothing(() => log.Add("Result: Nothing"))
+                .OnError(e => log.Add($"Result: Error - {e.Message}"));
+
+            // Assert
+            // final Maybe is Error because username check fails - already exists
+            Assert.IsType<UnhandledError<UserInputDto>>(result);
+            var error = (Error<UserInputDto>)result;
+            Assert.Equal("User exists", error.CapturedError.Message);
+
+            // that log contains expected entries
+            Assert.Equal("Stage1: validate", log[0]);
+            Assert.Equal("Stage2: hash password", log[1]);
+            Assert.Equal("Stage3: check username", log[2]);
+            Assert.Equal("Result: Error - User exists", log[3]);
+        }
+
+
         // Example of chaining Maybe operations
         private Maybe<string> EnsureNotEmpty(string s) =>
             string.IsNullOrWhiteSpace(s)

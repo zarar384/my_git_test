@@ -216,6 +216,84 @@ namespace LeaveMeAloneFuncSkillForge.Common
             }
         }
 
+        // a strict version of Bind for nested Maybes
+        public static Maybe<TOut> BindStrictNested<TIn, TOut>(
+            this Maybe<Maybe<TIn>> @this,
+            Func<TIn, TOut> func)
+        {
+            try
+            {
+                return @this switch
+                {
+                    Something<Maybe<TIn>> s => s.Value.BindStrict(func),
+                    Nothing<Maybe<TIn>> => new Nothing<TOut>(),
+                    Error<Maybe<TIn>> e => new Error<TOut>(e.CapturedError),
+                    _ => new Error<TOut>(new Exception("New Maybe state that isn't coded for!: " + @this.GetType()))
+                };
+            }
+            catch (Exception e)
+            {
+                return new Error<TOut>(e);
+            }
+        }
+
+        // an async strict version of Bind
+        public static async Task<Maybe<TOut>> BindStrictAsync<TIn, TOut>(
+            this Maybe<TIn> @this,
+            Func<TIn, Task<TOut>> func)
+        {
+            try
+            {
+                Maybe<TOut> updatedValue = @this switch
+                {
+                    // apply func if Something has a non-default value
+                    Something<TIn> s when !EqualityComparer<TIn>.Default.Equals(s.Value, default) =>
+                        new Something<TOut>(await func(s.Value)),
+
+                    // apply func if TIn is a primitive type (int, bool..)
+                    Something<TIn> s when s.GetType().GetGenericArguments()[0].IsPrimitive =>
+                        new Something<TOut>(await func(s.Value)),
+
+                    Something<TIn> _ => new UnhandledNothing<TOut>(),
+
+                    UnhandledNothing<TIn> _ => new UnhandledNothing<TOut>(),
+
+                    UnhandledError<TIn> e => new UnhandledError<TOut>(e.CapturedError),
+
+                    Error<TIn> e => new Error<TOut>(e.CapturedError),
+
+                    _ => new Error<TOut>(new Exception("New Maybe state that isn't coded for!: " + @this.GetType()))
+                };
+
+                return updatedValue;
+            }
+            catch (Exception ex)
+            {
+                return new UnhandledError<TOut>(ex);
+            }
+        }
+
+        // an async strict version of Bind for nested Maybes
+        public static async Task<Maybe<TOut>> BindStrictNestedAsync<TIn, TOut>(
+            this Maybe<Maybe<TIn>> @this,
+            Func<TIn, Task<TOut>> func)
+        {
+            try
+            {
+                return @this switch
+                {
+                    Something<Maybe<TIn>> outer => await outer.Value.BindStrictAsync(func),
+                    Nothing<Maybe<TIn>> =>  new Nothing<TOut>(),
+                    Error<Maybe<TIn>> e => new Error<TOut>(e.CapturedError),
+                    _ => new Error<TOut>(new Exception("Unknown Maybe state: " + @this.GetType()))
+                };
+            }
+            catch (Exception e)
+            {
+                return new Error<TOut>(e);
+            }
+        }
+
         /// <summary>
         /// Map for Maybe: transforms Something value while keeping Nothing or Error unchanged.
         /// </summary>
@@ -245,7 +323,7 @@ namespace LeaveMeAloneFuncSkillForge.Common
             //{
             //    action();
             //}
-            if(@this is UnhandledNothing<T>)
+            if (@this is UnhandledNothing<T>)
             {
                 action();
             }
