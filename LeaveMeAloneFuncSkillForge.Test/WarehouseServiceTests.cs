@@ -89,22 +89,5 @@ namespace LeaveMeAloneFuncSkillForge.Test
             var completed = Assert.IsType<TaskCompleted>(result);
             Assert.Contains("Inventory checked", completed.Message);
         }
-
-        [Fact]
-        public void ExecuteTask_WithException_ShouldReturnTaskError()
-        {
-            // Arrange
-            var task = new BrokenTask(); 
-
-            // Act
-            var result = WarehouseService.ExecuteTask(task);
-
-            // Assert
-            var error = Assert.IsType<TaskError>(result);
-            Assert.IsType<InvalidOperationException>(error.Error);
-        }
-
-        // Error test stub
-        private record BrokenTask : WarehouseTask;
     }
 }

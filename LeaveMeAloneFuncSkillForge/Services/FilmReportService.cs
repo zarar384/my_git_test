@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace LeaveMeAloneFuncSkillForge.Services
+﻿namespace LeaveMeAloneFuncSkillForge.Services
 {
     public class ReportItem
     {
@@ -18,7 +12,7 @@ namespace LeaveMeAloneFuncSkillForge.Services
         public List<ReportItem> Rows { get; set; } 
             = new List<ReportItem>();
     }
-    
+
     public class FilmReportService
     {
         public Report GenerateGenreCountReport(IEnumerable<Film> films)
