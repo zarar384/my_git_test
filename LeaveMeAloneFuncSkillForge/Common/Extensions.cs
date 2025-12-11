@@ -1,4 +1,5 @@
 ﻿using LeaveMeAloneFuncSkillForge.DiscriminatedUnions;
+using LeaveMeAloneFuncSkillForge.Functional.Monads;
 
 namespace LeaveMeAloneFuncSkillForge.Common
 {
@@ -345,5 +346,18 @@ namespace LeaveMeAloneFuncSkillForge.Common
 
 
         #endregion
+
+        public static State<TS, TV> ToState<TS, TV>(this TS @this, TV value) =>
+            new(@this, value);
+
+        public static State<TS, TV> Update<TS, TV>(
+            this State<TS, TV> @this,
+            Func<TS, TS> f
+            ) => new (f(@this.CurrentState), @this.CurrentValue);
+
+        public static State<TS, TVOut> Bind<TS, TVIn, TVOut>(
+            this State<TS, TVIn> state,
+            Func<TS, TVIn, TVOut> f
+            ) => new State<TS, TVOut>(state.CurrentState, f(state.CurrentState, state.CurrentValue));
     }
 }

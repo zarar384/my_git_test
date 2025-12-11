@@ -1,4 +1,4 @@
-﻿namespace LeaveMeAloneFuncSkillForge.Functional
+﻿namespace LeaveMeAloneFuncSkillForge.Functional.Monads
 {
     public sealed class Reader<TEnv, TResult>
     {
