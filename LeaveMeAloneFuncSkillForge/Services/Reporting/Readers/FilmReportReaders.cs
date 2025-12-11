@@ -4,18 +4,18 @@ namespace LeaveMeAloneFuncSkillForge.Services.Reporting.Readers
 {
     public static class FilmReportReaders
     {
-        public static Reader<ReportEnvironment, IEnumerable<Film>> GetFilms() =>
-            new Reader<ReportEnvironment, IEnumerable<Film>>(env => env.Films);
+        public static Reader<FilmReportEnvironment, IEnumerable<Film>> GetFilms() =>
+            new Reader<FilmReportEnvironment, IEnumerable<Film>>(env => env.Films);
 
-        public static Reader<ReportEnvironment, IEnumerable<IGrouping<string, Film>>> GroupByGenre() =>
+        public static Reader<FilmReportEnvironment, IEnumerable<IGrouping<string, Film>>> GroupByGenre() =>
             GetFilms()
-                .Bind(film => new Reader<ReportEnvironment, IEnumerable<IGrouping<string, Film>>>(
+                .Bind(film => new Reader<FilmReportEnvironment, IEnumerable<IGrouping<string, Film>>>(
                     _ => film.GroupBy(f => f.Genre ?? "Unknown")
                     ));
 
-        public static Reader<ReportEnvironment, Report> GenreCountReport() =>
+        public static Reader<FilmReportEnvironment, Report> GenreCountReport() =>
             GroupByGenre()
-                .Bind(groups => new Reader<ReportEnvironment, Report>(
+                .Bind(groups => new Reader<FilmReportEnvironment, Report>(
                     env =>
                     {
                         var rows = groups
@@ -36,9 +36,9 @@ namespace LeaveMeAloneFuncSkillForge.Services.Reporting.Readers
                     }
                 ));
 
-        public static Reader<ReportEnvironment, Report> RevenueByGenreReport() =>
+        public static Reader<FilmReportEnvironment, Report> RevenueByGenreReport() =>
              GroupByGenre()
-                .Bind(groups => new Reader<ReportEnvironment, Report>(env =>
+                .Bind(groups => new Reader<FilmReportEnvironment, Report>(env =>
                 {
                     var rows = groups
                         .Select(g => new ReportItem
@@ -55,16 +55,16 @@ namespace LeaveMeAloneFuncSkillForge.Services.Reporting.Readers
                     };
                 }));
 
-        public static Reader<ReportEnvironment, List<Report>> FullFilmReport() =>
+        public static Reader<FilmReportEnvironment, List<Report>> FullFilmReport() =>
             GenreCountReport()
                 .Bind(countReport =>
                    RevenueByGenreReport()
                         .Bind(revenueReport =>
-                            new Reader<ReportEnvironment, List<Report>>(_ =>
+                            new Reader<FilmReportEnvironment, List<Report>>(_ =>
                                 new List<Report>
                                 {
-                                        countReport,
-                                        revenueReport
+                                    countReport,
+                                    revenueReport
                                 }
                             )
                         )

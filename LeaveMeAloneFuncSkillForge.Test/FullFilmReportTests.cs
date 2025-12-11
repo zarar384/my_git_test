@@ -17,7 +17,7 @@ namespace LeaveMeAloneFuncSkillForge.Test
                 new Film { Genre = "Drama", BoxOfficeRevenue = 300 }
             };
 
-            var env = new ReportEnvironment
+            var env = new FilmReportEnvironment
             {
                 Films = films,
                 TopGenres = 10,
@@ -40,7 +40,7 @@ namespace LeaveMeAloneFuncSkillForge.Test
                 new Film { Genre = "Action", BoxOfficeRevenue = 100 }
             };
 
-            var env = new ReportEnvironment
+            var env = new FilmReportEnvironment
             {
                 Films = films,
                 TopGenres = 5,
@@ -66,7 +66,7 @@ namespace LeaveMeAloneFuncSkillForge.Test
                 new Film { Genre = "Drama" }
             };
 
-            var env = new ReportEnvironment
+            var env = new FilmReportEnvironment
             {
                 Films = films,
                 TopGenres = 1,
@@ -91,7 +91,7 @@ namespace LeaveMeAloneFuncSkillForge.Test
                 new Film { Genre = "Action", BoxOfficeRevenue = 150 }
             };
 
-            var env = new ReportEnvironment
+            var env = new FilmReportEnvironment
             {
                 Films = films,
                 Currency = "EUR",
@@ -111,7 +111,7 @@ namespace LeaveMeAloneFuncSkillForge.Test
         public void FullFilmReport_WithEmptyFilms_ReturnsEmptyRows()
         {
             // Arrange
-            var env = new ReportEnvironment
+            var env = new FilmReportEnvironment
             {
                 Films = Enumerable.Empty<Film>(),
                 TopGenres = 5,
