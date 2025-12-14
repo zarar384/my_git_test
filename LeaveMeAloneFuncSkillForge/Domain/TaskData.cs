@@ -1,6 +1,4 @@
-﻿using LeaveMeAloneFuncSkillForge.Utils;
-
-namespace LeaveMeAloneFuncSkillForge.Domain
+﻿namespace LeaveMeAloneFuncSkillForge.Domain
 {
     public class TaskData
     {
