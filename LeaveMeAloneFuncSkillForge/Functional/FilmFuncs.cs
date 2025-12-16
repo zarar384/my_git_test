@@ -31,6 +31,5 @@
             .Select(title => lookup(title!))                               
             .Where(film => film is not null && !string.IsNullOrEmpty(film.Title)) 
             .Select(film => $"{film!.Title} ({film.Genre}) — ${film.BoxOfficeRevenue:N1}M");
-
     }
 }

@@ -359,5 +359,13 @@ namespace LeaveMeAloneFuncSkillForge.Common
             this State<TS, TVIn> state,
             Func<TS, TVIn, TVOut> f
             ) => new State<TS, TVOut>(state.CurrentState, f(state.CurrentState, state.CurrentValue));
+
+        public static StateMaybe<TS, TV> ToStateMaybe<TS, TV>(this TS @this, TV value) =>
+            new(@this, value);
+
+        public static StateMaybe<TS, TVOut> Bind<TS, TVIn, TVOut>(
+            this StateMaybe<TS, TVIn> state,
+            Func<TS, TVIn, Maybe<TVOut>> f
+            ) =>  new StateMaybe<TS, TVOut>( state.CurrentState, state.CurrentValue.Bind(v => f(state.CurrentState, v)));
     }
 }

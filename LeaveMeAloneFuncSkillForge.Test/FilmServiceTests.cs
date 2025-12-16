@@ -1,4 +1,5 @@
-﻿using LeaveMeAloneFuncSkillForge.DiscriminatedUnions;
+﻿using LeaveMeAloneFuncSkillForge.Data.Context;
+using LeaveMeAloneFuncSkillForge.DiscriminatedUnions;
 using LeaveMeAloneFuncSkillForge.Domain;
 using LeaveMeAloneFuncSkillForge.DTOs;
 using LeaveMeAloneFuncSkillForge.Repositories.Interfaces;
@@ -141,6 +142,136 @@ namespace LeaveMeAloneFuncSkillForge.Test
             Assert.Equal(2, right.Value.Count());
             Assert.Equal(new[] { "C", "B" }, right.Value.Select(f => f.Title));
         }
-    }
 
+        [Fact]
+        public void OnlyWithRevenue_WhenSomeFilmsHaveRevenue_ReturnsSomething()
+        {
+            // Arrange
+            var films = new List<Film>
+            {
+                new() { Title = "A", BoxOfficeRevenue = 100 },
+                new() { Title = "B", BoxOfficeRevenue = 0 },
+                new() { Title = "C", BoxOfficeRevenue = -10 }
+            };
+            var service = CreateService(films);
+
+
+            // Act
+            var result = service.OnlyWithRevenue(new RequestContext("user"), films);
+
+            // Assert
+            var something = Assert.IsType<Something<IEnumerable<Film>>>(result);
+            Assert.Single(something.Value);
+            Assert.Equal("A", something.Value.First().Title);
+        }
+
+        [Fact]
+        public void OnlyWithRevenue_WhenNoFilmsHaveRevenue_ReturnsNothing()
+        {
+            // Arrange
+            var films = new List<Film>
+            {
+                new() { Title = "A", BoxOfficeRevenue = 0 },
+                new() { Title = "B", BoxOfficeRevenue = -5 }
+            };
+            var service = CreateService(films);
+
+            // Act
+            var result = service.OnlyWithRevenue(new RequestContext("user"), films);
+
+            // Assert
+            Assert.IsType<Nothing<IEnumerable<Film>>>(result);
+        }
+
+        [Fact]
+        public void TakeTop_ReturnsTopNFilmsSortedByRevenue()
+        {
+            // Arrange
+            var films = new List<Film>
+            {
+                new() { Title = "Low", BoxOfficeRevenue = 10 },
+                new() { Title = "High", BoxOfficeRevenue = 100 },
+                new() { Title = "Mid", BoxOfficeRevenue = 50 }
+            };
+            var service = CreateService(films);
+
+            // Act
+            var result = service.TakeTop(
+                new RequestContext("user"),
+                films,
+                topN: 2);
+
+            // Assert
+            var something = Assert.IsType<Something<IEnumerable<FilmInfoDto>>>(result);
+            var list = something.Value.ToList();
+
+            Assert.Equal(2, list.Count);
+            Assert.Equal("High", list[0].Title);
+            Assert.Equal("Mid", list[1].Title);
+        }
+
+        [Fact]
+        public void TakeTop_WhenInputIsEmpty_ReturnsNothing()
+        {
+            // Arrange 
+            var service = CreateService(new List<Film>());
+
+            // Act
+            var result = service.TakeTop(
+                new RequestContext("user"),
+                Enumerable.Empty<Film>(),
+                topN: 3);
+
+            // Assert
+            Assert.IsType<Nothing<IEnumerable<FilmInfoDto>>>(result);
+        }
+
+        [Fact]
+        public void BuildFilmReport_WhenValidData_ReturnsSomething()
+        {
+            // Arrange
+            var films = new List<Film>
+            {
+                new() { Title = "A", Genre = "Action", BoxOfficeRevenue = 10 },
+                new() { Title = "B", Genre = "Action", BoxOfficeRevenue = 100 },
+                new() { Title = "C", Genre = "Drama", BoxOfficeRevenue = 50 }
+            };
+            var service = CreateService(films);
+
+            // Act
+            var state = service.BuildFilmReport(
+                userName: "user",
+                genre: "Action",
+                topN: 1);
+
+            // Assert
+            var result = state.CurrentValue;
+            var something = Assert.IsType<Something<IEnumerable<FilmInfoDto>>>(result);
+
+            var film = something.Value.Single();
+            Assert.Equal("B", film.Title);
+            Assert.Equal(100, film.Revenue);
+        }
+
+        [Fact]
+        public void BuildFilmReport_WhenNoRevenueFilms_StopsChain()
+        {
+            // Arrange
+            var films = new List<Film>
+            {
+                new() { Title = "A", Genre = "Action", BoxOfficeRevenue = 0 },
+                new() { Title = "B", Genre = "Action", BoxOfficeRevenue = -5 }
+            };
+            var service = CreateService(films);
+
+            // Act
+            var state = service.BuildFilmReport(
+                userName: "user",
+                genre: "Action",
+                topN: 2);
+
+            // Assert
+            Assert.IsType<Nothing<IEnumerable<FilmInfoDto>>>(state.CurrentValue);
+        }
+    }
 }

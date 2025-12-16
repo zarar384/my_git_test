@@ -1,4 +1,5 @@
-﻿using LeaveMeAloneFuncSkillForge.Common;
+﻿
+using LeaveMeAloneFuncSkillForge.Common;
 
 namespace LeaveMeAloneFuncSkillForge.Test
 {

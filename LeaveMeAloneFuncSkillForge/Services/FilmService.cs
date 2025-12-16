@@ -1,4 +1,6 @@
-﻿using LeaveMeAloneFuncSkillForge.DiscriminatedUnions;
+﻿using LeaveMeAloneFuncSkillForge.Data.Context;
+using LeaveMeAloneFuncSkillForge.DiscriminatedUnions;
+using LeaveMeAloneFuncSkillForge.Functional.Monads;
 
 namespace LeaveMeAloneFuncSkillForge.Services
 {
@@ -50,6 +52,52 @@ namespace LeaveMeAloneFuncSkillForge.Services
                     new ErrorInfo("Exception", ex.Message)
                 );
             }
+        }
+
+        public Maybe<IEnumerable<Film>> GetFilms(RequestContext ctx, string genre)
+        {
+            var films = _filmRepository.GetFilmsByGenre(genre).ToList();
+
+            return films.Any()
+                ? new Something<IEnumerable<Film>>(films)
+                : new Nothing<IEnumerable<Film>>();
+        }
+
+        public Maybe<IEnumerable<Film>> OnlyWithRevenue(RequestContext ctx, IEnumerable<Film> films)
+        {
+            var filtered = films.Where(f => f.BoxOfficeRevenue > 0).ToList();
+
+            return filtered.Any()
+                ? new Something<IEnumerable<Film>>(filtered)
+                : new Nothing<IEnumerable<Film>>();
+        }
+
+        public Maybe<IEnumerable<FilmInfoDto>> TakeTop(
+            RequestContext ctx,
+            IEnumerable<Film> films,
+            int topN)
+        {
+            var result = films
+                .OrderByDescending(f => f.BoxOfficeRevenue)
+                .Take(topN)
+                .Select(f => new FilmInfoDto(f.Title, f.BoxOfficeRevenue))
+                .ToList();
+
+            return result.Any()
+                ? new Something<IEnumerable<FilmInfoDto>>(result)
+                : new Nothing<IEnumerable<FilmInfoDto>>();
+        }
+
+        public StateMaybe<RequestContext, IEnumerable<FilmInfoDto>> BuildFilmReport(
+            string userName,
+            string genre,
+            int topN)
+        {
+            return new RequestContext(userName)
+                .ToStateMaybe(genre)
+                .Bind((ctx, g) => GetFilms(ctx, g))
+                .Bind((ctx, films) => OnlyWithRevenue(ctx, films))
+                .Bind((ctx, films) => TakeTop(ctx, films, topN));
         }
 
         /// <summary>
