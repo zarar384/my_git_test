@@ -1,0 +1,234 @@
+1) Monolith плохо масштабируется по командам и по скорости изменений.
+Microservices увеличивают гибкость, но сильно усложняют наблюдаемость.
+
+Связь microservices ↔ CI/CD ↔ Observability(diagnosis)
+Monolith ≈ Waterfall: Долгий цикл: requirements → design → code → test → deploy
+Microservices ≈ CI/CD: Короткий цикл: plan → code → build → test → deploy → measure → repeat
+CI/CD без observability - опасно.
+Чем чаще деплой - тем больше нужен мониторинг и трассировка.
+
+Почему Observability ОБЯЗАТЕЛЬНА в microservices? В microservices нельзя понять, что происходит, без observability.
+
+Вывод: Observability is essential for microservices because failures are inevitable, deployments are frequent, and system behavior cannot be understood without metrics, logs, and traces.
+или же: The more microservices you have, the more observability you need.
+
+Вопросы:
+1. Почему microservices требуют observability? много сервисов; сложные зависимости; distributed failures; невозможно дебажить без метрик, логов и трейсов.
+2. Почему CI/CD увеличивает требования к мониторингу? частые деплои; каждый деплой несёт риск; нужно быстро обнаруживать деградации и откатываться.
+3. Почему monolith проще мониторить? один процесс; одна база; один лог; один entry point.
+4. Что происходит без observability? blind deployments; долгое MTTR; сложно найти root cause; нестабильная система.
+
+2) Monitoring - это: регулярный сбор и визуализация runtime-данных системы, чтобы отслеживать её здоровье.
+!regularly!
+
+Три ГЛАВНЫХ вопроса мониторинга:
+* Is the service ON? Обычно проверяется через: health checks; ping / HTTP HEAD / GET.
+* Is the service FUNCTIONING as expected? thresholds или же “Если ошибок < 5 в минуту → считаем нормой”.
+* Is the service PERFORMING well?  “HTTP response time ≤ 20 ms → OK”
+
+Три ГЛАВНЫХ вопроса по аналогии с машиной:
+* ON → двигатель крутится (RPM > 0)
+* FUNCTIONING → машина едет
+* PERFORMANCE → нет warning lights, нормальные показатели
+
+Telemetry data - это данные, которые мы собираем для мониторинга: метрики; логи; события; трейсы.
+!Telemetry data показывает ГДЕ проблема, но не всегда ПОЧЕМУ!
+
+Monitoring ≠ Debugging
+Monitoring(detection): указывает на аномалию; показывает симптомы.
+Debugging: ищет root cause; требует логов и трейсов.
+
+Без мониторинга microservices превращаются в black box.
+
+DevOps метрики:
+* MTD - Mean Time to Detection: Среднее время от начала инцидента до его обнаружения.
+показывает: качество мониторинга; качество алертов.
+* MTR / MTTR - Mean Time to Resolve: Среднее время от обнаружения проблемы до её полного устранения.
+Что показывает: качество observability; качество процессов; зрелость команды.
+
+Вопросы:
+1. Какие вопросы должен отвечать мониторинг? Is the service up? Is it working correctly? Is it performing well?
+2. В чём разница между monitoring и observability? Monitoring tells you that something is wrong, observability helps you understand why.
+3. Что такое telemetry data? Runtime data (metrics, logs, traces) used to monitor system health and behavior.
+4. Что такое MTD и MTTR? MTD → time to detect a problem; MTTR → time to fix it.
+
+3) Какие ключевые метрики собираются для Monitoring? Собирать нужно не “всё подряд”, а только meaningful metrics.
+Система обычно состоит из 3 слоёв:
+* UI layer (Web / Mobile)
+* Service layer (microservices)
+* Infrastructure layer (CPU, memory, disk, network)
+Под каждый слой - свои метрики.
+
+* RED Method (Service + частично UI) - Request-driven metrics, где RED = Rate, Errors, Duration - cамый популярный метод для microservices.
+RED method focuses on how a service behaves from the user’s perspective.
+R - Rate (Throughput): Requests per second; Traffic volume. - 2M requests/sec
+E - Errors: HTTP 5xx; business errors; fatal exceptions. - Смотрим error rate, а не просто количество.
+D - Duration (Latency): Response time; P95 / P99 latency. - Важнее перцентили, а не average.
+
+* USE Method (Infrastructure layer) - Resource-driven metrics, где USE = Utilization, Saturation, Errors- используется для хостов, контейнеров, VM.
+USE method helps identify infrastructure bottlenecks.
+U - Utilization: CPU %; Memory %; Disk usage %.
+S - Saturation: Очереди; Backpressure; Resources at 100% - Network queue length; Thread pool queue.
+E - Errors: Disk write errors; Network errors.
+
+* Four Golden Signals (Google SRE) - If you can measure only four metrics for a user-facing system, measure these.
+Golden Signals(RED + Saturation):
+- Latency
+- Traffic (Throughput)
+- Errors
+- Saturation
+
+* Core Web Vitals (UI / Web ONLY) - важно для frontend и SEO - UX метрики
+Core Web Vitals напрямую влияют на SEO - Google ранжирует сайты с учётом этих метрик.
+- LCP - Largest Contentful Paint - Время, когда пользователь чувствует, что страница загрузилась.
+- FID - First Input Delay - Когда пользователь может впервые взаимодействовать; perceived responsiveness.
+- CLS - Cumulative Layout Shift - Насколько страница “прыгает”; perceived stability.
+
+Вопросы:
+1. Какие методы мониторинга ты знаешь? RED method; USE method; Golden Signals; Core Web Vitals.
+2. Чем RED отличается от USE? RED → service-level, user-facing; USE → infrastructure-level.
+3. Что такое Golden Signals? Latency, traffic, errors, saturation - ключевые метрики Google SRE.
+4. Почему average latency - плохая метрика? Потому что она скрывает хвосты, важнее P95/P99.
+5. Зачем нужны Core Web Vitals?  UX; SEO ranking; perceived performance.
+
+4) Observability. 
+Monitoring - часть observability, но не наоборот. Они не конкурируют, а дополняют друг друга.
+
+Monitoring vs Observability - отличие:
+* Monitoring - Симптомы - Нужно заранее знать, ЧТО мониторить
+Работает по принципу - Реактивный подход: “Следим за CPU”; “Следим за error rate”.
+Хорошо отвечает на вопросы: WHEN (когда сломалось); WHERE (где сломалось).
+Подходит для: monolith; систем с предсказуемыми точками отказа.
+* Observability - Причины - Позволяет находить проблемы, о которых мы не подумали заранее и собирает actionable data со всей системы.
+Даёт holistic view. 
+Работает по принципу - Проактивный подход.
+Хорошо отвечает на вопросы: WHY (почему это произошло).
+Подходит для: microservices; distributed systems; сложных CI/CD систем.
+
+Monitoring vs Observability по аналогии с машиной:
+Monitoring - приборная панель - Видим, что что-то не так, но не знаем почему: RPM; скорость; warning lights.
+Observability - диагностика у механика - Понимаем root cause, а не симптом: подключение к OBD; получение детальных данных; точное понимание причины.
+
+Термины:
+Tool sprawl - ситуация, когда: используется много разрозненных monitoring tools; нет единой картины системы; данные не коррелируют друг с другом.
+Observability решает проблему Tool sprawl, объединяя: metrics; logs; traces.
+
+Ключевая концепция: Unknown Unknowns - Observability помогает обнаружить unknown unknowns -
+проблемы, о которых мы даже не знали, что они возможны.
+
+Вопросы:
+1. В чём разница между monitoring и observability? Monitoring tells us when and where something is wrong, observability helps us understand why it is wrong.
+2. Почему monitoring недостаточно для microservices?  слишком много сервисов; сложные зависимости; непредсказуемые точки отказа; нужны коррелированные данные.
+3. Что такое “unknown unknowns”? Issues that we didn’t anticipate or define monitoring for in advance.
+4. Что такое tool sprawl? Using many disconnected monitoring tools without a unified view of the system.
+
+5) Методы сбора метрик (Push vs Scrape)
+Существует 2 основных метода сбора метрик и сохранения их в time-series database: Push; Scrape.
+
+* Push method - Метрики отправляются приложением в time-series DB или в агент.
+- Приложение / микросервис сам отправляет метрики
+- Используются протоколы: TCP / UDP / HTTP
+- Часто используется agent / daemon для агрегации
+Напр. Application → StatsD (agent) → Graphite (TSDB)
+
+Зачем нужен агент (StatsD): 
+- TSDB потребляет CPU и storage
+- хранить каждую метрику дорого
+- агент: принимает метрики; агрегирует (avg, sum, count); отправляет уже агрегированные данные.
+!Push = application-driven metrics!
+
+Плюсы:
++ удобно для: ephemeral сервисов; IoT; environments без inbound доступа.
++ приложение контролирует отправку
+
+Минусы:
+- сложнее контролировать нагрузку
+- риск потерять метрики
+- сложнее стандартизировать
+
+* Scrape method - Метрики читаются извне системой мониторинга:  
+- Приложение экспортирует метрики через endpoint; 
+- Time-series DB сама приходит и читает метрики.
+Напр. Application (/metrics) ← Prometheus
+Принцип работы: приложение предоставляет HTTP endpoint → Prometheus знает адрес сервиса → Prometheus периодически scrape-ит метрики.
+!Scrape = monitoring-driven metrics!
+
+Плюсы:
++ централизованный контроль
++ легко масштабировать
++ стандарт для Kubernetes / cloud-native
++ Prometheus ecosystem
+
+Минусы:
+- нужен network access
+- сложнее для: IoT; edge; NAT / firewalls.
+
+!Push vs Scrape - это выбор, а не религия!
+!Не надо слепо выбирать Prometheus только потому, что “так делают все”!
+
+Перед выбором нужно подумать:
+- Тип систем: custom applications? OS / DB / infra?
+- Scalability: новые сервисы? новые регионы? multi-geo?
+- Complexity: IoT? edge devices? distributed world-wide?
+- Network ограничения:inbound доступ есть? firewall / NAT?
+
+Выбор зависит от: архитектуры; масштабов; окружения.
+
+Вопросы:
+1. Какие методы сбора метрик ты знаешь? Push и Scrape.
+2. В чём разница между Push и Scrape? Push - приложение отправляет метрики. Scrape - система мониторинга читает метрики.
+3. Пример Push-модели? Application → StatsD → Graphite.
+4. Пример Scrape-модели? Prometheus → /metrics endpoint приложения.
+5. Почему используют агрегацию в Push? Чтобы снизить нагрузку на TSDB и стоимость хранения.
+6. Почему Prometheus популярен? Scrape model, cloud-native, Kubernetes-friendly.
+7. Когда Push лучше Scrape? IoT; edge devices; нет inbound network доступа.
+8. Главная ошибка при выборе Prometheus? Использовать его “потому что модно”, а не потому что подходит архитектуре.
+
+6) Telemetry data (MELT), где M - Metrics; E - Events; L - Logs; T - Traces. 
+В observability - 4 типа telemetry data.
+* Events - это действие, которое произошло в конкретный момент времени.
+- есть action
+- есть timestamp
+- показывает факт того, что что-то произошло
+Напр. vending machine: покупка пачки чипсов в 3:20 PM
+Где встречаются: event streaming platforms (Kafka); event-driven microservices.
+!event подтверждает, что ожидаемое действие произошло!
+!но не показывает частоту!
+!Event ≠ metric!
+
+* Metrics - это агрегированное значение событий за период времени.
+- считает события
+- агрегирует (count, rate, avg)
+- всегда привязана ко времени
+Напр. vending machine: 100 пачек чипсов в минуту
+Зачем нужны: сравнение во времени; выявление трендов; деградация / рост.
+Напр: сегодня: 100/мин → неделю назад: 200/мин → видим проблему, но не причину
+
+* Logs - это детализированное описание события.
+- содержит контекст
+- содержит metadata
+- гораздо подробнее, чем event
+Напр. vending machine: продукт: chips; цена: $2; время: 3:20 PM; vending machine ID; локация: Sydney; payment method: Mastercard
+!Logs = максимум деталей!
+
+* Traces - это путь запроса через несколько сервисов.
+- используется в microservices
+- показывает взаимодействие сервисов
+- помогает найти точку сбоя
+Напр. vending machine → bank → Mastercard → bank → vending machine
+!любой шаг может упасть - trace показывает где именно!
+!Traces отвечают на вопрос: где запрос сломался!
+
+* Связь между MELT
+- Event - факт действия
+- Metric - агрегированная статистика событий
+- Log - подробности одного события
+- Trace - путь запроса через систему
+
+Вопросы:
+1. Какие типы telemetry data ты знаешь? Metrics; Events; Logs; Traces (MELT).
+2. Чем event отличается от metric? Event - одно действие в момент времени. Metric - агрегированное значение событий за период.
+3. Зачем нужны metrics, если есть events? Metrics позволяют видеть тренды и сравнивать во времени.
+4. Чем log отличается от event? Log содержит гораздо больше контекста и деталей.
+5. Для чего нужны traces? Чтобы увидеть путь запроса через микросервисы и найти точку отказа.
+6. Какие данные помогают найти root cause? Logs и traces (не metrics).
