@@ -16,6 +16,8 @@ namespace LeaveMeAloneFuncSkillForge.Common
         //    return match.Transform(@this);
         //}
 
+        public static Func<decimal, Func<decimal, decimal>> Add = a => b => a + b;
+
         public static MatchValueOrDefault<TInput, TOutput> Match<TInput, TOutput>(
             this TInput @this,
             params (Func<TInput, bool>, // or using KeyValuePair
