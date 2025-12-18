@@ -62,4 +62,31 @@ public static class OnePieceFunc
 
         return new CombatStats(CalculateDamage(c), CalculateCritChance(c), CalculateDodgeChance(c));
     }
+
+    public static Func<bool, string, string, string, IEnumerable<OnePieceCharacterDto>>
+       ParseOnePieceCharacters =>
+           (skipHeader, lineBreak, delimiter, fileName) =>
+           {
+               var filePath = Path.Combine("Resources", fileName);
+               var data = File.ReadAllText(filePath);
+
+               return data
+                   .Split(lineBreak)
+                   .Skip(skipHeader ? 1 : 0)
+                   .Where(line => !string.IsNullOrWhiteSpace(line))
+                   .Select(x => x.Split(delimiter))
+                   .Select(x => new OnePieceCharacterDto
+                   {
+                       Name = x[0],
+                       Role = x[1],
+                       DevilFruit = x[2],
+                       CrewName = x[3],
+                       Bounty = long.Parse(x[4]),
+                       Damage = int.Parse(x[5]),
+                       CritChance = int.Parse(x[6]),
+                       DodgeChance = int.Parse(x[7]),
+                       Rarity = x[8],
+                       SpecialMove = x[9]
+                   });
+           };
 }

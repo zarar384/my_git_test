@@ -16,7 +16,18 @@ namespace LeaveMeAloneFuncSkillForge.Common
         //    return match.Transform(@this);
         //}
 
+        // Add(10) returns a function that adds 10 to its input
         public static Func<decimal, Func<decimal, decimal>> Add = a => b => a + b;
+
+        // Converts a function with 4 parameters into a chain of functions
+        // Each call fixes one parameter and returns the next function
+        public static Func<T1,
+            Func<T2,
+                Func<T3,
+                    Func<T4, TResult>>>>
+            Curry<T1, T2, T3, T4, TResult>(
+            this Func<T1, T2, T3, T4, TResult> func)
+        => t1 => t2 => t3 => t4 => func(t1, t2, t3, t4);
 
         public static MatchValueOrDefault<TInput, TOutput> Match<TInput, TOutput>(
             this TInput @this,

@@ -38,7 +38,7 @@
 
             return result;
         }
-
+     
         public void CalculateReport()
         {
             //var text = File.ReadAllText(_filePath);
