@@ -29,6 +29,14 @@ namespace LeaveMeAloneFuncSkillForge.Common
             this Func<T1, T2, T3, T4, TResult> func)
         => t1 => t2 => t3 => t4 => func(t1, t2, t3, t4);
 
+        public static Func<T1,
+            Func<T2,
+                Func<T3,
+                    Func<T4, Maybe<TResult>>>>>
+            Curry<T1, T2, T3, T4, TResult>(
+            this Func<T1, T2, T3, T4, Maybe<TResult>> func)
+        => t1 => t2 => t3 => t4 => func(t1, t2, t3, t4);
+
         public static MatchValueOrDefault<TInput, TOutput> Match<TInput, TOutput>(
             this TInput @this,
             params (Func<TInput, bool>, // or using KeyValuePair

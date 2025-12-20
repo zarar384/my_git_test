@@ -1,6 +1,6 @@
 ﻿using LeaveMeAloneFuncSkillForge.Common;
-using LeaveMeAloneFuncSkillForge.Domain;
 using LeaveMeAloneFuncSkillForge.DTOs;
+using LeaveMeAloneFuncSkillForge.Utils;
 
 namespace LeaveMeAloneFuncSkillForge.Test
 {
@@ -80,7 +80,7 @@ namespace LeaveMeAloneFuncSkillForge.Test
         }
 
         [Fact]
-        public void Currying_Allows_Changing_Only_One_Aspect_Of_Parsing()
+        public void Currying_ChangeResultWhenSkipHeaderFlagChanges()
         {
             // Arrange
             var curried = OnePieceFunc.ParseOnePieceCharacters.Curry();
@@ -93,10 +93,33 @@ namespace LeaveMeAloneFuncSkillForge.Test
 
             // Act
             var skipHeaderResult = skipHeaderParser("OnePieceCharacters.csv").ToList();
-            var noHeaderResult = noHeaderParser("OnePieceCharacters.csv").ToList();
+            var headerResult = noHeaderParser("OnePieceCharacters.csv").ToList();
 
             // Assert
-            Assert.True(noHeaderResult.Count > skipHeaderResult.Count);
+            Assert.True(headerResult.Count > skipHeaderResult.Count);
+        }
+
+        [Fact]
+        public void CurryingWithMap_ChangeResultWhenSkipHeaderFlagChanges()
+        {
+            // Arrange
+            var curried = OnePieceFunc.ParseOnePieceCharacters.Curry();
+
+            // Act
+            var skipHeaderResult = curried
+                .Map(x=> x(true))
+                .Map(x=> x(Environment.NewLine)(","))
+                .Map(x=> x("OnePieceCharacters.csv"))
+                .ToList();
+
+            var headerResult = curried
+                .Map(x => x(false))
+                .Map(x => x(Environment.NewLine)(","))
+                .Map(x => x("OnePieceCharacters.csv"))
+                .ToList();
+
+            // Assert
+            Assert.True(headerResult.Count > skipHeaderResult.Count);
         }
 
         [Fact]

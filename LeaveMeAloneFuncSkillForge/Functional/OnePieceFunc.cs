@@ -75,18 +75,27 @@ public static class OnePieceFunc
                    .Skip(skipHeader ? 1 : 0)
                    .Where(line => !string.IsNullOrWhiteSpace(line))
                    .Select(x => x.Split(delimiter))
-                   .Select(x => new OnePieceCharacterDto
+                   .Select(columns =>
                    {
-                       Name = x[0],
-                       Role = x[1],
-                       DevilFruit = x[2],
-                       CrewName = x[3],
-                       Bounty = long.Parse(x[4]),
-                       Damage = int.Parse(x[5]),
-                       CritChance = int.Parse(x[6]),
-                       DodgeChance = int.Parse(x[7]),
-                       Rarity = x[8],
-                       SpecialMove = x[9]
+                       // only when skipHeader = 0
+                       long.TryParse(columns[4], out var bounty);
+                       int.TryParse(columns[5], out var damage);
+                       int.TryParse(columns[6], out var crit);
+                       int.TryParse(columns[7], out var dodge);
+
+                       return new OnePieceCharacterDto
+                       {
+                           Name = columns[0],
+                           Role = columns[1],
+                           DevilFruit = columns[2],
+                           CrewName = columns[3],
+                           Bounty = bounty,
+                           Damage = damage,
+                           CritChance = crit,
+                           DodgeChance = dodge,
+                           Rarity = columns[8],
+                           SpecialMove = columns[9]
+                       };
                    });
            };
 }
