@@ -107,14 +107,16 @@ namespace LeaveMeAloneFuncSkillForge.Test
 
             // Act
             var skipHeaderResult = curried
-                .Map(x=> x(true))
-                .Map(x=> x(Environment.NewLine)(","))
-                .Map(x=> x("OnePieceCharacters.csv"))
+                .Map(x => x(true))
+                .Map(x => x(Environment.NewLine))
+                .Map(x => x(","))
+                .Map(x => x("OnePieceCharacters.csv"))
                 .ToList();
 
             var headerResult = curried
                 .Map(x => x(false))
-                .Map(x => x(Environment.NewLine)(","))
+                .Map(x => x(Environment.NewLine))
+                .Map(x => x(","))
                 .Map(x => x("OnePieceCharacters.csv"))
                 .ToList();
 

@@ -19,23 +19,42 @@ namespace LeaveMeAloneFuncSkillForge.Common
         // Add(10) returns a function that adds 10 to its input
         public static Func<decimal, Func<decimal, decimal>> Add = a => b => a + b;
 
+        #region Currying
         // Converts a function with 4 parameters into a chain of functions
         // Each call fixes one parameter and returns the next function
         public static Func<T1,
-            Func<T2,
-                Func<T3,
-                    Func<T4, TResult>>>>
+                          Func<T2,
+                              Func<T3,
+                                  Func<T4, TResult>>>>
             Curry<T1, T2, T3, T4, TResult>(
             this Func<T1, T2, T3, T4, TResult> func)
         => t1 => t2 => t3 => t4 => func(t1, t2, t3, t4);
 
         public static Func<T1,
-            Func<T2,
-                Func<T3,
-                    Func<T4, Maybe<TResult>>>>>
+                          Func<T2,
+                              Func<T3,
+                                  Func<T4, Maybe<TResult>>>>>
             Curry<T1, T2, T3, T4, TResult>(
             this Func<T1, T2, T3, T4, Maybe<TResult>> func)
         => t1 => t2 => t3 => t4 => func(t1, t2, t3, t4);
+        #endregion
+
+        #region Partial Application
+        // 4 params to 1
+        public static Func<T4, TOut> Partial<T1,T2, T3, T4, TOut>(
+            this Func<T1,T2,T3,T4,TOut> func,
+            T1 one, T2 two, T3 thee) => (T4 four) => func(one, two, thee, four);
+
+        // 4 params to 2
+        public static Func<T3, T4, TOut> Partial<T1, T2, T3, T4, TOut>(
+            this Func<T1, T2, T3, T4, TOut> func,
+            T1 one, T2 two) => (T3 thee, T4 four) => func(one, two, thee, four);
+
+        // 2 params to 1
+        public static Func<T2, TOut> Partial<T1, T2, TOut>(
+            this Func<T1, T2, TOut> func, T1 one) => 
+            (T2 two) => func(one, two);
+        #endregion
 
         public static MatchValueOrDefault<TInput, TOutput> Match<TInput, TOutput>(
             this TInput @this,
