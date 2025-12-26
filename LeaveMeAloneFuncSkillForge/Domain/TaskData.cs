@@ -1,6 +1,6 @@
 ﻿namespace LeaveMeAloneFuncSkillForge.Domain
 {
-    public class TaskData
+    public record TaskData
     {
         public int EstimatedHours { get; set; }
         public int ComplexityLevel { get; set; } // 1–10

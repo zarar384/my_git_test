@@ -1,5 +1,4 @@
-﻿using LeaveMeAloneFuncSkillForge.DTOs;
-
+﻿
 namespace LeaveMeAloneFuncSkillForge.Functional
 {
     public static class TaskTransformations

@@ -16,6 +16,24 @@ namespace LeaveMeAloneFuncSkillForge.Common
         //    return match.Transform(@this);
         //}
 
+        /// <summary>
+        /// Trampolining: hides an indefinite while loop
+        /// </summary>
+        public static T IterateUntil<T>(
+            this T seed,
+            Func<T, T> updateFunction,
+            Func<T, bool> endCondition)
+        {
+            var current = seed;
+
+            while (!endCondition(current))
+            {
+                current = updateFunction(current);
+            }
+
+            return current;
+        }
+
         // Add(10) returns a function that adds 10 to its input
         public static Func<decimal, Func<decimal, decimal>> Add = a => b => a + b;
 
