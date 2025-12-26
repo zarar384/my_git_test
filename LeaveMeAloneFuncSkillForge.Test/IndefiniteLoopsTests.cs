@@ -47,18 +47,40 @@ namespace LeaveMeAloneFuncSkillForge.Test
 
         // Trampolining (hidden while loop)
         [Fact]
-        public void Trampolining_IterateUntil_NoUrgentTasksRemain()
+        public void Trampolining_IsRedundant_When_SingleSelectSolvesTheProblem()
         {
             var tasks = _repository.GetTasks().ToList();
 
-            var result =
-                tasks.IterateUntil(updateFunction: current =>
-                    current.Select(t => t.IsUrgent
+            var result = tasks.IterateUntil(updateFunction: current =>
+                    current.Select(t => t.IsUrgent // this solves the problem in one iteration
                                 ? t with { IsUrgent = false }
                                 : t).ToList(),
 
-                    endCondition: current =>
-                        !current.Any(t => t.IsUrgent)
+                    endCondition: current => !current.Any(t => t.IsUrgent)
+                );
+
+            Assert.All(result, t => Assert.False(t.IsUrgent));
+        }
+
+        [Fact]
+        public void Trampolining_ResolveUrgentTasks_OnePerIteration()
+        {
+            var tasks = _repository.GetTasks().ToList();
+
+            var result = tasks.IterateUntil(
+                    updateFunction: current =>
+                    {
+                        var firstUrgent = current.FirstOrDefault(t => t.IsUrgent);
+                        if (firstUrgent is null)
+                            return current;
+
+                        return current.Select(t =>
+                                ReferenceEquals(t, firstUrgent)
+                                    ? t with { IsUrgent = false }
+                                    : t
+                            ).ToList();
+                    },
+                    endCondition: current => !current.Any(t => t.IsUrgent)
                 );
 
             Assert.All(result, t => Assert.False(t.IsUrgent));
