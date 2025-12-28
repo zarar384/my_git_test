@@ -34,6 +34,60 @@ namespace LeaveMeAloneFuncSkillForge.Common
             return current;
         }
 
+        #region Memorization 
+        public static Func<T1, TOut> Memorize<T1, TOut>(this Func<T1, TOut> @this)
+        {
+            var dict = new Dictionary<T1, TOut>();
+            return x =>
+            {
+                if(!dict.ContainsKey(x))
+                    dict.Add(x, @this(x));
+                return dict[x];
+            };
+        }
+
+        public static Func<T1, T2, TOut> Memorize<T1, T2, TOut>(
+            this Func<T1, T2, TOut> @this)
+        {
+            var dict = new Dictionary<string, TOut>();
+            return (x, y) =>
+            {
+                var key = $"{x},{y}";
+                if(!dict.ContainsKey(key))
+                    dict.Add(key, @this(x, y));
+                return dict[key];
+            };
+        }
+
+        public static Func<T1, TOut> Memorize<T1, TOut>(
+            this Func<T1, TOut> @this,
+            Func<T1, string> keyGenerator)
+        {
+            var dict = new Dictionary<string , TOut>();
+            return x =>
+            {
+                var key = keyGenerator(x);
+                if (!dict.ContainsKey(key))
+                    dict.Add(key, @this(x));
+                return dict[key];
+            };
+        }
+
+        public static Func<T1, T2, TOut> Memorize<T1, T2, TOut>(
+            this Func<T1, T2, TOut> @this,
+            Func<T1, T2, string> keyGenerator)
+        {
+            var dict = new Dictionary<string , TOut>();
+            return (x, y) =>
+            {
+                var key = keyGenerator(x, y);
+                if (!dict.ContainsKey(key))
+                    dict.Add(key, @this(x, y));
+                return dict[key];
+            };
+        }
+        #endregion
+
         // Add(10) returns a function that adds 10 to its input
         public static Func<decimal, Func<decimal, decimal>> Add = a => b => a + b;
 
