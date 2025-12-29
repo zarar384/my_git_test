@@ -5,7 +5,6 @@ namespace LeaveMeAloneFuncSkillForge
     {
         public static async Task RunApp()
         {
-            L4BGameRun.Run();
         }
     }
 }
