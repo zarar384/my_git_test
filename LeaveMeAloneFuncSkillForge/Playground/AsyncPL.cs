@@ -83,6 +83,10 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             await CpuBoundAsync();
             await IoBoundAsync();
 
+            Console.WriteLine("\nI/O + CPU combined example");
+            var result = await CalculateOrderPriceAsync();
+            Console.WriteLine($"Final price: {result}");
+
             Console.WriteLine("\nAsync stream");
             await foreach (var value in GenerateNumbersAsync())
             {
@@ -166,5 +170,66 @@ namespace LeaveMeAloneFuncSkillForge.Playground
                 yield return i;
             }
         }
+
+        private static async Task<decimal> CalculateOrderPriceAsync()
+        {
+            // I/O-bound: call external services in parallel
+            Task<Order> orderTask = GetOrderFromOrderServiceAsync();
+            Task<Product> productTask = GetProductFromProductServiceAsync();
+
+            await Task.WhenAll(orderTask, productTask);
+
+            Order order = orderTask.Result;
+            Product product = productTask.Result;
+
+            // CPU-bound: heavy calculation
+            decimal finalPrice = await Task.Run(() =>
+            {
+                return CalculateFinalPrice(order, product);
+            });
+
+            return finalPrice;
+        }
+
+        // Simulated microservice calls (I/O-bound)
+
+        private static async Task<Order> GetOrderFromOrderServiceAsync()
+        {
+            Console.WriteLine($"Order service call started on thread {Thread.CurrentThread.ManagedThreadId}");
+            await Task.Delay(500); // simulate HTTP / DB
+            return new Order { Quantity = 3 };
+        }
+
+        private static async Task<Product> GetProductFromProductServiceAsync()
+        {
+            Console.WriteLine($"Product service call started on thread {Thread.CurrentThread.ManagedThreadId}");
+            await Task.Delay(700); // simulate HTTP / DB
+            return new Product { Price = 19.99m };
+        }
+
+        // CPU-bound calculation
+        private static decimal CalculateFinalPrice(Order order, Product product)
+        {
+            Console.WriteLine($"Calculation started on thread {Thread.CurrentThread.ManagedThreadId}");
+
+            decimal result = 0;
+            for (int i = 0; i < 10_000_000; i++)
+            {
+                result += product.Price * order.Quantity * 0.0000001m;
+            }
+
+            return result;
+        }
+
+        #region helpers
+        private sealed class Order
+        {
+            public int Quantity { get; set; }
+        }
+        private sealed class Product
+        {
+            public decimal Price { get; set; }
+        }
+        #endregion
     }
 }
