@@ -160,5 +160,58 @@ namespace LeaveMeAloneFuncSkillForge.Playground
                 System.Threading.Thread.Sleep(80);
             });
         }
+
+        public static void RunParallelAggregationDemo()
+        {
+            var numbers = Enumerable.Range(1, 1_000_000);
+
+            int total = 0;
+
+            Parallel.ForEach(
+                numbers,
+                () => 0, // local init
+                (n, state, localSum) =>
+                {
+                    return localSum + n;
+                },
+                localSum =>
+                {
+                    Interlocked.Add(ref total, localSum);
+                });
+
+            Console.WriteLine($"Parallel sum: {total}");
+        }
+
+        public static void RunBreakVsStopDemo()
+        {
+            Parallel.For(0, 20, (i, state) =>
+            {
+                Console.WriteLine($"Iteration {i}");
+
+                if (i == 5)
+                {
+                    state.Break(); // try Stop() and compare
+                }
+            });
+        }
+
+        public static void RunParallelInvokeCpuDemo()
+        {
+            Parallel.Invoke(
+                () => HeavyCalculation("A"),
+                () => HeavyCalculation("B"),
+                () => HeavyCalculation("C")
+            );
+        }
+
+        private static void HeavyCalculation(string name)
+        {
+            Console.WriteLine($"Started {name} on thread {Thread.CurrentThread.ManagedThreadId}");
+            double result = 0;
+            for (int i = 0; i < 10_000_000; i++)
+                result += Math.Sqrt(i);
+            Console.WriteLine($"Finished {name}");
+        }
+
     }
 }

@@ -28,7 +28,7 @@
 
         public static void Run()
         {
-            RunTaskExceptionDemo();
+            RunDynamicTaskParallelismDemo();
         }
 
         private static void RunTaskExceptionDemo()
@@ -261,6 +261,27 @@
 
             Console.WriteLine("Task t status: " + t.Status);
             Console.WriteLine("Task t2 status: " + t2.Status);
+        }
+
+        public static void RunDynamicTaskParallelismDemo()
+        {
+            Task parent = Task.Factory.StartNew(() =>
+            {
+                var tasks = new List<Task>();
+
+                for (int i = 0; i < 5; i++)
+                {
+                    int local = i;
+                    tasks.Add(Task.Factory.StartNew(() =>
+                    {
+                        Console.WriteLine($"Child {local} on thread {Thread.CurrentThread.ManagedThreadId}");
+                        Thread.Sleep(200);
+                    }, TaskCreationOptions.AttachedToParent));
+                }
+            });
+
+            parent.Wait();
+            Console.WriteLine("All child tasks completed");
         }
     }
 }

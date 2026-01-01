@@ -126,5 +126,41 @@
                 Console.WriteLine($"First 5 squared numbers: {string.Join(", ", results.Take(5))}");
             }
         }
+
+        public static void RunPlinqVsLinqDemo()
+        {
+            var numbers = Enumerable.Range(1, 20);
+
+            Console.WriteLine("LINQ:");
+            foreach (var n in numbers.Select(Process))
+                Console.WriteLine(n);
+
+            Console.WriteLine("\nPLINQ:");
+            foreach (var n in numbers.AsParallel().Select(Process))
+                Console.WriteLine(n);
+        }
+
+        private static int Process(int n)
+        {
+            Thread.Sleep(100);
+            Console.WriteLine($"Processing {n} on thread {Thread.CurrentThread.ManagedThreadId}");
+            return n * n;
+        }
+
+        public static void RunPlinqOrderingDemo()
+        {
+            var numbers = Enumerable.Range(1, 10);
+
+            var unordered = numbers.AsParallel().Select(n => n * n);
+            Console.WriteLine("Unordered:");
+            foreach (var n in unordered)
+                Console.WriteLine(n);
+
+            var ordered = numbers.AsParallel().AsOrdered().Select(n => n * n);
+            Console.WriteLine("Ordered:");
+            foreach (var n in ordered)
+                Console.WriteLine(n);
+        }
+
     }
 }
