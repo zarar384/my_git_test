@@ -4,7 +4,7 @@
     {
         public static void Run()
         {
-            RunParallelEnumerableWithCustomAggregateDemo();
+            RunPlinqVsLinqDemo();
         }
 
         public static void RunParallelMergeOptionsDemo()

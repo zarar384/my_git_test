@@ -265,6 +265,7 @@
 
         public static void RunDynamicTaskParallelismDemo()
         {
+            var results = new int[5];
             Task parent = Task.Factory.StartNew(() =>
             {
                 var tasks = new List<Task>();
@@ -276,12 +277,15 @@
                     {
                         Console.WriteLine($"Child {local} on thread {Thread.CurrentThread.ManagedThreadId}");
                         Thread.Sleep(200);
+                        results[local] = local;
                     }, TaskCreationOptions.AttachedToParent));
                 }
             });
 
             parent.Wait();
             Console.WriteLine("All child tasks completed");
+
+            Console.WriteLine("Results: " + string.Join(", ", results));
         }
     }
 }

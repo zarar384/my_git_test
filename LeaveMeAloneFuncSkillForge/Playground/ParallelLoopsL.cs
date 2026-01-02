@@ -14,7 +14,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
 
         public static void Run()
         {
-            RunPartitionerSquareEachValueDemo();
+            RunParallelAggregationDemo();
         }
 
         // chanked to use Partitioner for better performance on large datasets
@@ -184,8 +184,14 @@ namespace LeaveMeAloneFuncSkillForge.Playground
 
         public static void RunBreakVsStopDemo()
         {
-            Parallel.For(0, 20, (i, state) =>
+            Parallel.For(
+                0, 
+                100, 
+                new ParallelOptions { MaxDegreeOfParallelism = 3 }, 
+                (i, state) =>
             {
+                Thread.Sleep(200); // Simulate work
+
                 Console.WriteLine($"Iteration {i}");
 
                 if (i == 5)
