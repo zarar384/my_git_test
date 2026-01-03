@@ -8,12 +8,16 @@ namespace LeaveMeAloneFuncSkillForge.Playground
         public static void Run()
         {
             RxBasicDemo();
+            //RxHotVsColdDemo();
+            //RxSubjectDemo();
+            //RxErrorHandlingDemo();
+            //RxTimeOperatorsDemo();
         }
 
         // Basic Rx example: push-based stream with LINQ operators
         public static void RxBasicDemo()
         {
-            var subscription = Observable.Interval(TimeSpan.FromSeconds(1))
+            var subscription = Observable.Interval(TimeSpan.FromSeconds(1)) // emits a long value every second
                 .Where(x => x % 2 == 0)
                 .Select(x => $"Even tick: {x}")
                 .Subscribe(

@@ -7,6 +7,7 @@ namespace LeaveMeAloneFuncSkillForge
     {
         public static async Task RunApp()
         {
+            ReactiveL.Run();
         }
     }
 }
