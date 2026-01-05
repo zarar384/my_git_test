@@ -232,3 +232,117 @@ Observability решает проблему Tool sprawl, объединяя: met
 4. Чем log отличается от event? Log содержит гораздо больше контекста и деталей.
 5. Для чего нужны traces? Чтобы увидеть путь запроса через микросервисы и найти точку отказа.
 6. Какие данные помогают найти root cause? Logs и traces (не metrics).
+
+7) Prometheus: как собирать метрики (Exporters, Scrape, Push Gateway):
+Prometheus (хранит и обрабатывает метрики) -- pull --> scrape (читает /metrics endpoint(HTTP GET)) --> Exporter (собирает и преобразует метрики) -- reads --> System (источник данных)
+
+Базовая идея: Prometheus - это pull-based time series database.
+!В Prometheus НЕЛЬЗЯ напрямую пушить метрики!
+
+Проблема: не всегда есть доступ к source code системы, с которой нужно собрать метрики.
+Примеры: базы данных (MySQL, PostgreSQL), OS (Linux, Windows), CloudWatch (AWS), HAProxy, IoT (датчики, сенсоры).
+!Мы не можем: менять код MySQL, обновлять код миллионов IoT, позволить миллионам устройств пушить метрики в Prometheus (он задохнётся).
+
+Антипаттерн: bash / PowerShell скрипты, cron jobs / scheduled tasks, ручной сбор и отправка метрик.
+Минусы: не масштабируется, сложно поддерживать, нестабильно.
+
+* Exporters - верное решение - это компонент, который: собирает метрики из системы и отдаёт их в формате, понятном Prometheus.
+!Exporter = адаптер между системой и Prometheus!
+Он может быть как установлен на системе (Linux exporter), так и установлен рядом (CloudWatch, HAProxy, IoT).
+Примеры: Node Exporter (Linux), Windows Exporter, MySQL Exporter, CloudWatch Exporter, HAProxy Exporter.
+
+
+* Scraping - это процесс, когда Prometheus подключается к exporter, читает метрики, сохраняет их у себя.
+!Scrape = Prometheus pulls data!
+- настраивается в prometheus.yml
+- default scrape interval = 15 секунд
+- Prometheus сам контролирует частоту и нагрузку
+
+Scraping идеален, когда: 
+- heterogeneous infrastructure
+- много разных компонентов
+- OS + DB + proxies + cloud services
+- централизованный контроль 
+
+* Push Gateway => часть Prometheus ecosystem, который содержит встроенный exporter - иногда приложение хочет отправить метрики само.
+!Push Gateway НЕ делает Prometheus push-based!
+Принцип работы:
+- application => Push Gateway
+- Push Gateway хранит метрики временно
+- Prometheus scrapes Push Gateway
+Используется для: batch jobs, short-lived jobs, cron jobs.
+!Prometheus ВСЕГДА pull!
+
+Вопросы:
+1. Как Prometheus собирает метрики? Pull model (scraping).
+2. Что такое exporter? Компонент, который собирает метрики из системы и отдаёт их Prometheus.
+3. Зачем нужны exporters? Когда нет доступа к source code системы.
+4. Что такое scraping? Процесс, когда Prometheus периодически читает метрики у exporter.
+5. Почему нельзя напрямую пушить метрики в Prometheus? Prometheus архитектурно pull-based.
+6. Зачем нужен Push Gateway? Для batch / short-lived jobs.
+7. Делает ли Push Gateway Prometheus push-based? Нет. Prometheus всё равно scrapes.
+8. Почему Push Gateway не рекомендуют для long-running services? Потеря семантики, stale metrics, проблемы с масштабированием.
+
+8) Node Exporter - это официальный Prometheus exporter для сбора метрик Unix-based систем - exporter для Unix-based операционных систем.
+!Node Exporter НЕ имеет отношения к Node.js!
+Node = любая машина с Unix-based kernel: Linux, ubuntu, other Unix-like OS.
+Является частью Prometheus project и поддерживается комьюнити, считается стандартом для инфраструктурных метрик
+!есть official exporters, а есть third-party exporters, написанные другими компаниями и разработчиками.
+
+Метрики(инфраструктурные метрики (USE method):
+- CPU usage
+- Memory usage
+- Disk usage
+- Network I/O
+- Filesystem
+- Load average
+- Process / kernel metrics
+!Это метрики уровня ОС, а не приложения!
+!Node Exporter — foundation для infra monitoring!
+
+!!! ДЛЯ .NET WINDOWS SERVER НУЖЕН Windows Exporter!
+ПРЕДСТАВИМ, ЧТО РАБОТАЕТ НА ЛИНУКСЕ БУЭЭЭ СЕРВЕРЕ, ТОГДА:
+[ .NET Application ]
+  -- OpenTelemetry → Prometheus / Grafana
+  |     (requests, errors, latency)
+  |
+[ Linux Server ]
+  -- Node Exporter → Prometheus / Grafana
+        (CPU, RAM, Disk, Network)
+НО ЭТО ТАК СЛОЖИЛОСЬ ИСТОРИЧЕСКИ... СЕЙЧАС  ВМЕСТО ШИНДОУСОВ ВСЕ ЧАЩЕ ИЗ-ЗА КОРА ПРИЛОЖЕНИЯ РАЗВОРАЧИВАЮТ НА ЛИНУКС СЕРВАКАХ... ИЗ-ЗА КОНТЕЙНЕРОВ, КУБЕРНЕТИСОВ ВСЯКИХ. КЛАУДЫ ДЕШЕВЛЕ И ПРОЧАЯ ДЕВОПС МИШУРА, КОТОРАЯ РЯДОВОМУ ПРОГРАММИСТУ ДО ЛАМПОЧКИ. Т.Е ЕСЛИ У ТЕБЯ ЛЕГАСИ ГОВ... КОД... ТО ТАМ СКОРЕЙ ВСЕГО ВИНДА НА СЕРВАКЕ. 
+
+.NET раньше => Windows Server + IIS
+.NET сейчас => Linux + Docker + Kubernetes
+
+Вопросы:
+1. Что такое Node Exporter? Официальный Prometheus exporter для Unix-based систем.
+2. Имеет ли Node Exporter отношение к Node.js? Нет.
+3. Какие метрики собирает Node Exporter? CPU, memory, disk, network, filesystem, kernel metrics.
+4. На каком уровне работает Node Exporter? Infrastructure / OS level.
+5. Что значит 'official Prometheus exporter'? Часть Prometheus project и поддерживается его сообществом.
+6. Можно ли расширять Node Exporter? Да, через pluggable collectors.
+
+9) Prometheus data model (metrics, labels, time series) - в Prometheus все данные хранятся как time series -
+значение метрики (timestamp (Unix timestamp))
+!Prometheus = time series database!
+
+Каждая time series в Prometheus уникально идентифицируется:
+- metric name
+- labels (key=value pairs) - способ разделять одну метрику на разные time series
+	metric_name{key="value", key="value"}, где
+	- labels в { } и могут быть 0, 1, n.
+	Пример: для метрика auth_api_hit с labels: auth_api_hit{count="1", time_taken="800"}, где
+	- auth_api_hit - metric name, count="1" - label, time_taken="800" - label
+	!Одна метрика → много time series через labels!
+Labels используются для: фильтрации, агрегации, группировки.
+!Metric name + labels = unique time series!
+
+!Prometheus не хранит 'объекты', он хранит числовые значения во времени.
+
+Вопросы:
+1. Как Prometheus хранит данные? Как time series (value + timestamp).
+2. Что делает time series уникальной? Metric name + set of labels.
+3. Что такое label в Prometheus? Key-value пара, описывающая измерение метрики.
+4. Можно ли иметь метрику без labels? Да.
+5. Зачем нужны labels? Для фильтрации, агрегации и разделения метрик.
+6. Что важнее: metric name или labels? Оба: metric name определяет метрику, labels - её измерения.

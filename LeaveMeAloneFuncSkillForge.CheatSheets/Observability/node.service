@@ -1,0 +1,39 @@
+# Prometheus Node Exporter - systemd service definition
+
+[Unit]
+# Human-readable description of the service
+Description=Prometheus Node Exporter
+
+# Official Prometheus documentation for reference
+Documentation=https://prometheus.io/docs/introduction/overview/
+
+# Ensure the network is fully up before starting Node Exporter
+# Node Exporter exposes metrics over HTTP, so networking is required
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+# Simple long-running service (not forking)
+Type=simple
+
+# Run Node Exporter under a dedicated, non-root user for security reasons
+User=prometheus
+Group=prometheus
+
+# Reload the service configuration without stopping the process
+# Sends SIGHUP to the main process
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Path to the Node Exporter binary
+# This is the process that exposes OS metrics via /metrics endpoint
+ExecStart=/var/lib/node/node_exporter
+
+# Identifier used in system logs (journalctl)
+SyslogIdentifier=prometheus_node_exporter
+
+# Automatically restart the service if it crashes
+Restart=always
+
+[Install]
+# Start this service automatically in multi-user (server) mode
+WantedBy=multi-user.target
