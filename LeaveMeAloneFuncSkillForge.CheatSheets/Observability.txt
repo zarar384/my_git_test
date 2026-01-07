@@ -2,8 +2,8 @@
 Microservices увеличивают гибкость, но сильно усложняют наблюдаемость.
 
 Связь microservices ↔ CI/CD ↔ Observability(diagnosis)
-Monolith ≈ Waterfall: Долгий цикл: requirements → design → code → test → deploy
-Microservices ≈ CI/CD: Короткий цикл: plan → code → build → test → deploy → measure → repeat
+Monolith ≈ Waterfall: Долгий цикл: requirements => design => code => test => deploy
+Microservices ≈ CI/CD: Короткий цикл: plan => code => build => test => deploy => measure => repeat
 CI/CD без observability - опасно.
 Чем чаще деплой - тем больше нужен мониторинг и трассировка.
 
@@ -23,13 +23,13 @@ CI/CD без observability - опасно.
 
 Три ГЛАВНЫХ вопроса мониторинга:
 * Is the service ON? Обычно проверяется через: health checks; ping / HTTP HEAD / GET.
-* Is the service FUNCTIONING as expected? thresholds или же “Если ошибок < 5 в минуту → считаем нормой”.
-* Is the service PERFORMING well?  “HTTP response time ≤ 20 ms → OK”
+* Is the service FUNCTIONING as expected? thresholds или же 'Если ошибок < 5 в минуту => считаем нормой'.
+* Is the service PERFORMING well?  'HTTP response time ≤ 20 ms => OK'
 
 Три ГЛАВНЫХ вопроса по аналогии с машиной:
-* ON → двигатель крутится (RPM > 0)
-* FUNCTIONING → машина едет
-* PERFORMANCE → нет warning lights, нормальные показатели
+* ON => двигатель крутится (RPM > 0)
+* FUNCTIONING => машина едет
+* PERFORMANCE => нет warning lights, нормальные показатели
 
 Telemetry data - это данные, которые мы собираем для мониторинга: метрики; логи; события; трейсы.
 !Telemetry data показывает ГДЕ проблема, но не всегда ПОЧЕМУ!
@@ -50,9 +50,9 @@ DevOps метрики:
 1. Какие вопросы должен отвечать мониторинг? Is the service up? Is it working correctly? Is it performing well?
 2. В чём разница между monitoring и observability? Monitoring tells you that something is wrong, observability helps you understand why.
 3. Что такое telemetry data? Runtime data (metrics, logs, traces) used to monitor system health and behavior.
-4. Что такое MTD и MTTR? MTD → time to detect a problem; MTTR → time to fix it.
+4. Что такое MTD и MTTR? MTD => time to detect a problem; MTTR => time to fix it.
 
-3) Какие ключевые метрики собираются для Monitoring? Собирать нужно не “всё подряд”, а только meaningful metrics.
+3) Какие ключевые метрики собираются для Monitoring? Собирать нужно не 'всё подряд', а только meaningful metrics.
 Система обычно состоит из 3 слоёв:
 * UI layer (Web / Mobile)
 * Service layer (microservices)
@@ -82,11 +82,11 @@ Golden Signals(RED + Saturation):
 Core Web Vitals напрямую влияют на SEO - Google ранжирует сайты с учётом этих метрик.
 - LCP - Largest Contentful Paint - Время, когда пользователь чувствует, что страница загрузилась.
 - FID - First Input Delay - Когда пользователь может впервые взаимодействовать; perceived responsiveness.
-- CLS - Cumulative Layout Shift - Насколько страница “прыгает”; perceived stability.
+- CLS - Cumulative Layout Shift - Насколько страница 'прыгает'; perceived stability.
 
 Вопросы:
 1. Какие методы мониторинга ты знаешь? RED method; USE method; Golden Signals; Core Web Vitals.
-2. Чем RED отличается от USE? RED → service-level, user-facing; USE → infrastructure-level.
+2. Чем RED отличается от USE? RED => service-level, user-facing; USE => infrastructure-level.
 3. Что такое Golden Signals? Latency, traffic, errors, saturation - ключевые метрики Google SRE.
 4. Почему average latency - плохая метрика? Потому что она скрывает хвосты, важнее P95/P99.
 5. Зачем нужны Core Web Vitals?  UX; SEO ranking; perceived performance.
@@ -96,7 +96,7 @@ Monitoring - часть observability, но не наоборот. Они не �
 
 Monitoring vs Observability - отличие:
 * Monitoring - Симптомы - Нужно заранее знать, ЧТО мониторить
-Работает по принципу - Реактивный подход: “Следим за CPU”; “Следим за error rate”.
+Работает по принципу - Реактивный подход: 'Следим за CPU'; 'Следим за error rate'.
 Хорошо отвечает на вопросы: WHEN (когда сломалось); WHERE (где сломалось).
 Подходит для: monolith; систем с предсказуемыми точками отказа.
 * Observability - Причины - Позволяет находить проблемы, о которых мы не подумали заранее и собирает actionable data со всей системы.
@@ -119,7 +119,7 @@ Observability решает проблему Tool sprawl, объединяя: met
 Вопросы:
 1. В чём разница между monitoring и observability? Monitoring tells us when and where something is wrong, observability helps us understand why it is wrong.
 2. Почему monitoring недостаточно для microservices?  слишком много сервисов; сложные зависимости; непредсказуемые точки отказа; нужны коррелированные данные.
-3. Что такое “unknown unknowns”? Issues that we didn’t anticipate or define monitoring for in advance.
+3. Что такое 'unknown unknowns'? Issues that we didn’t anticipate or define monitoring for in advance.
 4. Что такое tool sprawl? Using many disconnected monitoring tools without a unified view of the system.
 
 5) Методы сбора метрик (Push vs Scrape)
@@ -129,7 +129,7 @@ Observability решает проблему Tool sprawl, объединяя: met
 - Приложение / микросервис сам отправляет метрики
 - Используются протоколы: TCP / UDP / HTTP
 - Часто используется agent / daemon для агрегации
-Напр. Application → StatsD (agent) → Graphite (TSDB)
+Напр. Application => StatsD (agent) => Graphite (TSDB)
 
 Зачем нужен агент (StatsD): 
 - TSDB потребляет CPU и storage
@@ -150,7 +150,7 @@ Observability решает проблему Tool sprawl, объединяя: met
 - Приложение экспортирует метрики через endpoint; 
 - Time-series DB сама приходит и читает метрики.
 Напр. Application (/metrics) ← Prometheus
-Принцип работы: приложение предоставляет HTTP endpoint → Prometheus знает адрес сервиса → Prometheus периодически scrape-ит метрики.
+Принцип работы: приложение предоставляет HTTP endpoint => Prometheus знает адрес сервиса => Prometheus периодически scrape-ит метрики.
 !Scrape = monitoring-driven metrics!
 
 Плюсы:
@@ -164,7 +164,7 @@ Observability решает проблему Tool sprawl, объединяя: met
 - сложнее для: IoT; edge; NAT / firewalls.
 
 !Push vs Scrape - это выбор, а не религия!
-!Не надо слепо выбирать Prometheus только потому, что “так делают все”!
+!Не надо слепо выбирать Prometheus только потому, что 'так делают все'!
 
 Перед выбором нужно подумать:
 - Тип систем: custom applications? OS / DB / infra?
@@ -177,12 +177,12 @@ Observability решает проблему Tool sprawl, объединяя: met
 Вопросы:
 1. Какие методы сбора метрик ты знаешь? Push и Scrape.
 2. В чём разница между Push и Scrape? Push - приложение отправляет метрики. Scrape - система мониторинга читает метрики.
-3. Пример Push-модели? Application → StatsD → Graphite.
-4. Пример Scrape-модели? Prometheus → /metrics endpoint приложения.
+3. Пример Push-модели? Application => StatsD => Graphite.
+4. Пример Scrape-модели? Prometheus => /metrics endpoint приложения.
 5. Почему используют агрегацию в Push? Чтобы снизить нагрузку на TSDB и стоимость хранения.
 6. Почему Prometheus популярен? Scrape model, cloud-native, Kubernetes-friendly.
 7. Когда Push лучше Scrape? IoT; edge devices; нет inbound network доступа.
-8. Главная ошибка при выборе Prometheus? Использовать его “потому что модно”, а не потому что подходит архитектуре.
+8. Главная ошибка при выборе Prometheus? Использовать его 'потому что модно', а не потому что подходит архитектуре.
 
 6) Telemetry data (MELT), где M - Metrics; E - Events; L - Logs; T - Traces. 
 В observability - 4 типа telemetry data.
@@ -202,7 +202,7 @@ Observability решает проблему Tool sprawl, объединяя: met
 - всегда привязана ко времени
 Напр. vending machine: 100 пачек чипсов в минуту
 Зачем нужны: сравнение во времени; выявление трендов; деградация / рост.
-Напр: сегодня: 100/мин → неделю назад: 200/мин → видим проблему, но не причину
+Напр: сегодня: 100/мин => неделю назад: 200/мин => видим проблему, но не причину
 
 * Logs - это детализированное описание события.
 - содержит контекст
@@ -215,7 +215,7 @@ Observability решает проблему Tool sprawl, объединяя: met
 - используется в microservices
 - показывает взаимодействие сервисов
 - помогает найти точку сбоя
-Напр. vending machine → bank → Mastercard → bank → vending machine
+Напр. vending machine => bank => Mastercard => bank => vending machine
 !любой шаг может упасть - trace показывает где именно!
 !Traces отвечают на вопрос: где запрос сломался!
 
@@ -298,16 +298,16 @@ Node = любая машина с Unix-based kernel: Linux, ubuntu, other Unix-l
 - Load average
 - Process / kernel metrics
 !Это метрики уровня ОС, а не приложения!
-!Node Exporter — foundation для infra monitoring!
+!Node Exporter - foundation для infra monitoring!
 
 !!! ДЛЯ .NET WINDOWS SERVER НУЖЕН Windows Exporter!
 ПРЕДСТАВИМ, ЧТО РАБОТАЕТ НА ЛИНУКСЕ БУЭЭЭ СЕРВЕРЕ, ТОГДА:
 [ .NET Application ]
-  -- OpenTelemetry → Prometheus / Grafana
+  -- OpenTelemetry => Prometheus / Grafana
   |     (requests, errors, latency)
   |
 [ Linux Server ]
-  -- Node Exporter → Prometheus / Grafana
+  -- Node Exporter => Prometheus / Grafana
         (CPU, RAM, Disk, Network)
 НО ЭТО ТАК СЛОЖИЛОСЬ ИСТОРИЧЕСКИ... СЕЙЧАС  ВМЕСТО ШИНДОУСОВ ВСЕ ЧАЩЕ ИЗ-ЗА КОРА ПРИЛОЖЕНИЯ РАЗВОРАЧИВАЮТ НА ЛИНУКС СЕРВАКАХ... ИЗ-ЗА КОНТЕЙНЕРОВ, КУБЕРНЕТИСОВ ВСЯКИХ. КЛАУДЫ ДЕШЕВЛЕ И ПРОЧАЯ ДЕВОПС МИШУРА, КОТОРАЯ РЯДОВОМУ ПРОГРАММИСТУ ДО ЛАМПОЧКИ. Т.Е ЕСЛИ У ТЕБЯ ЛЕГАСИ ГОВ... КОД... ТО ТАМ СКОРЕЙ ВСЕГО ВИНДА НА СЕРВАКЕ. 
 
@@ -333,7 +333,7 @@ Node = любая машина с Unix-based kernel: Linux, ubuntu, other Unix-l
 	- labels в { } и могут быть 0, 1, n.
 	Пример: для метрика auth_api_hit с labels: auth_api_hit{count="1", time_taken="800"}, где
 	- auth_api_hit - metric name, count="1" - label, time_taken="800" - label
-	!Одна метрика → много time series через labels!
+	!Одна метрика => много time series через labels!
 Labels используются для: фильтрации, агрегации, группировки.
 !Metric name + labels = unique time series!
 
@@ -346,3 +346,297 @@ Labels используются для: фильтрации, агрегации
 4. Можно ли иметь метрику без labels? Да.
 5. Зачем нужны labels? Для фильтрации, агрегации и разделения метрик.
 6. Что важнее: metric name или labels? Оба: metric name определяет метрику, labels - её измерения.
+
+10) Prometheus data types (Scalar, Instant Vector, Range Vector)
+Prometheus имеет собственный query language - PromQL.
+
+* Scalar - одно значение (float, string).
+Пример метрики:
+prometheus_http_requests_total{code="200", job="prometheus"}
+
+prometheus_http_requests_total{job="prometheus", code=~"2.*"}
+code=~"2.*" - код начинается с 2, например 200,201,204,205.
+!Такую гибкость float не даёт!
+! если написать code=200 - ничего не вернет - Label values в Prometheus ВСЕГДА строки.
+
+! float используется:
+- значение метрики
+- результат вычислений
+- результат PromQL выражений
+пример:
+http_requests_total 12345
+cpu_usage 0.73
+request_latency_ms 800
+
+* Instant Vector - может быть:
+- набор time series
+- одна sample value
+- один timestamp (now)
+пример: auth_api_hit
+
+* Instant Vector + filters
+auth_api_hit{count="1", time_taken="800"}
+1. искать метрик на основе metric name, т.е auth_api_hit
+2. фильтровать time series по labels: count="1", time_taken="800"
+и возвращает для каждого time series по одному значению на текущий момент времени
+! НЕ ИСТОРИЮ 
+! НЕ ДИАПАЗОН
+т.е Instant Vector = фотография
+
+* Range Vector
+- набор time series
+- много samples
+- за указанный период времени
+синтаксис:
+metric_name[time_range]
+пример:
+auth_api_hit[5m]
+
+Допустимые единицы времени
+ms - milliseconds
+s - seconds
+m - minutes
+h - hours
+d - days (24h)
+w - weeks (7d)
+y - years (365d)
+!Нет месяцев!
+!Case-sensitive!
+
+Вопросы:
+1. Какие data types есть в Prometheus? Scalar, Instant Vector, Range Vector.
+2. Что такое instant vector? Набор time series с одним sample на текущий момент.
+3. Что такое range vector? Набор time series с samples за период времени.
+4. Почему запрос с code=200 может не работать? Потому что значение было сохранено как string.
+5. От чего зависит количество значений в range vector? От time range и scrape interval.
+6. Можно ли использовать месяцы в range vector? Нет.
+
+11) PromQL arithmetic operators (Scalar, Instant Vector)
++ - addition
+- - subtraction
+* - multiplication
+/ - division
+% - remainder
+^ - power
+
+* Scalar ⨯ Scalar = результат = scalar
+2 + 2 = 4
+
+* Scalar ⨯ Instant Vector = scalar применяется к каждому элементу instant vector
+vector = [5, 6]
+vector + 5 =>  [10, 11]
+!Scalar применяется ко всем значениям vector!
+
+* Instant Vector ⨯ Instant Vector = операция выполняется только для matching time series
+time series - m1{label="c"}, metric name => m1 и labels => {label="c"}
+matching = одинаковый metric name + одинаковые labels
+если нет match - series пропадает
+A: m1{label=a}, m1{label=b}, m1{label=c}
+B: m1{label=a}, m1{label=b}
+
+A + B => только label=a и label=b
+!Нет matching labels => нет результата!
+
+Вопросы:
+1. Какие арифметические операторы есть в PromQL? +, -, *, /, %, ^
+2. Что происходит при scalar + instant vector? Scalar применяется ко всем элементам vector.
+3. Что происходит при instant vector + instant vector? Операция выполняется только для matching time series.
+4. Когда time series не попадёт в результат? Если нет matching metric name и labels.
+5. Изменяется ли исходный vector при операции? Нет, всегда создаётся новый vector.
+
+12) PromQL binary comparison operators
+такие же как и везде... ==, > и тд, и тп..
+
+* Scalar ⨯ Instant Vector = оператор применяется к каждому элементу vector и остаются только те series, где условие true:
+vector: [a=10, b=4]
+vector == 10 => [a]
+!Series, где условие false, исчезают!
+
+* Instant Vector ⨯ Instant Vector = сравниваются только matching time series 
+matching = metric name + labels
+остаются series, где есть match и условие true.
+A: m{a=10}, m{b=4}
+B: m{a=10}, m{b=6}
+A == B = m{a}
+
+Вопросы:
+1. Какие бинарные операторы есть в PromQL? ==, !=, >, <, >=, <=
+2. Что возвращает comparison scalar vs scalar? 1 (true) или 0 (false).
+3. Что происходит при scalar vs instant vector? Scalar применяется ко всем series, остаются только true.
+4. Как работают comparison между двумя vectors? Только matching metric name + labels участвуют.
+5. Почему часть series может пропасть? Нет match или условие false.
+
+13) PromQL set binary operators (and / or / unless)
+and
+A: m{a=10}, m{b=4}
+B: m{a=10}, m{c=4}
+
+A and B => m{a}
+
+or
+A: m{a}, m{b}
+B: m{a}, m{c}
+
+A or B → m{a}, m{b}, m{c}
+
+unless - только элементы из левого vector, которых НЕТ в правом.
+A: m{a}, m{b}
+B: m{a}, m{c}
+
+A unless B → m{b}
+
+Вопросы:
+1. С какими типами данных работают set operators? Только instant vectors.
+2. Чувствительны ли они к регистру? Да, всегда lowercase.
+
+11) PromQL aggregation operators = агрегируют один Instant Vector = возвращают новый Instant Vector
+!Агрегация всегда создаёт НОВЫЙ vector!
+Основные:
+sum - сумма значений
+min - минимальное значение
+max - максимальное значение
+avg - среднее значение
+count - количество элементов (time series)
+count_values - считает элементы с одинаковым значением
+group - группирует элементы, value всегда = 1
+topk(k, vector) - k наибольших значений
+bottomk(k, vector) - k наименьших значений
+stddev - стандартное отклонение (population)
+stdvar - дисперсия (population)
+
+примеры:
+sum(metric_name)
+avg(metric_name)
+topk(3, metric_name)
+sum(metric) by (label)
+sum(node_cpu_seconds_total) by (mode)
+
+sum(metric) without (label)
+sum(node_cpu_seconds_total) without (mode)
+!without = убрать label перед агрегацией!
+
+group(metric)
+group(metric) by (label)
+!value ВСЕГДА = 1!
+
+topk / bottomk - возвращает только k элементов и часто используется вместе с avg, sum, rate
+topk(3, metric)
+bottomk(2, metric)
+topk(5, avg(http_request_duration_seconds) by (service))
+
+Вопросы:
+1. Что делают aggregation operators? Агрегируют Instant Vector => возвращают новый Instant Vector.
+2. Разница между by и without? by - группируем по label, without - исключаем label.
+3. Для чего нужен group? Только группировка labels, значение всегда 1.
+4. Когда использовать topk? Для поиска самых 'тяжёлых' сервисов / хостов / метрик.
+5. Можно ли агрегировать Range Vector? Нет, сначала нужен Instant Vector (обычно через rate, avg_over_time).
+
+12) Time offset в PromQL
+offset - позволяет смотреть значения метрик в прошлом, а не latest scrape = если нужно значение N минут / часов / дней назад
+пример:
+metric_name offset 5m
+metric_name offset 10m
+metric_name offset 8h
+metric_name offset 2d
+
+!offset НЕ меняет тип данных
+
+prometheus_http_requests_total            => value = 21 (now)
+prometheus_http_requests_total offset 8m  => value = 20 (8 min ago)
+
+правильная запись
+avg(prometheus_http_requests_total offset 8h) by (code)
+
+говно из жопы !!!!!
+ГОВНО avg(prometheus_http_requests_total) by (code) offset 8h
+ГОВНО avg(prometheus_http_requests_total by (code)) offset 8h
+
+!!!offset применяется к метрике, а не к aggregation
+
+* offset + aggregation
+ПОРЯДОК: metric offset time → aggregation → by / without
+пример:
+avg(prometheus_http_requests_total offset 1h) by (code)
+
+!group плохо для графиков
+group(metric) by (label)
+- value всегда = 1
+- график всегда flat
+- для графиков нужны sum / avg / count
+
+типикал use-cases offset:
+- сравнение now vs past
+- baseline comparison
+- что было час назад?
+- анализ деградации
+пример:
+rate(http_requests_total[5m]) / rate(http_requests_total[5m] offset 1h)
+
+Вопросы:
+1. Где писать offset? Сразу после метрики, до aggregation.
+2. Можно ли применять offset к aggregation? Нет
+
+14) 
+* PromQL functions (часть 1): absent, math, clamp
+параша... нагугли и прочитай, энивей хуй запомнишь
+
+примеры:
+проверка, что метрика ПРОПАЛА
+absent(node_cpu_seconds_total) → пусто
+absent(node_cpu_seconds_total{cpu="random"}) → { } = 1
+
+та ж опера, но с range vector
+absent_over_time(node_cpu_seconds_total[1h])
+
+обрезка значений
+clamp_min(node_cpu_seconds_total, 300)
+clamp_max(node_cpu_seconds_total, 150000)
+clamp(node_cpu_seconds_total, 300, 150000)
+
+* PromQL time & delta functions (day, weekday, delta)
+day_of_month(metric)
+day_of_week(metric)
+delta(node_cpu_temperature[2h])
+idelta()
+
+* PromQL utility functions: log, sort, time, timestamp
+sort(clamp(metric, 300, 150000))
+sort_desc(metric)
+
+timestamp(metric)            => now
+timestamp(metric offset 1h)  => now - 1h
+
+* Aggregation over time (*_over_time)
+avg_over_time(metric[2h])
+
+примерно так работает:
+metric           => Instant Vector (now)
+metric[2h]       => Range Vector (history)
+avg_over_time()  => Instant Vector (1 value per series)
+
+пример:
+avg_over_time(node_cpu_seconds_total{cpu="0"}[2h])
+
+15) Prometheus + Windows (WMI / Windows Exporter)
+! У Prometheus НЕТ официального exporter’а для Windows
+(в отличие от Node Exporter для Linux)
+Но существуют third-party exporters, которые основаны на WMI.
+WMI (Windows Management Instrumentation) — встроенная инфраструктура Windows для:
+- получения системных метрик
+- управления ОС
+- автоматизации админских задач
+!WMI != Prometheus
+!Prometheus просто читает данные, которые exporter достаёт из WMI!
+Сейчас эта залупа называется windows_exporter, раньше wmi_exporter(многие скуфы до сих пор так называют).
+
+* Архитектура:
+Windows OS
+  ↓ (WMI)
+Windows Exporter (port 9182)
+  ↓ (HTTP /metrics)
+Prometheus (scrape)
+
+!Prometheus exporter слушает порт 9182 - написано в документации... так что хз, держи за факт.
+
+
+
