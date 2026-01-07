@@ -221,6 +221,42 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             return result;
         }
 
+        private static async Task<string> DownloadStringWithTimeout(HttpClient client, string uri)
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            Task<string> downloadTask = client.GetStringAsync(uri);
+            Task timeoutTask = Task.Delay(Timeout.InfiniteTimeSpan, cts.Token);
+            Task completedTask = await Task.WhenAny(downloadTask, timeoutTask);
+            if (completedTask == timeoutTask)
+                return null;
+            return await downloadTask;
+        }
+
+        private static async Task<string> DownloadStringWithRetries(HttpClient client, string uri)
+        {
+            // retry after 1 sec., then after 2 sec., then after 4 sec.
+            TimeSpan nextDelay = TimeSpan.FromSeconds(1);
+            for (int i = 0; i != 3; ++i)
+            {
+                try
+                {
+                    return await client.GetStringAsync(uri);
+                }
+                catch
+                {
+                }
+                await Task.Delay(nextDelay);
+                nextDelay = nextDelay + nextDelay;
+            }
+            // try one last time and let any exception propagate
+            return await client.GetStringAsync(uri);
+        }
+
+        private static async Task<T> DelayResult<T>(T result, TimeSpan delay)
+        {
+            await Task.Delay(delay);
+            return result;
+        }
         #region helpers
         private sealed class Order
         {
