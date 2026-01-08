@@ -50,7 +50,7 @@ namespace LeaveMeAloneFuncSkillForge.API
             throw new NotImplementedException();
         }
 
-        public async Task<string> GetDataAsync(string endpoint, CancellationToken ct = default)
+        public async Task<string> GetData(string endpoint, CancellationToken ct = default)
         {
             // real HTTP call example (commented out for this example)
             //using var request = new HttpRequestMessage(HttpMethod.Get, endpoint);

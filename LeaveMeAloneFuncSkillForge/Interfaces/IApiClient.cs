@@ -2,6 +2,6 @@
 {
     public interface IApiClient
     {
-        Task<string> GetDataAsync(string endpoint, CancellationToken ct = default);
+        Task<string> GetData(string endpoint, CancellationToken ct = default);
     }
 }

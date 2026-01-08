@@ -7,7 +7,8 @@ namespace LeaveMeAloneFuncSkillForge.Playground
     {
         public static async Task Run()
         {
-            await RunBasicAsyncExamples();
+            await RunWithMySyncImplementation();
+            //await RunWithHttpClient();
         }
 
         private static async Task TestApiClientFactoryAsync()
@@ -25,7 +26,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             var client2 = await factory.CreateClientAsync("testClient_2");
             Console.WriteLine(client2 != null ? "Client 2 created" : "Null client");
 
-            var results = await client1.GetDataAsync("/data/endpoint1");
+            var results = await client1.GetData("/data/endpoint1");
             Console.WriteLine(results);
 
             // reuse cached client (no re-initialization)
@@ -49,7 +50,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             var client2 = await factory("testClient_2");
             Console.WriteLine(client2 != null ? "Client 2 created" : "Null client");
 
-            var results = await client1.GetDataAsync("/data/endpoint1");
+            var results = await client1.GetData("/data/endpoint1");
             Console.WriteLine(results); // Fake data from testClient_1 for /data/endpoint1
 
             // reuse cached client (if you implement caching in your mock factory)
@@ -221,17 +222,121 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             return result;
         }
 
+        private static async Task RunWithMySyncImplementation()
+        {
+            using var httpClient = new HttpClient(new FakeHttpMessageHandler())
+            {
+                BaseAddress = new Uri("https://fake.api/")
+            };
+
+            IFeatureFlagService featureFlagService = new FeatureFlagService(httpClient);
+            IMyAsyncInterface service = new MySyncImplementation(featureFlagService);
+
+            Console.WriteLine("* SIMPLE ASYNC CONTRACT (SYNC IMPLEMENTATION)");
+            await service.DoSomethingAsync();
+            Console.WriteLine("[OK] DoSomethingAsync completed");
+
+            Console.WriteLine();
+            Console.WriteLine("* RANDOM FAILURE TEST (50%)");
+
+            try
+            {
+                await service.DoSomethingWithExceptionAsync();
+                Console.WriteLine("[OK] Operation succeeded");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("* RETURN VALUE TEST");
+
+            var value = await service.GetIntAsync();
+            Console.WriteLine($"[VALUE] {value}");
+
+            Console.WriteLine();
+            Console.WriteLine("* NOT IMPLEMENTED TEST");
+
+            try
+            {
+                await service.NotImplementedAsync<string>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+            Console.WriteLine();
+            var delay = await DelayResult("[SLEEP] 1 sec...", TimeSpan.FromSeconds(1));
+            Console.WriteLine(delay);
+
+            Console.WriteLine();
+            Console.WriteLine("* FEATURE FLAG DEPENDENT METHOD");
+
+            var paymentMethod = await service.GetPaymentMethodAsync();
+            Console.WriteLine($"[PAYMENT MEHOD] {paymentMethod}");
+            Console.WriteLine();
+
+            Console.WriteLine("* CALCULATE PRICE ASYNC");
+            var price = await service.CalculatePriceAsync(new Transaction { Amount = 123.45m });
+            Console.WriteLine($"[PRICE] {price}");
+
+            Console.WriteLine();
+            Console.WriteLine("[DONE]");
+        }
+
+
+        private static async Task RunWithHttpClient()
+        {
+            using var httpClient = new HttpClient(new FakeHttpMessageHandler())
+            {
+                BaseAddress = new Uri("https://fake.api/")
+            };
+
+            Console.WriteLine("* TIMEOUT TEST");
+            var timeoutResult = await DownloadStringWithTimeout(httpClient, "users");
+
+            Console.WriteLine(timeoutResult ?? "[TIMEOUT]");
+            Console.WriteLine();
+
+            // small delay between tests
+            var secDelay = await DelayResult("[SLEEP] 2 sec...", TimeSpan.FromSeconds(2));
+            Console.WriteLine(secDelay);
+
+            Console.WriteLine();
+            Console.WriteLine("* RETRY TEST");
+
+            try
+            {
+                var retryResult = await DownloadStringWithRetries(httpClient, "orders");
+
+                Console.WriteLine(retryResult);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Final failure: {ex.Message}");
+            }
+        }
+
         private static async Task<string> DownloadStringWithTimeout(HttpClient client, string uri)
         {
+            // auto-cancel after 3 seconds
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            
+            // setup
             Task<string> downloadTask = client.GetStringAsync(uri);
             Task timeoutTask = Task.Delay(Timeout.InfiniteTimeSpan, cts.Token);
             Task completedTask = await Task.WhenAny(downloadTask, timeoutTask);
+
+            // check which task completed
             if (completedTask == timeoutTask)
                 return null;
+
             return await downloadTask;
         }
 
+        // Retry logic with exponential backoff. Recomends using Polly in real apps.
         private static async Task<string> DownloadStringWithRetries(HttpClient client, string uri)
         {
             // retry after 1 sec., then after 2 sec., then after 4 sec.
