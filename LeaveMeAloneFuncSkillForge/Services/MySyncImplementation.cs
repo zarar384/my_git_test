@@ -71,5 +71,43 @@ namespace LeaveMeAloneFuncSkillForge.Services
         {
             return Task.FromException<T>(new NotImplementedException("[WRONG] This method is not implemented."));
         }
+
+        public async Task<double> CalculatePriceWithProgressAsync(
+            Transaction transaction, 
+            IProgress<double>? progress = null, 
+            CancellationToken cancellationToken = default)
+        {
+            double basePrice = (double)transaction.Amount;
+            double precent = 0;
+
+            // validation
+            await Task.Delay(300, cancellationToken);
+            precent = 0.25;
+            progress?.Report(precent);
+
+            // feature flag check
+            var isCheckoutNewEnabled = await _featureFlagService.IsNewCheckoutEnabledAsync();
+            precent = 0.5;
+            progress?.Report(precent);
+
+            // price calculation
+            await Task.Delay(300, cancellationToken);
+            var calculatedPrice = basePrice * _random.Next(1, 5);
+            precent = 0.75;
+            progress?.Report(precent);
+
+            // apply feature flag logic
+            await Task.Delay(300, cancellationToken);
+
+            if (isCheckoutNewEnabled)
+            {
+                calculatedPrice *= 0.9; // apply a 10% discount for the new checkout feature
+            }
+
+            precent = 1.0;
+            progress?.Report(precent);
+
+            return calculatedPrice;
+        }
     }
 }

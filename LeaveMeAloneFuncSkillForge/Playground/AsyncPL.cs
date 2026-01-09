@@ -280,7 +280,10 @@ namespace LeaveMeAloneFuncSkillForge.Playground
 
             Console.WriteLine("* CALCULATE PRICE ASYNC");
             var price = await service.CalculatePriceAsync(new Transaction { Amount = 123.45m });
-            Console.WriteLine($"[PRICE] {price}");
+            Console.WriteLine($"[PRICE] {price:N2}");
+
+            Console.WriteLine("* CALCULATE PRICE WITH PROGRESS ASYNC");
+            await RunPriceCalculationAsync(service, new Transaction { Amount = 678.90m });
 
             Console.WriteLine();
             Console.WriteLine("[DONE]");
@@ -361,6 +364,32 @@ namespace LeaveMeAloneFuncSkillForge.Playground
         {
             await Task.Delay(delay);
             return result;
+        }
+
+        private static async Task RunPriceCalculationAsync(
+            IMyAsyncInterface service,
+            Transaction transaction)
+        {
+            using var cts = new CancellationTokenSource();
+
+            var progress = new Progress<double>(percent =>
+            {
+                Console.WriteLine($"Progress: {percent:P0}");
+            });
+
+            try
+            {
+                double price = await service.CalculatePriceWithProgressAsync(
+                    transaction,
+                    progress,
+                    cts.Token);
+
+                Console.WriteLine($"Final price: {price:N2}");
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Price calculation canceled");
+            }
         }
         #region helpers
         private sealed class Order

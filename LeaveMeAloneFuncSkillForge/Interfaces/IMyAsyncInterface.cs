@@ -13,5 +13,11 @@
         Task<string> GetPaymentMethodAsync();
 
         Task<double> CalculatePriceAsync(Transaction transaction);
+
+        Task<double> CalculatePriceWithProgressAsync(
+            Transaction transaction,
+            IProgress<double>? progress = null,
+            CancellationToken cancellationToken = default);
+
     }
 }
