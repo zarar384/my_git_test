@@ -638,5 +638,46 @@ Prometheus (scrape)
 
 !Prometheus exporter слушает порт 9182 - написано в документации... так что хз, держи за факт.
 
+16) Grafana
+Cloud vs Self-hosted
+Grafana Cloud = скорость и простота
+Self-hosted = контроль и гибкость
+!Выбор по архитектурному и бизнес-решению, а не “что моднее”
+
+* Grafana Cloud - буду юзать чисто free tier для пет проектов с целью обучения. PS не хочу лишний раз ебаться, запустил в облаке и сидишь довольный, как слон. 
+Из минусов:
+- в продакшне бьет по кошельку. Моему? нет... так что меня это ебать не должно, но факт есть факт.
+- ограничения на кастомизацию (хз че я там кастомизировать собрался)
+- security / data residency(ГДЕ физически хранятся данные)
+- GDPR / compliance, где
+	GDRP(General Data Protection Regulation) - это закон ЕС о защите персональных данных, он регулирует, где, как и кем могут храниться и обрабатываться данные людей из ЕС.
+	Compliance = соответствие законам, стандартам и внутренним правилам компании.
+- vendor lock-in - эт когда ты зависим от одного поставщика. Если хочешь ливнуть, то эт больно и дорого. Т.е надо будет после ухода переписывать код, мигрировать данные, менять инфраструктуру.
 
 
+* Self-hosted Grafana (On-prem) - все сам, развертка, настройка. Из плюсов - кастомизация, потенциально бесплатно и безопасность.
+
+* Установка
+типикал сценарии
+- VM (AWS / Azure / GCP / on-prem)
+- Ubuntu 20.04 / 22.04
+- Grafana как systemd service
+
+базовые бибатеки
+- adduser
+- libfontconfig1
+- musl
+
+конфиг на Windows тут 
+\grafana\grafana\conf\defaults.ini 
+создать копию с названием custom.ini
+поменял локал порт на 3300
+http_port = 3300
+
+затем рестарт Restart-Service grafana
+ну или services.msc => Grafana => restart или stop - start
+дефолт юзер и пассворд admin => потом я его поменяю на PizdaKita69
+
+Grafana Docker
+https://github.com/aussiearef/grafana-udemy/blob/ba5010d93a9d702dad042d9f572ac0f9b9a92116/docker/docker-compose.yaml
+https://github.com/aussiearef/grafana-udemy
