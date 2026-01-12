@@ -477,13 +477,13 @@ or
 A: m{a}, m{b}
 B: m{a}, m{c}
 
-A or B → m{a}, m{b}, m{c}
+A or B => m{a}, m{b}, m{c}
 
 unless - только элементы из левого vector, которых НЕТ в правом.
 A: m{a}, m{b}
 B: m{a}, m{c}
 
-A unless B → m{b}
+A unless B => m{b}
 
 Вопросы:
 1. С какими типами данных работают set operators? Только instant vectors.
@@ -554,7 +554,7 @@ avg(prometheus_http_requests_total offset 8h) by (code)
 !!!offset применяется к метрике, а не к aggregation
 
 * offset + aggregation
-ПОРЯДОК: metric offset time → aggregation → by / without
+ПОРЯДОК: metric offset time => aggregation => by / without
 пример:
 avg(prometheus_http_requests_total offset 1h) by (code)
 
@@ -582,8 +582,8 @@ rate(http_requests_total[5m]) / rate(http_requests_total[5m] offset 1h)
 
 примеры:
 проверка, что метрика ПРОПАЛА
-absent(node_cpu_seconds_total) → пусто
-absent(node_cpu_seconds_total{cpu="random"}) → { } = 1
+absent(node_cpu_seconds_total) => пусто
+absent(node_cpu_seconds_total{cpu="random"}) => { } = 1
 
 та ж опера, но с range vector
 absent_over_time(node_cpu_seconds_total[1h])
@@ -681,3 +681,114 @@ http_port = 3300
 Grafana Docker
 https://github.com/aussiearef/grafana-udemy/blob/ba5010d93a9d702dad042d9f572ac0f9b9a92116/docker/docker-compose.yaml
 https://github.com/aussiearef/grafana-udemy
+
+17) Grafana dashboards
+! Dashboards нужно делать под цель, а не 'всё в одном'
+
+Типы дашбордов и их цель:
+* Browser / Frontend dashboards (Angular / React / Web)
+Фокус: UX + ошибки + производительность
+Рекомендуемый layout:
+- Top (самое важное):
+Error rate
+Number of errors
+Top N errors (справа)
+- Middle:
+Page load time (latency)
+Page views / throughput
+- Bottom (UX):
+Core Web Vitals: LCP(Largest Contentful Paint), FID(First Input Delay), CLS(Cumulative Layout Shift)
+
+* APM(Application Performance Monitoring) dashboards (Backend / Services)
+Фокус: здоровье сервиса
+Рекомендуемый layout:
+- API calls per minute (traffic)
+- Error rate
+- Logs volume
+- Hosts / containers running the service
+- CPU usage
+- Memory usage
+
+* Infrastructure dashboards
+Фокус: состояние платформы
+Рекомендуемый layout:
+- Summary сверху:
+Hosts count
+Applications
+Events
+Alerts / warnings
+- Key metrics:
+CPU usage
+Memory usage
+Disk usage / utilization
+- Details:
+List of hosts / VMs / containers
+Databases
+Caches (Redis, etc.)
+Отвечает на вопрос: Инфраструктура выдерживает нагрузку?
+
+* Synthetic monitoring dashboards
+Фокус: доступность извне (black-box)
+Synthetic monitoring = без instrumentation ! (ничего не ставим в код / сервис)
+Например: Ping website, HTTP HEAD / GET, External dependencies
+Рекомендуемый layout:
+- Landing pages: UP / DOWN (green / red)
+- API health checks
+- Page load time
+- External systems:
+Redis (cloud)
+MySQL (cloud)
+Kafka
+RabbitMQ
+Отвечает на вопрос: Сервис вообще доступен пользователю?
+
+* Business dashboards
+Фокус: бизнес-метрики, не техметрики
+Хуйня, но если будет надо, то обычно делают такие метрики:
+- Total sales count
+- Refund count
+- Sales value
+- Refund value
+- Comparison:
+vs last week
+vs last month
+- Sales / payments by region
+- Conversion rate
+- Customer acquisition
+- Abandoned checkout
+- Top payment methods
+- Average basket value
+!это не APM, это decision-making dashboards
+
+Запомни принципы: 
+один шаблон = одна цель!!!!!
+САМОЕ ВАЖНО - ВВЕРХУ
+Errors & availability - ПРИОРИТЕТОМ
+Не мешать: infra, app, business !!!!
+!Dashboard должен отвечать на вопрос, а не 'красиво выглядеть'
+
+Вопросы:
+1. Какие типы Grafana dashboards ты знаешь?
+- Browser / Frontend
+- APM (backend)
+- Infrastructure
+- Synthetic monitoring
+- Business dashboards
+
+5. Чем synthetic monitoring отличается от APM?
+- Synthetic => black-box, без instrumentation
+- APM => внутри приложения
+
+6. Что должно быть вверху frontend dashboard?
+- Error rate
+- Errors count
+- Performance
+
+7. Что такое business dashboard? Метрики бизнеса, а не системы
+
+8. Почему нельзя делать один dashboard 'на всё'?
+- разная аудитория
+- разные цели
+- разные сигналы
+
+
