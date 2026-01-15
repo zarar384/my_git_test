@@ -7,7 +7,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
     {
         public static async Task Run()
         {
-            await RunWithMySyncImplementation();
+            await TestExternalFilmServiceAsync();
             //await RunWithHttpClient();
         }
 
@@ -220,6 +220,19 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             }
 
             return result;
+        }
+
+        private static async Task TestExternalFilmServiceAsync()
+        {
+            using var httpClient = new HttpClient(new FakeHttpMessageHandler())
+            {
+                BaseAddress = new Uri("https://filmDB-fake.api/")
+            };
+            IExternalFilmService filmService = new Services.ExternalFilmService(httpClient);
+            var filmIds = new List<int> { 1, 2, 3, 4, 5 };
+            var allFilmsHtml = await filmService.GetAllAsync(filmIds);
+
+            Console.WriteLine(allFilmsHtml);
         }
 
         private static async Task RunWithMySyncImplementation()
