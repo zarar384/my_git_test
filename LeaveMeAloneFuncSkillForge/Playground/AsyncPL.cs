@@ -7,7 +7,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
     {
         public static async Task Run()
         {
-            await TestExternalFilmServiceAsync();
+            await TestExternalFilmServiceGetFirstSuccessfulResponseAsync();
             //await RunWithHttpClient();
         }
 
@@ -222,7 +222,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             return result;
         }
 
-        private static async Task TestExternalFilmServiceAsync()
+        private static async Task TestExternalFilmServiceGetAllAsync()
         {
             using var httpClient = new HttpClient(new FakeHttpMessageHandler())
             {
@@ -231,6 +231,38 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             IExternalFilmService filmService = new Services.ExternalFilmService(httpClient);
             var filmIds = new List<int> { 1, 2, 3, 4, 5 };
             var allFilmsHtml = await filmService.GetAllAsync(filmIds);
+
+            Console.WriteLine(allFilmsHtml);
+        }
+
+        private static async Task TestExternalFilmServiceGetFirstRespondingAsync()
+        {
+            using var httpClient = new HttpClient(new FakeHttpMessageHandler())
+            {
+                BaseAddress = new Uri("https://filmDB-fake.api/")
+            };
+            IExternalFilmService filmService = new Services.ExternalFilmService(httpClient);
+
+            var filmIdFromNewService = 12;
+            var filmIdFromOldService = 1526237;
+
+            var allFilmsHtml = await filmService.GetFirstRespondingAsync(filmIdFromNewService, filmIdFromOldService);
+
+            Console.WriteLine(allFilmsHtml);
+        }
+
+        private static async Task TestExternalFilmServiceGetFirstSuccessfulResponseAsync()
+        {
+            using var httpClient = new HttpClient(new FakeHttpMessageHandler())
+            {
+                BaseAddress = new Uri("https://filmDB-fake.api/")
+            };
+            IExternalFilmService filmService = new Services.ExternalFilmService(httpClient);
+
+            var filmIdFromNewService = 12;
+            var filmIdFromOldService = 1526237;
+
+            var allFilmsHtml = await filmService.GetFirstSuccessfulResponseAsync(filmIdFromNewService, filmIdFromOldService);
 
             Console.WriteLine(allFilmsHtml);
         }
