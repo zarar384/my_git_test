@@ -621,7 +621,7 @@ avg_over_time(node_cpu_seconds_total{cpu="0"}[2h])
 ! У Prometheus НЕТ официального exporter’а для Windows
 (в отличие от Node Exporter для Linux)
 Но существуют third-party exporters, которые основаны на WMI.
-WMI (Windows Management Instrumentation) — встроенная инфраструктура Windows для:
+WMI (Windows Management Instrumentation) - встроенная инфраструктура Windows для:
 - получения системных метрик
 - управления ОС
 - автоматизации админских задач
@@ -791,4 +791,114 @@ Errors & availability - ПРИОРИТЕТОМ
 - разные цели
 - разные сигналы
 
+
+18) Alerting в Grafana
+Alerting нужен не для красоты графиков, а для быстрой реакции на проблемы!!!
+Dashboard = visibility
+Alerting = action
+
+Alert - это сигнал, который срабатывает, когда нарушено правило.
+Правило = query + condition
+
+** Alerting architecture
+Alert Rule => Notification Policy => Contact Point
+!Дуранчелус, если ты не понимаешь эту цепочку - ты не понимаешь Grafana alerting!
+
+1. Alert Rules - определяют КОГДА алерт должен сработать.
+основаны на query, имеют condition (>, <, ==, threshold) и ОБЯЗАТЕЛЬНО используют labels!
+Labels нужны для маршрутизации уведомлений. 
+Пример labels: 
+team=backend
+service=payments
+severity=critical
+country=EU
+
+!Без labels alerting превращается в мусор, в помойку, в ненужную, постную хуйню для галочки!
+
+2. Notification Policies - определяют НУЖНО ли отправлять уведомление и КОМУ отправлять.
+Работают по labels, а не по имени метрики.
+Default policy НЕ ТРОГАТЬ
+Всегда создавать nested policies
+Пример:
+team = payments => send to L2-support
+Можно фильтровать по:
+team
+service
+country
+severity
+любому label
+
+!Notification policy = routing logic!
+
+3. Contact Points - определяют КУДА отправлять алерт.
+Примеры:
+Email
+Slack
+Microsoft Teams
+PagerDuty
+OpsGenie
+Telegram
+!Contact point сам по себе НИЧЕГО не делает, пока не привязан к policy!
+
+* Email vs Chat tools
+Email:
+- медленно
+- легко пропустить
+- плохо для инцидентов
+Slack / Teams / PagerDuty:
+- мгновенно
+- видно всей команде
+- есть контекст и ссылки
+!Вывод:
+Email - только для learning / fallback
+Chat tools - для production
+
+ЧИСТО ДЛЯ РАСШИРЕНИЯ КРУГОЗОРА АКА ХУЙНЯ ТЕБЕ ЭТО НЕ НАДО - Slack alerting 
+Slack интеграция дел
+Flow: Slack Incoming Webhook URL => Grafana Contact Point => Notification Policy => Alert Rule firesается через Incoming Webhook.
+Webhook URL: копировать полностью, без токена, универсальный способ (работает и для Teams)
+
+Почему приходит несколько алертов?
+Если alert rule: параметризован по labels (country, instance, pod), условие нарушено для каждого значения.
+Grafana создаёт ОДИН alert на каждый label-set
+Это НОРМАЛЬНО и ПРАВИЛЬНО.
+
+!Best practices:
+- Labels - ОСНОВА alerting
+- Фильтровать уведомления по labels, не по метрикам
+- Default notification policy не менять
+- Один alert = одна проблема
+- Alert должен требовать действия
+- Не алертить на всё подряд
+
+Anti-patterns(хуйня не делай так)
+- Один алерт на всё
+- Алерты без labels
+- Алерты без владельца
+- Email-only alerting
+- Alert fatigue (слишком много алертов)
+
+Alerting vs Monitoring
+Monitoring:
+- показывает, что что-то не так
+- detection
+Alerting:
+- требует реакции
+- action
+Monitoring без alerting = смотришь на графики и ничего не делаешь
+Alerting без мониторинга = слепые алерты
+
+Вопросы:
+1. Как работает alerting в Grafana? Alert Rule => Notification Policy => Contact Point
+2. Зачем нужны labels в алертах? Для маршрутизации уведомлений
+3. Почему нельзя слать все алерты всем? Alert fatigue => алерты начинают игнорировать
+4. Почему email плох для alerting? Медленно, нет реакции, легко пропустить
+5. Чем alerting отличается от dashboard?
+Dashboard = visibility
+Alerting = action
+
+Кратко по алертам
+Alert rules decide WHEN
+Notification policies decide WHO
+Contact points decide WHERE
 
