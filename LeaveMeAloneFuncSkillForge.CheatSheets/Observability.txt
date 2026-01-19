@@ -902,3 +902,142 @@ Alert rules decide WHEN
 Notification policies decide WHO
 Contact points decide WHERE
 
+19) Grafana Loki - это log aggregation system, заточенный под Grafana.
+loki-config.yaml
+Он закрывает L (Logs) в MELT.
+- Loki не имеет собственного UI
+- Логи смотрят ТОЛЬКО через Grafana
+- Loki = data source для Grafana
+
+Мне нужен Loki, т.к Observability ≠ только метрики - потому что метрики показывают что сломалось, логи - почему.
+Loki решает:
+- централизованный сбор логов
+- быстрый поиск по логам
+- корреляцию логов с метриками и дашбордами в Grafana
+
+Свойства Loki:
+Log aggregation - собирает и хранит логи
+Prometheus-like модель
+- labels
+- похожая философия
+- свой query language (LogQL)
+Tight integration с Grafana
+Distributed architecture
+- горизонтально масштабируется
+Cost-effective storage
+- chunk-based storage
+- компрессия логов
+- дешевле, чем классические log systems
+
+Основной сценарий:
+Application
+  => writes logs to local files
+Agent (Promtail)
+  => reads log files
+  => pushes logs
+Grafana Loki
+  => stores logs
+Grafana
+  => queries Loki
+  => visualizes logs
+
+* Promtail - агент для Loki
+- агент, который:
+- читает лог-файлы
+- добавляет labels
+- отправляет логи в Loki
+
+работает по конфигу(promtail-config.yaml):
+- где лежат логи
+- какие файлы читать
+
+!!Promtail = agent
+!!Loki = storage + query
+!!Grafana = visualization
+
+* Способы отправки логов в Loki
+1) Promtail (рекомендуемый)
+- backend пишет логи в файл
+- promtail читает файл
+- promtail пушит в Loki
+Плюсы:
++ backend не зависит от Loki
++ стандартный подход
++ отказоустойчиво
+
+2) Push напрямую из приложения
+- приложение пушит логи в Loki API
+Минусы:
+- Loki становится зависимостью приложения
+- не рекомендуется для большинства кейсов
+ИСПОЛЬЗУЙ только если есть веская причина
+
+3) Grafana Alloy
+- более универсальный агент
+умеет:
+- logs
+- metrics
+- traces
+- OpenTelemetry signals
+Подходит если:
+- нужна расширяемая observability платформа
+- планируется OTel
+- сложная архитектура
+
+!!Promtail vs Grafana Alloy
+-- Promtail
+- проще
+- меньше компонентов
+- logs-only
+- хороший старт
+
+-- Grafana Alloy
+- универсальный агент
+- future-proof
+- поддержка OpenTelemetry
+- сложнее, но мощнее
+
+ЕСЛИ КРАТКО ПО ТЕМЕ
+Loki = logs backend
+Grafana = единственный UI
+Promtail = де-факто стандартный агент
+Прямой push из приложения - антипаттерн
+Alloy - агент будущего, Promtail - рабочая классика
+
+Вопросы: 
+1. Что такое Grafana Loki? Log aggregation system для Grafana.
+2. Есть ли у Loki собственный UI? Нет.
+3. Как обычно логи попадают в Loki? Через Promtail.
+4. Почему не рекомендуется пушить логи напрямую из приложения? Tight coupling, зависимость от Loki.
+5. Когда нужен Grafana Alloy? Когда нужна расширяемая observability платформа и OpenTelemetry.
+
+OpenTelemetry - это библиотека (SDK) для .NET, которая инструментирует приложение и позволяет стандартизированно отдавать метрики, логи и трейсы во внешние системы observability.
+
+Для монолита обычные метрики + логи.
+пример
+[ ASP.NET Monolith ]
+   | metrics (/metrics)
+   | logs (JSON)
+   v
+Prometheus -----> Grafana
+Loki <----- logs
+
+например для логов:
+dotnet add package Serilog.AspNetCore - интегрирует Serilog с ASP.NET Core (pipeline, DI, lifecycle приложения).
+dotnet add package Serilog.Sinks.Console - выводит логи в консоль (удобно для dev, Docker, Kubernetes).
+dotnet add package Serilog.Sinks.File - пишет логи в файлы на диске (для хранения, анализа и отправки в Loki/ELK).
+
+для метриков:
+dotnet add package prometheus-net.AspNetCore - интеграция Prometheus с ASP.NET Core.
+ 
+app.UseHttpMetrics(); // HTTP metrics (requests, latency, status codes)
+app.MapMetrics(); // /metrics endpoint
+
+Prometheus сам по себе не user-friendly. У него есть примитивный UI только для отладки запросов.
+Поэтому почти всегда делают так:
+
+Prometheus  ← PromQL ←  Grafana
+   ↑                    ↓
+ /metrics            Dashboards / Alerts
+ 
+
