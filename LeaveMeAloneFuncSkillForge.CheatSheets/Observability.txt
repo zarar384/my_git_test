@@ -956,7 +956,7 @@ Grafana
 !!Grafana = visualization
 
 * Способы отправки логов в Loki
-1) Promtail (рекомендуемый)
+1. Promtail (рекомендуемый)
 - backend пишет логи в файл
 - promtail читает файл
 - promtail пушит в Loki
@@ -965,14 +965,14 @@ Grafana
 + стандартный подход
 + отказоустойчиво
 
-2) Push напрямую из приложения
+2. Push напрямую из приложения
 - приложение пушит логи в Loki API
 Минусы:
 - Loki становится зависимостью приложения
 - не рекомендуется для большинства кейсов
 ИСПОЛЬЗУЙ только если есть веская причина
 
-3) Grafana Alloy
+3. Grafana Alloy
 - более универсальный агент
 умеет:
 - logs
@@ -1040,4 +1040,169 @@ Prometheus  ← PromQL ←  Grafana
    ↑                    ↓
  /metrics            Dashboards / Alerts
  
+18) OpenTelemetry (OTel) - vendor-neutral стандарт для генерации и передачи telemetry data.
+!OpenTelemetry ≠ backend
+!OpenTelemetry = instrumentation + transport
+- генерирует Metrics
+- генерирует Logs
+- генерирует Traces
+- экспортирует их в observability backend
 
+Backend примеры:
+- Prometheus (metrics)
+- Grafana Loki (logs)
+- Grafana Tempo / Jaeger (traces)
+- New Relic, Splunk и т.д.
+
+Возможные проблемы без OTel:
+- vendor lock-in
+- разные SDK под каждый backend
+- сложно мигрировать
+
+И решением = OTel:
+- один стандарт
+- одна модель данных
+- много backends
+
+OpenTelemetry ≠ Prometheus:
+OpenTelemetry				Prometheus
+Push-based				Pull-based
+Генерирует и экспортирует telemetry	Хранит и обрабатывает metrics
+Metrics + Logs + Traces			Только metrics
+Стандарт				Backend
+
+C OpenTelemetry обычно работают c двух перспектив:
+1. Developer perspective
+- есть доступ к коду
+- добавляешь SDK
+- создаёшь custom metrics / traces / logs
+SDK есть для:
+.NET, Java, Go, JS, Python, PHP, Ruby, Rust, Swift
+
+2. DevOps perspective
+- кода не трогаем
+- используем auto-instrumentation
+- собираем telemetry извне
+Пример:
+.NET profiler
+Java agent
+!Auto-instrumentation = меньше гибкости, но быстро
+
+Архитектура OpenTelemetry (упрощённо ака для ебланов):
+* Application
+  -> OpenTelemetry SDK / Auto-Instrumentation
+      -> Exporter (OTLP / Prometheus / etc)
+          -> Collector (optional, но важно)
+              -> Backend
+
+* Exporters
+Exporter = куда отправлять telemetry
+Примеры:
+- Prometheus exporter
+- OTLP exporter
+- New Relic exporter
+- Splunk exporter
+!!!!OTLP (OpenTelemetry Protocol) - универсальный стандарт
+!Будущее именно за OTLP
+
+* OpenTelemetry Collector
+Collector нужен, когда:
+- много сервисов
+- нужен контроль трафика
+- нужна агрегация, фильтрация, batching
+Collector:
+- принимает telemetry
+- обрабатывает
+- отправляет дальше
+!Collector = control plane observability
+
+!!!!!!!Push vs Pull
+- OpenTelemetry:
+ВСЕГДА push
+- Prometheus:
+ВСЕГДА pull
+
+OTel => Prometheus = через remote_write
+начинать настройку нужно с backend
+
+Prometheus + OpenTelemetry (remote_write)
+remote_write - пушить метрики дальше
+пример Endpoint: http://<prometheus-host>:<port>/api/v1/write
+
+* Grafana Alloy = Grafana distribution of OpenTelemetry Collector
+это  OpenTelemetry Collector +
+Prometheus-friendly
+Loki-friendly
+Tempo-friendly
+
+Возможности:
+--принимает metrics / logs / traces
+--источники:
+	- OpenTelemetry SDK
+	- Prometheus exporters
+	- Linux / Windows
+	- .NET / Java
+	- Kubernetes
+-- обрабатывает telemetry
+-- отправляет:
+	- metrics -> Prometheus
+	- logs -> Loki
+	- traces -> Tempo
+!Alloy = единый агент для всего
+
+promtail vs alloy:
+promtail	Grafana Alloy
+Только логи	Metrics + Logs + Traces
+Только Loki	Loki + Prometheus + Tempo
+Просто		Универсально
+Устаревает	Будущее
+
+Коротко:
+promtail - ок для обучения
+Alloy - для нормальной архитектуры
+
+Т.е подводя итоги: 
+Минимальный сетап
+- Metrics -> Prometheus
+- Logs -> Loki
+- Traces -> потом
+
+Нормальный сетап
+- Instrumentation -> OpenTelemetry
+- Transport -> Grafana Alloy
+- Storage -> Prometheus / Loki / Tempo
+- UI -> Grafana
+
+OpenTelemetry - стандарт, не backend
+OTel = Metrics + Logs + Traces
+OTel работает по push-модели
+Collector нужен при масштабе
+Grafana Alloy = лучший collector сейчас
+Prometheus остаётся backend’ом
+Grafana - только UI
+
+!!! Минимальный современный монолит без OpenTelemetry
+[ Monolith (.NET) ]
+   | metrics (/metrics) - prometheus-net
+   | logs (files)
+   v
+Prometheus  - scrapes /metrics (RPS, Error rate, Latency (P95))
+Promtail    - tails log files
+   |	
+   v
+Loki        - logs (structured logs (JSON), correlation id)
+Grafana     - UI (Error rate > X, Latency > Y) -> send alerts
+
+!!! Минимальный современный монолит с OpenTelemetry
+[ Monolith ]
+  └─ OpenTelemetry SDK
+        |
+        v
+   Grafana Alloy
+        |
+        +--> Prometheus (metrics)
+        +--> Loki (logs)
+        +--> Tempo (traces, опционально) - хуйня
+        |
+      Grafana
+НО без traces - половина ценности OTel теряется
