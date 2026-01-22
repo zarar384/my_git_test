@@ -1,0 +1,1 @@
+﻿record ReserveRequest(string OrderId, string CoffeeType);

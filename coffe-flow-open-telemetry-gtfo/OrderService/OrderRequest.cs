@@ -1,0 +1,1 @@
+﻿record OrderRequest(string CoffeeType);
