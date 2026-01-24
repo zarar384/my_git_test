@@ -1,0 +1,92 @@
+groups:
+- name: tempo-alerts # группа алертов, логически связанных с Tempo
+  rules:
+
+  - alert: TempoDown
+    expr: up{job="tempo"} == 0 # если Tempo не отдает метрику up
+    for: 1m
+    labels:
+      severity: critical # уровень важности алерта
+    annotations:
+      summary: "Tempo is down"
+      description: "Tempo has been unreachable for more than 1 minute"
+
+  - alert: HighTempoMemoryUsage
+    expr: process_resident_memory_bytes{job="tempo"} > 500000000 # больше ~500MB RAM
+    for: 2m
+    labels:
+      severity: warning # не критично, но стоит глянуть
+    annotations:
+      summary: "High memory usage on Tempo"
+      description: "Tempo is using more than 500MB of RAM for over 2 minutes"
+
+
+- name: loki-alerts # группа алертов, логически связанных с Loki
+  rules:
+
+  - alert: LokiDown
+    expr: up{job="loki"} == 0 # если Loki не отвечает
+    for: 1m
+    labels:
+      severity: critical # если локи умер - это пиздец
+    annotations:
+      summary: "Loki is down"
+      description: "Loki has been unreachable for more than 1 minute"
+
+  - alert: LokiTooManyDroppedLogs
+    expr: rate(loki_dropped_log_lines_total[1m]) > 0 # если Loki начал дропать логи
+    for: 30s
+    labels:
+      severity: warning # значит что-то не успевает обрабатываться
+    annotations:
+      summary: "Loki is dropping logs"
+      description: "Loki has been dropping log lines for the last 30 seconds"
+
+
+- name: alloy-alerts # группа алертов, связанных с Alloy
+  rules:
+
+  - alert: AlloyDown
+    expr: up{job="alloy"} == 0 # если Alloy не отвечает
+    for: 1m
+    labels:
+      severity: critical # если агент мертв - данные не доходят вообще
+    annotations:
+      summary: "Alloy is down"
+      description: "Alloy has been unreachable for more than 1 minute"
+
+  - alert: AlloyNotSendingLogs
+    expr: rate(loki_write_requests_total[1m]) == 0 # если Alloy не шлет логи в Loki
+    for: 2m
+    labels:
+      severity: warning # значит логи не доходят до Loki
+    annotations:
+      summary: "Alloy is not sending logs"
+      description: "Alloy has not sent any logs to Loki for the last 2 minutes"
+
+
+- name: dotnet-app-alerts # группа алертов для .NET приложения
+  rules:
+
+  - alert: DotNetAppDown
+    expr: up{job="dotnet-app"} == 0 # если приложение не отвечает
+    for: 1m
+    labels:
+      severity: critical # если приложение мертво - пользователи страдают
+    annotations:
+      summary: ".NET application is down"
+      description: ".NET application has been unreachable for more than 1 minute"
+
+  - alert: HighDotNetRequestLatency
+    expr: histogram_quantile(
+            0.95,
+            sum by (le) (
+              rate(http_server_request_duration_seconds_bucket{job="dotnet-app"}[5m])
+            )
+          ) > 1 # 95% запросов дольше 1 секунды
+    for: 2m
+    labels:
+      severity: warning # если ответы дольше 1 секунды - уже подозрительно
+    annotations:
+      summary: "High latency on .NET application"
+      description: "95th percentile request latency has been above 1 second for 2 minutes"

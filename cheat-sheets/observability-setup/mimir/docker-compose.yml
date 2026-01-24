@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+  mimir:
+    image: grafana/mimir:3.0.2 # официальный образ Mimir
+    container_name: mimir
+    command: -config.file=/etc/mimir.yaml
+    volumes:
+      - ./mimir.yaml:/etc/mimir.yaml # прокидываем конфиг внутрь контейнера
+      - ./data:/data                 # прокидываем папку с данными
+    ports:
+      - "9009:9009" # наружу порт Mimir

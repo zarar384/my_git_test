@@ -61,9 +61,28 @@ loki.write "local" {
 }
 
 
-# METRICS 
+# METRICS => Prometheus
 #_______________________
 # просто пример, можешь потом вырубить это все
+
+# prometheus.scrape "tempo" {
+#   targets = [
+#     { __address__ = "localhost:3200" } # Tempo HTTP API, откуда тянем метрики
+#   ]
+# }
+# 
+# prometheus.remote_write "to_prometheus" {
+#   endpoint {
+#     url = "http://localhost:9090/api/v1/write" # куда шлём метрики (Prometheus)
+#   }
+# }
+# 
+# prometheus.scrape.tempo
+#   | prometheus.remote_write.to_prometheus # связка: scrape => remote_write
+# 
+# METRICS => MIMIR
+#_______________________
+# тут мы заменяем Prometheus на Mimir
 
 prometheus.scrape "tempo" {
   targets = [
@@ -71,11 +90,11 @@ prometheus.scrape "tempo" {
   ]
 }
 
-prometheus.remote_write "to_prometheus" {
+prometheus.remote_write "to_mimir" {
   endpoint {
-    url = "http://localhost:9090/api/v1/write" # куда шлём метрики (Prometheus)
+    url = "http://localhost:9009/api/v1/push" # HTTP API Mimir
   }
 }
 
 prometheus.scrape.tempo
-  | prometheus.remote_write.to_prometheus # связка: scrape => remote_write
+  | prometheus.remote_write.to_mimir # связка: scrape => remote_write

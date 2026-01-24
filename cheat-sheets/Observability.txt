@@ -1214,9 +1214,9 @@ Grafana     - UI (Error rate > X, Latency > Y) -> send alerts
 
 Tracing отвечает на вопрос: где именно запрос замедлился или сломался, когда он проходит через несколько сервисов.
 т.е 
-Метрики → говорят что плохо
-Логи → говорят что произошло
-Трейсы → показывают путь запроса и точку проблемы
+Метрики -> говорят что плохо
+Логи -> говорят что произошло
+Трейсы -> показывают путь запроса и точку проблемы
 
 * Базовые понятия в tracing
 - Trace:
@@ -1280,14 +1280,14 @@ Grafana (UI)
 batching, filtering, processing, 
 не привязываем код напрямую к Tempo.
 
-* Context propagation — ключевая идея tracing
+* Context propagation - ключевая идея tracing
 Tracing не работает автоматически, нужно передавать trace_id и span_id между сервисами
-- HTTP: trace context → HTTP headers
-- Message broker: trace context → message payload / headers
+- HTTP: trace context -> HTTP headers
+- Message broker: trace context -> message payload / headers
 
 * Client / Server spans (важно для service graph)
-HTTP вызов → SpanKind.Client
-Приём HTTP → SpanKind.Server
+HTTP вызов -> SpanKind.Client
+Приём HTTP -> SpanKind.Server
 !!! Без этого service graph не построится
 
 * Service Graph в Grafana Tempo
@@ -1298,7 +1298,7 @@ Service Graph показывает:
 - latency между сервисами
 
 !!! Service Graph использует Prometheus
-Tempo сам экспортирует metrics → Prometheus (через remote_write)
+Tempo сам экспортирует metrics -> Prometheus (через remote_write)
 !!!! Если нет Prometheus service graph работать не будет
 
 !!!! Tempo + Prometheus 
@@ -1307,7 +1307,7 @@ Tempo config:
 - отправляет derived metrics в Prometheus
 - Prometheus используется только для service graph
 
-* TraceQL — очередной, сука, язык запросов Tempo… бляяя… как же эта вся хуйня остаебенила ебанарот…
+* TraceQL - очередной, сука, язык запросов Tempo… бляяя… как же эта вся хуйня остаебенила ебанарот…
 TraceQL вдохновился PromQL, но блять… почему тогда не придумать единый формат! нахуя мне то и то в голове держать... айтишники ебаные...
 
 Можно фильтровать по:
@@ -1328,10 +1328,10 @@ TraceQL вдохновился PromQL, но блять… почему тогд�
 Tracing нужен для distributed systems
 Trace = путь запроса
 Span = шаг внутри пути
-Context propagation — must have
-OpenTelemetry — стандарт для tracing
-Grafana Tempo — backend для трейсов
-Grafana Alloy — рекомендованный collector
+Context propagation - must have
+OpenTelemetry - стандарт для tracing
+Grafana Tempo - backend для трейсов
+Grafana Alloy - рекомендованный collector
 Service Graph требует Prometheus
 Без client/server spans граф не работает
-Tracing ≠ monitoring, но без него microservices — слепые
+Tracing ≠ monitoring, но без него microservices - слепые

@@ -15,4 +15,4 @@ scrape_configs:
           - localhost # формальность для файловых логов, всегда localhost
         labels:
           job: windows # кастомный label для удобной фильтрации логов в Grafana
-          __path__: D:/observability/loki/logs/*.log # какие файлы читать. * = все .log в папке
+          __path__: D:/observability/logs/*.log # какие файлы читать. * = все .log в папке

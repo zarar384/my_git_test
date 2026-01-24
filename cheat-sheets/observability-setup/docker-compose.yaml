@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  # GRAFANA
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000" # веб-интерфейс Grafana
+    volumes:
+      - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml # автоподключение источников
+      - ./grafana/dashboards.json:/var/lib/grafana/dashboards/dashboards.json # тестовый дашборд
+    depends_on:
+      - loki
+      - tempo
+      - mimir
+
+  # LOKI (логи)
+  loki:
+    image: grafana/loki:2.9.1
+    container_name: loki
+    ports:
+      - "3100:3100" # HTTP API Loki
+    command: -config.file=/etc/loki/config.yaml
+    volumes:
+      - ./loki/config.yaml:/etc/loki/config.yaml # конфиг Loki
+      - ./loki/data:/loki # данные логов
+
+  # TEMPO (трейсы)
+  tempo:
+    image: grafana/tempo:2.9.1
+    container_name: tempo
+    ports:
+      - "3200:3200" # HTTP API Tempo
+      - "4318:4318" # OTLP/HTTP (сюда шлёт Alloy)
+    command: -config.file=/etc/tempo/config.yaml
+    volumes:
+      - ./tempo/config.yaml:/etc/tempo/config.yaml # конфиг Tempo
+      - ./tempo/data:/tempo # данные трейсов
+
+  # MIMIR (метрики)
+  mimir:
+    image: grafana/mimir:3.0.2
+    container_name: mimir
+    ports:
+      - "9009:9009" # HTTP API Mimir
+    command: -config.file=/etc/mimir/config.yaml
+    volumes:
+      - ./mimir/config.yaml:/etc/mimir/config.yaml # конфиг Mimir
+      - ./mimir/data:/data # данные метрик
+
+  # ALLOY (агент)
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    command: run /etc/alloy/config.alloy
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy # конфиг Alloy
+      - ./logs:/logs # сюда пишет .NET приложение
+    depends_on:
+      - loki
+      - tempo
+      - mimir

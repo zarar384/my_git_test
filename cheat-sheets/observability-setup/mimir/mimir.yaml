@@ -1,0 +1,28 @@
+auth_enabled: false # вырубаем аутентификацию для локального стенда
+
+server:
+  http_listen_port: 9009 # порт API и UI Mimir
+
+common:
+  path_prefix: /data # папка для хранения всех данных внутри контейнера
+  storage:
+    filesystem:
+      directory: /data/blocks # куда складываются блоки метрик
+  replication_factor: 1 # одна копия данных (мы же в одиночном инстансе)
+  ring:
+    kvstore:
+      store: inmemory # без Consul/Etcd, всё в памяти
+
+blocks_storage:
+  backend: filesystem # храним блоки на диске
+  filesystem:
+    dir: /data/blocks
+
+ruler:
+  rule_path: /data/rules # куда Mimir будет складывать загруженные rules
+  alertmanager_url: http://alertmanager:9093 # пока можно оставить, даже если его нет
+
+ruler_storage:
+  backend: filesystem
+  filesystem:
+    dir: /data/rules
