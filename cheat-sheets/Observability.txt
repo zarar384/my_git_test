@@ -1,3 +1,4 @@
+
 1) Monolith плохо масштабируется по командам и по скорости изменений.
 Microservices увеличивают гибкость, но сильно усложняют наблюдаемость.
 
@@ -1206,3 +1207,131 @@ Grafana     - UI (Error rate > X, Latency > Y) -> send alerts
         |
       Grafana
 НО без traces - половина ценности OTel теряется
+
+
+19) Tracing - нужен только для distributed systems.
+прикол https://view.genial.ly/662de2ca7c54340013e64ade
+
+Tracing отвечает на вопрос: где именно запрос замедлился или сломался, когда он проходит через несколько сервисов.
+т.е 
+Метрики → говорят что плохо
+Логи → говорят что произошло
+Трейсы → показывают путь запроса и точку проблемы
+
+* Базовые понятия в tracing
+- Trace:
+Полный путь одного запроса через систему
+Имеет trace_id
+Состоит из span’ов
+- Span
+Один шаг работы внутри trace
+Например: HTTP запрос, SQL query, вызов сервиса
+Имеет span_id
+Есть parent / child связи
+- Trace context
+Метаданные: trace_id, span_id
+Передаются между сервисами
+- Sampling
+Трейсы дорогие
+Трассируют не все запросы, а часть
+Нужно для снижения нагрузки и объёма данных
+
+* !!! tracing в microservices!!!
+- Без tracing:
+невозможно понять, где именно запрос тормозит
+невозможно понять, какой сервис виноват
+root cause искать долго и больно
+
+- Tracing позволяет:
+найти bottleneck
+увидеть зависимости сервисов
+понять latency breakdown
+построить service graph
+
+* Инструменты tracing (кто есть кто)
+- Instrumentation (создают трейсы)
+OpenTelemetry (стандарт) - sdk для того же .NET
+Zipkin
+New Relic SDK
+
+- Backends (хранят и показывают)
+Jaeger
+Zipkin
+Grafana Tempo - эту залупу я использую
+
+* Grafana Tempo - подключается к Tempo, визуализирует трейсы, использует TraceQL.
+Дальше будет тоже самое, только с заумными словами:
+- tracing backend
+- open-source
+- масштабируемый
+- НЕ требует БД
+- хранит трейсы в: local disk или S3 / GCS / Azure Blob
+
+!!!!!Рекомендованная современная архитектура
+Application
+  ↓ (OTLP)
+Grafana Alloy (collector)
+  ↓
+Grafana Tempo (traces)
+  ↓
+Grafana (UI)
+
+где Alloy = единая точка приёма,
+batching, filtering, processing, 
+не привязываем код напрямую к Tempo.
+
+* Context propagation — ключевая идея tracing
+Tracing не работает автоматически, нужно передавать trace_id и span_id между сервисами
+- HTTP: trace context → HTTP headers
+- Message broker: trace context → message payload / headers
+
+* Client / Server spans (важно для service graph)
+HTTP вызов → SpanKind.Client
+Приём HTTP → SpanKind.Server
+!!! Без этого service graph не построится
+
+* Service Graph в Grafana Tempo
+Service Graph показывает:
+- какие сервисы вызывают друг друга
+- RPS
+- ошибки
+- latency между сервисами
+
+!!! Service Graph использует Prometheus
+Tempo сам экспортирует metrics → Prometheus (через remote_write)
+!!!! Если нет Prometheus service graph работать не будет
+
+!!!! Tempo + Prometheus 
+Tempo config:
+- включает remote_write
+- отправляет derived metrics в Prometheus
+- Prometheus используется только для service graph
+
+* TraceQL — очередной, сука, язык запросов Tempo… бляяя… как же эта вся хуйня остаебенила ебанарот…
+TraceQL вдохновился PromQL, но блять… почему тогда не придумать единый формат! нахуя мне то и то в голове держать... айтишники ебаные...
+
+Можно фильтровать по:
+- span name
+- duration
+- status
+- service name
+- attributes
+
+Например:
+найти медленные запросы
+найти ошибки
+найти конкретный сервис
+найти trace с N spans
+и тд, и тп
+
+Вкратце и по существу:
+Tracing нужен для distributed systems
+Trace = путь запроса
+Span = шаг внутри пути
+Context propagation — must have
+OpenTelemetry — стандарт для tracing
+Grafana Tempo — backend для трейсов
+Grafana Alloy — рекомендованный collector
+Service Graph требует Prometheus
+Без client/server spans граф не работает
+Tracing ≠ monitoring, но без него microservices — слепые

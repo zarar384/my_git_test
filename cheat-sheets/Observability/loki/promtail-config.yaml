@@ -1,18 +1,18 @@
 server:
-  http_listen_port: 9080
-  grpc_listen_port: 0
+  http_listen_port: 9080 # порт, на котором агент поднимает веб-интерфейс (/metrics, /ready)
+  grpc_listen_port: 0 # gRPC агента вырубаем, не нужен для простого локального сетапа
 
 positions:
-  filename: D:/observability/loki/positions.yaml
+  filename: D:/observability/loki/positions.yaml # файл, где хранится позиция чтения логов (чтобы не читать заново)
 
 clients:
-  - url: http://localhost:3100/loki/api/v1/push
+  - url: http://localhost:3100/loki/api/v1/push # адрес Loki, куда агент шлет логи
 
 scrape_configs:
-  - job_name: windows-logs
+  - job_name: windows-logs # имя джобы, потом видно в Grafana как label job=windows
     static_configs:
       - targets:
-          - localhost
+          - localhost # формальность для файловых логов, всегда localhost
         labels:
-          job: windows
-          __path__: D:/observability/loki/logs/*.log
+          job: windows # кастомный label для удобной фильтрации логов в Grafana
+          __path__: D:/observability/loki/logs/*.log # какие файлы читать. * = все .log в папке

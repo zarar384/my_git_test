@@ -1,0 +1,74 @@
+server:
+  http_listen_port: 12345 # порт alloy
+
+logging:
+  level: info
+
+
+# TRACES => TEMPO (HTTP)
+#_______________________
+
+otelcol.receiver.otlp "otlp_in" {
+  # grpc {}         #  отключено, раскоментируй, если надо
+  http {}           # вкл только OTLP/HTTP
+}
+
+otelcol.processor.batch "batch" {}
+
+otelcol.exporter.otlp "to_tempo" {
+  endpoint = "localhost:4318"   # OTLP/HTTP порт Tempo
+  tls {
+    insecure = true
+  }
+}
+
+otelcol.receiver.otlp.otlp_in
+  | otelcol.processor.batch.batch
+  | otelcol.exporter.otlp.to_tempo
+
+
+# LOGS => LOKI
+#_______________________
+
+# Источник логов (аналог promtail)
+loki.source.file "windows_logs" {
+  targets = [
+    { __path__ = "C:/logs/*.log" }   # папка под реальные логи
+  ]
+}
+
+# Пайплайн обработки логов
+loki.pipeline "logs_pipeline" {
+  forward_to = [loki.write.to_loki.receiver]
+}
+
+# Экспортер в Loki
+loki.write "to_loki" {
+  endpoint {
+    url = "http://localhost:3100/loki/api/v1/push"
+  }
+}
+
+# Связка источник => пайплайн
+loki.source.file.windows_logs
+  | loki.pipeline.logs_pipeline
+
+
+# METRICS 
+#_______________________
+# просто пример, можешь потом хуйнуть это все
+
+prometheus.scrape "tempo" {
+  targets = [
+    { __address__ = "localhost:3200" }
+  ]
+}
+
+prometheus.remote_write "to_prometheus" {
+  endpoint {
+    url = "http://localhost:9090/api/v1/write"
+  }
+}
+
+prometheus.scrape.tempo
+  | prometheus.remote_write.to_prometheus

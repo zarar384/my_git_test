@@ -1,0 +1,26 @@
+auth_enabled: false # вкл / выкл аутентификацию в Tempo (для локального сетапа не нужна)
+
+server:
+  http_listen_port: 3200 # HTTP API Tempo (Grafana ходит сюда за трейcами)
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc: # включает приём трейсов по OTLP/gRPC (порт 4317 по умолчанию)
+        http: # включает приём трейсов по OTLP/HTTP (порт 4318 по умолчанию)
+
+ingester:
+  trace_idle_period: 10s # через сколько бездействия трейс считается завершённым
+  max_block_bytes: 1_000_000 # максимальный размер блока трейсов в памяти перед сбросом на диск
+  max_block_duration: 5m # максимальное время жизни блока, даже если он ещё не полный
+
+compactor:
+  compaction:
+    block_retention: 1h # сколько хранить трейсы (через час старые блоки удаляются)
+
+storage:
+  trace:
+    backend: local # хранилище трейсов на локальном диске
+    local:
+      path: D:/observability/tempo/data # папка, где Tempo хранит все трейс-блоки
