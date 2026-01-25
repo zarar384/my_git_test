@@ -1335,3 +1335,101 @@ Grafana Alloy - рекомендованный collector
 Service Graph требует Prometheus
 Без client/server spans граф не работает
 Tracing ≠ monitoring, но без него microservices - слепые
+
+20) Grafana Mimir - это Prometheus на стероидах для больших масштабов = distributed, scalable, HA(High Availability) storage для Prometheus-метрик.
+Prometheus:
+- single-node
+- не HA
+- не горизонтально масштабируем
+- плохо подходит для миллионов / миллиардов метрик и long-term storage
+И Mimir решает эти проблемы!
+!Суть мимирки-пипирки - НЕ заменяет Prometheus, а расширяет.
+
+Что даёт Mimir (очень много букав, но это скорее для девопсов):
+- High Availability (репликация)
+- Horizontal scaling
+- Long-term storage (S3 / GCS / Azure Blob)
+- Multi-tenancy (org / tenant isolation)
+- 100% PromQL compatibility
+- Remote Write API (/api/v1/push)
+- Alerting engine (Ruler + Alertmanager)
+
+* Данные в Мимир попадают: 
+Node Exporter
+    ↓
+Prometheus (scrape)
+    ↓ remote_write
+Grafana Mimir (/api/v1/push)
+    ↓
+Object Storage (S3 / GCS / FS)
+
+Prometheus продолжает:
+- scrape
+- rules
+- labels
+- PromQL
+
+Mimir берёт на себя:
+- хранение
+- масштаб
+- HA
+
+* Архитектура Mimir (вкратце)
+- Write path
+Distributor — точка входа
+Ingester — пишет time series
+Object Storage — хранение
+Compactor — дедупликация + оптимизация
+
+- Read path
+Query Frontend — cache
+Query Scheduler — очередь запросов (опционально)
+Querier — читает данные
+
+* Монолитный режим (для обучения)
+Для локального старта:
+Single binary
+One ingester
+Replication factor = 1
+File system storage
+Multi-tenancy = off
+!!!!Это НЕ прод, это learning mode.
+
+* Multi-tenancy (важно)
+Один Prometheus = один tenant
+Tenant передаётся через HTTP header:
+X-Scope-OrgID: tenant-name
+
+В итоге:
+разные Prometheus → разные tenants
+Grafana → разные data sources → разные org’и
+
+* Alerts в Mimir
+- Почему НЕ Prometheus Alertmanager:
+Prometheus не масштабируется
+нет multi-tenancy
+проблемы с большим числом алертов
+
+- В Mimir:
+Ruler — вычисляет правила
+Alertmanager — дедупликация + нотификации
+Используются те же rule files, что и в Prometheus
+GitOps-friendly (через API / mimirtool)
+
+* Storage: Common vs Blocks
+Common storage — внутренние данные Mimir
+Blocks storage — реальные time series (метрики)
+!Обычно оба на S3 / GCS / Azure Blob
+
+* !!!! Когда нужен Mimir
+НЕ нужен:
+- пет-проекты
+- один Prometheus
+- небольшой монолит
+
+Нужен:
+- много Prometheus
+- миллионы метрик
+- long-term storage
+- multi-tenancy
+- enterprise / cloud
