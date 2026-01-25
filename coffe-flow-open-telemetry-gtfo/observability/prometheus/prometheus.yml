@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 15s # как часто скрейпим метрики
+
+scrape_configs:
+
+  - job_name: "alloy" # метрики самого Alloy
+    static_configs:
+      - targets:
+          - "alloy:12345" # HTTP порт Alloy

@@ -1,0 +1,36 @@
+logging {
+  level  = "info" # уровень логирования Alloy
+  format = "logfmt" # формат логов
+}
+
+# вход от .NET по OTLP/HTTP
+otelcol.receiver.otlp "otlp_in" {
+  http {} # .NET будет слать сюда
+
+  output {
+    metrics = [otelcol.exporter.prometheus.remote_write.input] # метрики в Prometheus
+    logs    = [otelcol.exporter.loki.to_loki.input] # логи в Loki
+  }
+}
+
+# экспортер метрик в Prometheus
+otelcol.exporter.prometheus "remote_write" {
+  forward_to = [prometheus.remote_write.local.receiver]
+}
+
+prometheus.remote_write "local" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write" # API Prometheus
+  }
+}
+
+# экспортер логов в Loki
+otelcol.exporter.loki "to_loki" {
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push" # HTTP API Loki
+  }
+}

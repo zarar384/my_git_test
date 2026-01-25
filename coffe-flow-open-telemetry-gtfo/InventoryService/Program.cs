@@ -1,9 +1,13 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Serilog;
+using Serilog.Enrichers.Span;
+using Serilog.Sinks.Grafana.Loki;
 using System.Diagnostics.Metrics;
 
 
@@ -17,17 +21,25 @@ builder3.Services.AddOpenTelemetry()
     .WithTracing(t =>
     {
         t.AddAspNetCoreInstrumentation();   // Trace incoming HTTP requests
-        t.AddOtlpExporter();                // Send traces via OTLP
+        t.AddOtlpExporter();                // Send traces via OTLP -> Alloy
     })
     // Metrics pipeline
     .WithMetrics(m =>
     {
         m.AddAspNetCoreInstrumentation();   // HTTP request metrics
         m.AddRuntimeInstrumentation();      // GC, threads, memory metrics
-        m.AddOtlpExporter();                // Send metrics via OTLP
+        m.AddOtlpExporter();                // Send metrics via OTLP -> Alloy
     });
 
 
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .Enrich.WithSpan()                         // traceId / spanId
+    .WriteTo.Console()
+    .WriteTo.GrafanaLoki("http://loki:3100")   // Loki в docker-сети
+    .CreateLogger();
+
+builder3.Host.UseSerilog();
 
 var app3 = builder3.Build();
 
@@ -55,8 +67,10 @@ app3.MapGet("/", () => "Inventory Service is running");
 
 app3.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
-app3.MapPost("/reserve", (ReserveRequest request) =>
+app3.MapPost("/reserve", (ReserveRequest request, ILogger<Program> logger) =>
 {
+    logger.LogInformation("Reserve request {OrderId} for {CoffeeType}", request.OrderId, request.CoffeeType);
+
     var beansNeeded = request.CoffeeType switch
     {
         "espresso" => 1,

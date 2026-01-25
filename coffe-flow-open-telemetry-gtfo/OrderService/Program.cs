@@ -49,7 +49,7 @@ builder.Services.AddHttpClient("inventory", c => c.BaseAddress = new Uri("http:/
 
 var app = builder.Build();
 
-var meter = new Meter("inventory-service");
+var meter = new Meter("order-service");
 
 var ordersCounter = meter.CreateCounter<long>("coffee_orders_total");
 

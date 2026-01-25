@@ -31,7 +31,7 @@ builder2.Services.AddOpenTelemetry()
 
 var app2 = builder2.Build();
 
-var meter = new Meter("inventory-service");
+var meter = new Meter("brew-service");
 
 var brewDuration = meter.CreateHistogram<double>("coffee_brew_duration_seconds");
 var brewErrors = meter.CreateCounter<long>("coffee_brew_errors_total");
