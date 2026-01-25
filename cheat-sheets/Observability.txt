@@ -1376,15 +1376,15 @@ Mimir берёт на себя:
 
 * Архитектура Mimir (вкратце)
 - Write path
-Distributor — точка входа
-Ingester — пишет time series
-Object Storage — хранение
-Compactor — дедупликация + оптимизация
+Distributor - точка входа
+Ingester - пишет time series
+Object Storage - хранение
+Compactor - дедупликация + оптимизация
 
 - Read path
-Query Frontend — cache
-Query Scheduler — очередь запросов (опционально)
-Querier — читает данные
+Query Frontend - cache
+Query Scheduler - очередь запросов (опционально)
+Querier - читает данные
 
 * Монолитный режим (для обучения)
 Для локального старта:
@@ -1401,8 +1401,8 @@ Tenant передаётся через HTTP header:
 X-Scope-OrgID: tenant-name
 
 В итоге:
-разные Prometheus → разные tenants
-Grafana → разные data sources → разные org’и
+разные Prometheus -> разные tenants
+Grafana -> разные data sources -> разные org’и
 
 * Alerts в Mimir
 - Почему НЕ Prometheus Alertmanager:
@@ -1411,14 +1411,14 @@ Prometheus не масштабируется
 проблемы с большим числом алертов
 
 - В Mimir:
-Ruler — вычисляет правила
-Alertmanager — дедупликация + нотификации
+Ruler - вычисляет правила
+Alertmanager - дедупликация + нотификации
 Используются те же rule files, что и в Prometheus
 GitOps-friendly (через API / mimirtool)
 
 * Storage: Common vs Blocks
-Common storage — внутренние данные Mimir
-Blocks storage — реальные time series (метрики)
+Common storage - внутренние данные Mimir
+Blocks storage - реальные time series (метрики)
 !Обычно оба на S3 / GCS / Azure Blob
 
 * !!!! Когда нужен Mimir
@@ -1433,3 +1433,118 @@ Blocks storage — реальные time series (метрики)
 - long-term storage
 - multi-tenancy
 - enterprise / cloud
+
+21) AI в observability - НАХУЯ и спрашивается ЗАЧЕМ?
+Проблемы классической observability в больших системах:
+- слишком много метрик / логов / трейсов
+- alert fatigue (100 алертов - игноришь все)
+- сложно найти root cause
+- статические thresholds не работают при сезонности и нелинейной нагрузке
+
+AI решает это за счёт:
+- anomaly detection (не по порогу, а по поведению)
+- корреляции сигналов (метрики + логи + трейсы)
+- предсказания инцидентов
+- суммаризации логов
+- ускорения RCA
+
+Существует Grafana Cloud, но он платный, поэтому идет в пизду корпорат злоебучий.
+Базированный способ через ChatGPT / Gemini - вручную.
+Или через Grafana Plugin + LLM API:
+Grafana Plugin
+   ↓
+Grafana LLM (proxy)
+   ↓
+OpenAI / Gemini API
+
+плагины НЕ хранят API keys
+ключи живут в Grafana LLM
+
+* Почему это полезно SRE(Site Reliability Engineering)
+Без AI:
+алерт -> паника -> ручной анализ
+
+С AI:
+алерт -> предполагаемый root cause
+алерт -> suggested remediation
+MTTR ↓↓↓
+
+* Prompt engineering - НУЖНО ЗНАТЬ ДЛЯ ОБЩЕГО ОЗНАКОМЛЕНИЯ
+Ключевые техники:
+1. Context framing - система, метрика, симптом
+2. Few-shot - примеры
+3. Chain of thought - “explain step by step”
+4. Output format - PromQL / YAML / JSON
+5. Persona - “you are a senior SRE”
+6. Scope limiting - “only one PromQL line”
+
+22) Grafana: High Availability (HA) = Grafana продолжает работать при сбоях.
+* Базовая HA-модель: 
+- 2–3 экземпляра Grafana
+- Развёрнуты VM или Docker containers
+- Перед ними Load Balance
+
+* Общее хранилище состояния - все инстансы Grafana ОБЯЗАНЫ использовать одну и ту же БД (Postgres / MySQL).
+Зачем:
+- dashboards
+- panels
+- alert rules
+- users
+- orgs
+! БД = SPOF -> сама БД тоже должна быть HA
+- primary + replica
+- failover
+
+* Конфигурация (grafana.ini)
+Проблема: каждый инстанс имеет свой grafana.ini и разные конфиги = undefined behavior
+Решение: shared config, который лежит на network drive или shared filesystem и все инстансы читают один и тот же конфиг.
+
+* Alerting в HA
+Проблема: каждый инстанс Grafana = свой Alertmanager и из-за этого один алерт -> N уведомлений.
+! Нужно одно уведомление
+
+* Unified Alerting - Grafana решает это через Alertmanager clustering.
+нужно включить unified alerting и заставить Alertmanager’ы знать друг о друге.
+В grafana.ini:
+[unified_alerting]
+enabled = true
+ha_peers = grafana-1:9094,grafana-2:9094,grafana-3:9094
+
+9094 - порт Alertmanager
+! не порт Grafana (3000)
+и в результате алерты поднимаются везде и уведомление отправляется один раз.
+
+* Ограничение hardcoded peers
+Проблема:
+- autoscaling
+- динамические IP / DNS
+- нельзя руками обновлять ha_peers
+Решение: Redis
+
+* Alerting HA через Redis (production way)
+Redis нужен тут, чтобы:
+- хранить состояние Alertmanager cluster
+- синхронизировать инстансы
+- и он подходит для autoscaling
+В grafana.ini:
+[unified_alerting]
+enabled = true
+ha_redis_address = redis:6379
+ha_redis_username = ...
+ha_redis_password = ...
+ha_redis_db = 0
+ha_redis_prefix = grafana
+
+Теперь Grafana instances могут появляться и исчезать, и Alertmanager cluster самообновляется!
+
+* Grafana: Scalability
+!!HA ≠ Scalability, потому что HA защита от падений, а  Scalability защита от нагрузки.
+
+!!! Grafana в проде без HA и Redis - это демо, а не observability.
+Запомни главное:
+- High Availability (HA) Grafana = минимум 2 инстанса
+- Общая БД - обязательно
+- Один grafana.ini - обязательно
+- Unified Alerting - обязательно
+- Redis - обязательно при autoscaling
+- Hardcoded IP - только для small setups
