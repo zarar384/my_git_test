@@ -1,5 +1,6 @@
 ﻿using LeaveMeAloneFuncSkillForge.API;
 using LeaveMeAloneFuncSkillForge.Interfaces;
+using System.Diagnostics;
 
 namespace LeaveMeAloneFuncSkillForge.Playground
 {
@@ -7,7 +8,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
     {
         public static async Task Run()
         {
-            await TestExternalFilmServiceGetFirstSuccessfulResponseAsync();
+            await ConfigureAwaitContextDemoAsync();
             //await RunWithHttpClient();
         }
 
@@ -436,6 +437,86 @@ namespace LeaveMeAloneFuncSkillForge.Playground
                 Console.WriteLine("Price calculation canceled");
             }
         }
+
+        // Starts all tasks concurrently and processes each result upon completion, using Task.Delay timers.
+        private static async Task ProcessTasksAsync()
+        {
+            // only for demo purposes: output to console
+            Trace.Listeners.Add(new ConsoleTraceListener());
+
+            // create a task sequence
+            Task<int> task1 = DelayAndReturnAsync(2);
+            Task<int> task2 = DelayAndReturnAsync(3);
+            Task<int> task3 = DelayAndReturnAsync(1);
+            
+            Task<int>[] tasks = { task1, task2, task3 };
+
+            var tQ = from t in tasks
+                     select AwaitAndProcessAsync(t);
+
+            Task[] processingAllTasks = tQ.ToArray();
+
+            // or using LINQ method syntax:
+            //Task[] p = new Task<int>[]
+            //{
+            //    DelayAndReturnAsync(2),
+            //    DelayAndReturnAsync(3),
+            //    DelayAndReturnAsync(1)
+            //}
+            //.Select(async t =>
+            //{
+            //    var result = await t;
+            //    Trace.WriteLine(result);
+            //})
+            //.ToArray();
+
+            // wait for all processing to complete
+            await Task.WhenAll(processingAllTasks);
+        }
+
+        private static async Task<int> DelayAndReturnAsync(int value)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(value));
+            return value;
+        }
+
+        private async static Task AwaitAndProcessAsync(Task<int> task)
+        {
+            int result = await task;
+            Trace.WriteLine(result);
+        }
+
+        private static async Task ConfigureAwaitContextDemoAsync()
+        {
+            Console.WriteLine($"Starting on thread: {Thread.CurrentThread.ManagedThreadId}");
+            Console.WriteLine();
+
+            Console.WriteLine("With captured context");
+            await AwaitWithCapturedContextAsync();
+
+            Console.WriteLine();
+            Console.WriteLine("Now without captured context");
+            await AwaitWithoutCapturedContextAsync();
+        }
+
+        private static async Task AwaitWithCapturedContextAsync()
+        {
+            Console.WriteLine($"Before await: {Thread.CurrentThread.ManagedThreadId}");
+
+            // resumes on captured context (e.g., UI thread)
+            await Task.Delay(300);
+            Console.WriteLine($"After await (captured context): {Thread.CurrentThread.ManagedThreadId}");
+        }
+
+        private static async Task AwaitWithoutCapturedContextAsync()
+        {
+            Console.WriteLine($"Before await: {Thread.CurrentThread.ManagedThreadId}");
+
+            // does not resume on captured context
+            await Task.Delay(300).ConfigureAwait(false); // no effect in console apps (no SynchronizationContext) neither at ASP.NET Core apps
+            Console.WriteLine($"After await (no captured context): {Thread.CurrentThread.ManagedThreadId}");
+        }
+
         #region helpers
         private sealed class Order
         {
