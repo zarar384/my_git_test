@@ -8,7 +8,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
     {
         public static async Task Run()
         {
-            await ConfigureAwaitContextDemoAsync();
+            await TestAsyncExceptionHandling();
             //await RunWithHttpClient();
         }
 
@@ -266,6 +266,35 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             var allFilmsHtml = await filmService.GetFirstSuccessfulResponseAsync(filmIdFromNewService, filmIdFromOldService);
 
             Console.WriteLine(allFilmsHtml);
+        }
+
+        private static async Task TestAsyncExceptionHandling()
+        {
+            Console.WriteLine("ASYNC EXCEPTION HANDLING TEST");
+            Console.WriteLine();
+
+            using var httpClient = new HttpClient(new FakeHttpMessageHandler())
+            {
+                BaseAddress = new Uri("https://fake.api/")
+            };
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
+            IMyAsyncInterface service = new MySyncImplementation(new FeatureFlagService(httpClient));
+
+            try
+            {
+                await service.GetPaymentMethodWithExceptionAsync(cts.Token);
+                Console.WriteLine("[OK] Operation succeeded");
+            }
+            catch(InvalidOperationException ex)
+            {
+                Console.WriteLine($"Caught InvalidOperationException: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Caught general exception: {ex.Message}");
+            }
         }
 
         private static async Task RunWithMySyncImplementation()

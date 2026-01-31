@@ -37,18 +37,41 @@ namespace LeaveMeAloneFuncSkillForge.Services
             }
         }
 
-        public Task<int> GetIntAsync()
+        public async Task<string> GetPaymentMethodWithExceptionAsync(CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(_random.Next(1, 101));
+            bool chance50 = _random.Next(2) == 0;
+
+            // Simulate some synchronous work that throws an exception
+            await Task.Delay(100, cancellationToken);
+
+            if (chance50)
+            {
+                throw new InvalidOperationException("[EXCEPTION] Task failed due to some issue.");
+            }
+
+            // Check feature flag
+            var paymentMethod = await GetPaymentMethodAsync(cancellationToken);
+
+            if(string.IsNullOrEmpty(paymentMethod))
+            {
+                throw new Exception("[EXCEPTION] Payment method is not available.");
+            }
+
+            return paymentMethod;
         }
 
-        public async Task<string> GetPaymentMethodAsync()
+        public async Task<string> GetPaymentMethodAsync(CancellationToken cancellationToken = default)
         {
-            var isNewEnabled = await _featureFlagService.IsNewPaymentMethodEnabledAsync();
+            var isNewEnabled = await _featureFlagService.IsNewPaymentMethodEnabledAsync(cancellationToken);
 
             return isNewEnabled
                 ? "NewPaymentMethod"
                 : "OldPaymentMethod";
+        }
+
+        public Task<int> GetIntAsync()
+        {
+            return Task.FromResult(_random.Next(1, 101));
         }
 
         public async Task<double> CalculatePriceAsync(Transaction transaction)

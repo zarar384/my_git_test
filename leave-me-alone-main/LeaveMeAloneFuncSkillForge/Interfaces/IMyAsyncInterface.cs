@@ -10,7 +10,9 @@
 
         Task DoSomethingWithExceptionAsync();
 
-        Task<string> GetPaymentMethodAsync();
+        Task<string> GetPaymentMethodAsync(CancellationToken cancellationToken = default);
+
+        Task<string> GetPaymentMethodWithExceptionAsync(CancellationToken cancellationToken = default);
 
         Task<double> CalculatePriceAsync(Transaction transaction);
 

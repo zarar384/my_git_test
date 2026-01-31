@@ -5,13 +5,16 @@ namespace LeaveMeAloneFuncSkillForge.Services
 {
     public sealed class FeatureFlagService: IFeatureFlagService
     {
+        private readonly HttpClient _httpClient;
         private readonly Random _random = new Random();
         // cashe completed task - no need to check multiple times
         private readonly Task<bool> _paymentMethodFeatureEnabledTask;
-        private readonly Task<bool> _checkoutfeatureEnabledTask;
+        private  Task<bool>? _checkoutfeatureEnabledTask;
 
         public FeatureFlagService(HttpClient httpClient)
         {
+            _httpClient = httpClient;
+
             bool chance50 = _random.Next(2) == 0;
 
             // set the environment variable to simulate feature flag
@@ -24,22 +27,38 @@ namespace LeaveMeAloneFuncSkillForge.Services
             _paymentMethodFeatureEnabledTask = Task.FromResult(value);
 
             // simulate async check for new checkout feature flag
-            _checkoutfeatureEnabledTask = LoadFlagNewCheckoutAsync(httpClient);
+            //_checkoutfeatureEnabledTask = LoadFlagNewCheckoutAsync(httpClient, cancellationToken);
         }
 
-        public async Task<bool> IsNewPaymentMethodEnabledAsync()
+        public Task<bool> IsNewPaymentMethodEnabledAsync(CancellationToken cancellationToken = default)
         {
-            return await _paymentMethodFeatureEnabledTask;
+            //return await _paymentMethodFeatureEnabledTask;
+            return _checkoutfeatureEnabledTask ??= LoadFlagAsync(_httpClient, "feature/new-checkout", cancellationToken);
         }
 
-        private static async Task<bool> LoadFlagNewCheckoutAsync(HttpClient client)
+        private static async Task<bool> LoadFlagAsync
+            (HttpClient client,
+            string uri,
+            CancellationToken cancellationToken = default)
         {
             try
             {
-                var response = await client.GetStringAsync("feature/new-checkout");
+                var response = await client.GetStringAsync(
+                    uri,
+                    cancellationToken);
 
                 // fake API returns "true" / "false"
                 return true;
+            }
+            catch(OperationCanceledException)
+            {
+                Console.WriteLine("[FeatureFlagService] Loading new checkout feature flag was canceled.");
+                throw; // propagate cancellation
+            }
+            catch(HttpRequestException ex)
+            {
+                Console.WriteLine($"[FeatureFlagService] HTTP error while loading new checkout feature flag: {ex.Message}");
+                return false; // in case of HTTP error, disable the feature
             }
             catch
             {
@@ -47,9 +66,9 @@ namespace LeaveMeAloneFuncSkillForge.Services
             }
         }
 
-        public Task<bool> IsNewCheckoutEnabledAsync()
+        public Task<bool> IsNewCheckoutEnabledAsync(CancellationToken cancellationToken = default)
         {
-            return _checkoutfeatureEnabledTask;
+            return _checkoutfeatureEnabledTask ??= LoadFlagAsync(_httpClient, "feature/new-checkout", cancellationToken);
         }
     }
 }
