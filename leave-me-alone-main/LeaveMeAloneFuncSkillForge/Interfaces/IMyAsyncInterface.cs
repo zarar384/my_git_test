@@ -21,5 +21,9 @@
             IProgress<double>? progress = null,
             CancellationToken cancellationToken = default);
 
+        ValueTask<double> CalculatePriceSmartWithProgressAsync(
+            Transaction transaction,
+            IProgress<double>? progress = null,
+            CancellationToken cancellationToken = default);
     }
 }

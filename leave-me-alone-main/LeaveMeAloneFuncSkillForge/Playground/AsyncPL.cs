@@ -8,7 +8,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
     {
         public static async Task Run()
         {
-            await TestAsyncExceptionHandling();
+            await TestValueTaskScenarioAsync();
             //await RunWithHttpClient();
         }
 
@@ -544,6 +544,39 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             // does not resume on captured context
             await Task.Delay(300).ConfigureAwait(false); // no effect in console apps (no SynchronizationContext) neither at ASP.NET Core apps
             Console.WriteLine($"After await (no captured context): {Thread.CurrentThread.ManagedThreadId}");
+        }
+
+        private static async Task TestValueTaskScenarioAsync()
+        {
+            Console.WriteLine("Testing ValueTask scenarios");
+            Console.WriteLine();
+
+            using var httpClient = new HttpClient(new FakeHttpMessageHandler())
+            {
+                BaseAddress = new Uri("https://fake.api/")
+            };
+
+            IFeatureFlagService featureFlagService = new FeatureFlagService(httpClient);
+            var service = new MySyncImplementation(featureFlagService);
+
+            var transaction = new Transaction { Amount = 250.00m };
+
+            // warm-up load feature flag for slow path
+            await featureFlagService.IsNewCheckoutEnabledAsync();
+
+            // test fast path
+            // now ValueTask should hit fast path and complete synchronously
+            var sw = Stopwatch.StartNew(); // measure time
+
+            for(int i = 0; i < 10; i++)
+            {
+                double price = await service.CalculatePriceSmartWithProgressAsync(transaction);
+                Console.WriteLine($"Price #{i + 1}: {price:N2}");
+            }
+
+            sw.Stop();
+            Console.WriteLine($"Total time for 10 calls: {sw.ElapsedMilliseconds} ms");
+            Console.WriteLine("END");
         }
 
         #region helpers

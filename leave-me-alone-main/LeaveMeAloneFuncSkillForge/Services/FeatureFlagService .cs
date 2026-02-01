@@ -70,5 +70,19 @@ namespace LeaveMeAloneFuncSkillForge.Services
         {
             return _checkoutfeatureEnabledTask ??= LoadFlagAsync(_httpClient, "feature/new-checkout", cancellationToken);
         }
+
+        // ValueTask for fast path access
+        public ValueTask<bool> IsNewCheckoutEnabledFastAsync(CancellationToken cancellationToken = default)
+        {
+            // fast path - return cached result if available
+            if (_checkoutfeatureEnabledTask != null && 
+                _checkoutfeatureEnabledTask.IsCompletedSuccessfully)
+            {
+                return new ValueTask<bool>(_checkoutfeatureEnabledTask.Result);
+            }
+
+            // otherwise, slow path, load asynchronously
+            return new ValueTask<bool>(IsNewCheckoutEnabledAsync(cancellationToken));
+        }
     }
 }
