@@ -14,6 +14,10 @@
 
         Task<string> GetPaymentMethodWithExceptionAsync(CancellationToken cancellationToken = default);
 
+        Task<string> BuildCheckoutSummaryAsync(
+            Transaction transaction,
+            CancellationToken cancellationToken = default);
+
         Task<double> CalculatePriceAsync(Transaction transaction);
 
         Task<double> CalculatePriceWithProgressAsync(

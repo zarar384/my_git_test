@@ -8,8 +8,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
     {
         public static async Task Run()
         {
-            await TestValueTaskScenarioAsync();
-            //await RunWithHttpClient();
+            await TestValueTaskWhenAllConsuptionAsync();
         }
 
         private static async Task TestApiClientFactoryAsync()
@@ -577,6 +576,46 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             sw.Stop();
             Console.WriteLine($"Total time for 10 calls: {sw.ElapsedMilliseconds} ms");
             Console.WriteLine("END");
+        }
+
+        private static async Task TestValueTaskWhenAllConsuptionAsync()
+        {
+            Console.WriteLine();
+            Console.WriteLine("VALUETASK + WHENALL CONSUMPTION TEST");
+            Console.WriteLine();
+
+            using var httpClient = new HttpClient(new FakeHttpMessageHandler())
+            {
+                BaseAddress = new Uri("https://fake.api/")
+            };
+
+            IFeatureFlagService featureFlagService = new FeatureFlagService(httpClient);
+            var service = new MySyncImplementation(featureFlagService);
+
+            var transaction = new Transaction
+            {
+                Id = 42,
+                Amount = 499.99m,
+                Time = DateTime.Now
+            };
+
+            // warm-up load feature flag for slow path
+            await featureFlagService.IsNewCheckoutEnabledAsync();
+
+            try
+            {
+                // ValueTask -> AsTask -> Task.WhenAll -> await result
+                string summary = await service.BuildCheckoutSummaryAsync(transaction);
+
+                Console.WriteLine($"[RESPONSE] {summary}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] {ex.GetType().Name}: {ex.Message}");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("END OF VALUETASK CONSUMPTION TEST");
         }
 
         #region helpers

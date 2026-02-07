@@ -130,6 +130,50 @@ namespace LeaveMeAloneFuncSkillForge.Services
             return new ValueTask<double>(CalculatePriceWithProgressAsync(transaction, progress, cancellationToken, checkoutFeatureFlagTask));
         }
 
+        /// <summary>
+        /// Demonstrates consuming ValueTask by converting it to Task
+        /// in order to await it together with other asynchronous operations.
+        /// </summary>
+        public async Task<string> BuildCheckoutSummaryAsync(
+            Transaction transaction,
+            CancellationToken cancellationToken = default)
+        {
+            // get the feature flag as a ValueTask: may already be completed
+            ValueTask<bool> checkoutFlagValueTask = _featureFlagService.IsNewCheckoutEnabledFastAsync(cancellationToken);
+
+            // convert ValueTask to Task for easier composition with other async operations
+            Task<bool> checkoutFlagTask = checkoutFlagValueTask.AsTask();
+
+            // other independent async operations (I/O bound, simulated with Task.Delay here)
+            Task<Film> filmTask = LoadFilmAsync(transaction.Id, cancellationToken); 
+            Task<TaskData> taskDataTask = LoadTaskDataAsync(transaction.Id, cancellationToken);
+
+            await Task.WhenAll(checkoutFlagTask, filmTask, taskDataTask);
+
+            // now can safely access the results of all tasks.
+            // here await is like result since we know they are completed, but using await allows for better exception handling and readability
+            bool isCheckoutNewEnabled = await checkoutFlagTask;
+            Film film = await filmTask;
+            TaskData taskData = await taskDataTask;
+
+            string checkoutType = isCheckoutNewEnabled ? "New Checkout" : "Old Checkout";
+
+            return $"Checkout Summary:\n" +
+                   $"* Transaction ID: {transaction.Id}\n" +
+                   $"* Amount: {transaction.Amount:C}\n" +
+                   $"* Time: {transaction.Time}\n" +
+                   $"* Film: {film.Title} ({film.Genre})\n" +
+                   $"* Box Office: {film.BoxOfficeRevenue:C}\n" +
+                   $"* Task Complexity: {taskData.ComplexityLevel}\n" +
+                   $"* Estimated Hours: {taskData.EstimatedHours}\n" +
+                   $"* Urgency: {(taskData.IsUrgent ? "High" : "Normal")}\n" +
+                   $"* Assigned Developer: {taskData.AssignedDeveloper}\n" +
+                   $"* Backup Developer: {taskData.BackupDeveloper}\n" +
+                   $"* Created Date: {taskData.CreatedDate}\n" +
+                   $"* Due Date: {taskData.DueDate}\n" +
+                   $"* Checkout Type: {checkoutType}";
+        }
+
         #region private helpers for CalculatePriceSmartWithProgressAsync
         // synchronous fast-path
         private double CalculatePriceSyncWithProgress(
@@ -197,6 +241,42 @@ namespace LeaveMeAloneFuncSkillForge.Services
 
             return await CalculatePriceBodyAsync(transaction, progress, cancellationToken, isCheckoutNewEnabled);
         }
+        #endregion
+
+        #region private helper for BuildCheckoutSummaryAsync
+        private async Task<Film> LoadFilmAsync(int filmId, CancellationToken cancellationToken)
+        {
+            // Simulate async loading of film data
+            await Task.Delay(200, cancellationToken);
+
+            // For demo purposes, return a fake film based on the ID
+            return new Film
+            {
+                Id = filmId,
+                Title = $"Film {filmId}",
+                Genre = "Action",
+                BoxOfficeRevenue = 100_000_000 * filmId
+            };
+        }
+
+        private async Task<TaskData> LoadTaskDataAsync(int taskId, CancellationToken cancellationToken)
+        {
+            // Simulate async loading of task data
+            await Task.Delay(200, cancellationToken);
+
+            // For demo purposes, return fake task data based on the ID
+            return new TaskData
+            {
+                EstimatedHours = _random.Next(4, 40),
+                ComplexityLevel = _random.Next(1, 10),
+                IsUrgent = _random.NextDouble() > 0.7,
+                AssignedDeveloper = "Alice",
+                BackupDeveloper = "Bob",
+                CreatedDate = DateTime.UtcNow.AddDays(-2),
+                DueDate = DateTime.UtcNow.AddDays(5)
+            };
+        }
+
         #endregion
     }
 }
