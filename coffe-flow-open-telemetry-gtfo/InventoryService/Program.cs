@@ -1,8 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using OpenTelemetry.Metrics;
+﻿using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
@@ -28,7 +24,15 @@ builder3.Services.AddOpenTelemetry()
     {
         m.AddAspNetCoreInstrumentation();   // HTTP request metrics
         m.AddRuntimeInstrumentation();      // GC, threads, memory metrics
-        m.AddOtlpExporter();                // Send metrics via OTLP -> Alloy
+
+        // custom metrics
+        m.AddMeter("inventory-service");    // Enable custom metrics from this assembly
+
+        // Export metrics to Prometheus/Mimir via OTLP
+        m.AddOtlpExporter(o =>              // Send metrics via OTLP -> Alloy
+        {
+            o.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf; // Use HTTP Protobuf for better performance
+        });  
     });
 
 
@@ -47,18 +51,19 @@ var app3 = builder3.Build();
 var remainingBeans = 100;
 var remainingMilk = 50;
 
-
 var meter = new Meter("inventory-service");
 
 var inventoryErrors = meter.CreateCounter<long>("inventory_errors_total");
 
 var beansGauge = meter.CreateObservableGauge(
     "inventory_remaining_beans",
-    () => new Measurement<int>(remainingBeans));
+    () => new Measurement<int>(remainingBeans),
+    description: "Remaining coffee beans in inventory");
 
 var milkGauge = meter.CreateObservableGauge(
     "inventory_remaining_milk",
-    () => new Measurement<int>(remainingMilk));
+    () => new Measurement<int>(remainingMilk),
+    description: "Remaining milk in inventory");
 
 var rand = new Random();
 
@@ -114,5 +119,5 @@ app3.MapPost("/reserve", (ReserveRequest request, ILogger<Program> logger) =>
     });
 });
 
-
+// explicit URL binding; launchSettings.json is ignored
 app3.Run("http://0.0.0.0:8080");

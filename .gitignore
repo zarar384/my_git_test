@@ -32,3 +32,6 @@ packages/
 
 # Publish output folder
 publish/
+
+# Observability
+**/observability/**/data/

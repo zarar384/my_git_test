@@ -9,6 +9,10 @@ mkdir -p observability/prometheus/data
 
 echo "Folders are ready. Starting full stack (services + observability)..." # ещё один лог
 
-docker compose up -d # поднимает вообще всё
+docker compose up -d --build # поднимает вообще всё
+
+# Полная пересборка БЕЗ использования cache
+# docker compose build --no-cache
+# docker compose up -d
 
 echo "Done. BrewService, OrderService, InventoryService, Alloy, Loki and Prometheus are running." # финал

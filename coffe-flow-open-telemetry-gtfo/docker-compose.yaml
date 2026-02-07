@@ -24,6 +24,7 @@ services:
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-remote-write-receiver"
 
   alloy:
     image: grafana/alloy:latest
@@ -41,7 +42,9 @@ services:
 
   # .NET SERVICES
   brewservice:
-    build: ./BrewService
+    build: 
+      context: .
+      dockerfile: BrewService/Dockerfile
     container_name: brewservice
     ports:
       - "5001:8080" # HTTP API сервиса
@@ -52,7 +55,9 @@ services:
       - alloy
 
   orderservice:
-    build: ./OrderService
+    build: 
+      context: .
+      dockerfile: OrderService/Dockerfile
     container_name: orderservice
     ports:
       - "5002:8080"
@@ -63,7 +68,9 @@ services:
       - alloy
 
   inventoryservice:
-    build: ./InventoryService
+    build: 
+      context: .
+      dockerfile: InventoryService/Dockerfile
     container_name: inventoryservice
     ports:
       - "5003:8080"

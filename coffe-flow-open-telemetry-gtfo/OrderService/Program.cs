@@ -1,15 +1,10 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using OpenTelemetry.Metrics;
+﻿using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
 using Serilog.Enrichers.Span;
 using Serilog.Sinks.Grafana.Loki;
 using System.Diagnostics.Metrics;
-using System.Net.Http.Json;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,7 +26,15 @@ builder.Services.AddOpenTelemetry()
         m.AddAspNetCoreInstrumentation();   // HTTP request metrics
         m.AddHttpClientInstrumentation();   // HTTP client metrics
         m.AddRuntimeInstrumentation();      // GC, threads, memory metrics
-        m.AddOtlpExporter();                // Send metrics via OTLP (to Mimir/Prometheus)
+
+        // custom metrics
+        m.AddMeter("order-service");        // Enable custom metrics from this assembly
+        
+        // Export metrics to Prometheus/Mimir via OTLP
+        m.AddOtlpExporter(o =>              // Send metrics via OTLP (to Mimir/Prometheus)
+        {
+            o.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf; // Use HTTP Protobuf for better performance
+        });               
     });
 
 // Configure Serilog
@@ -39,13 +42,17 @@ Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()                 // Add scoped properties
     .Enrich.WithSpan()                       // Add traceId / spanId
     .WriteTo.Console()                       // Log to console
-    .WriteTo.GrafanaLoki("http://loki:3100") // Send logs to Loki
+    .WriteTo.GrafanaLoki("http://loki:3100", // Send logs to Loki
+         labels: new[]
+        {
+            new LokiLabel { Key = "service", Value = "order-service" }
+        })
     .CreateLogger();
 
 builder.Host.UseSerilog(); // Replace default logger with Serilog
 
-builder.Services.AddHttpClient("brew", c => c.BaseAddress = new Uri("http://brew-service:8080"));
-builder.Services.AddHttpClient("inventory", c => c.BaseAddress = new Uri("http://inventory-service:8080"));
+builder.Services.AddHttpClient("brew", c => c.BaseAddress = new Uri("http://brewservice:8080"));
+builder.Services.AddHttpClient("inventory", c => c.BaseAddress = new Uri("http://inventoryservice:8080"));
 
 var app = builder.Build();
 
@@ -57,6 +64,42 @@ var ordersCounter = meter.CreateCounter<long>("coffee_orders_total");
 app.MapGet("/", () => "Order Service is running");
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+
+// POST /order?coffeeType=latte
+app.MapPost("/order", async (string coffeeType, IHttpClientFactory factory, ILogger<Program> logger) =>
+{
+    var orderId = Guid.NewGuid().ToString();
+
+    logger.LogInformation("New order {OrderId} for {CoffeeType}", orderId, coffeeType);
+
+    var inventoryClient = factory.CreateClient("inventory");
+    var brewClient = factory.CreateClient("brew");
+
+    var inventoryResponse = await inventoryClient.PostAsJsonAsync("/reserve", new
+    {
+        orderId,
+        coffeeType
+    });
+
+    if (!inventoryResponse.IsSuccessStatusCode)
+        return Results.Problem("Inventory error", statusCode: 409);
+
+    var brewResponse = await brewClient.PostAsJsonAsync("/brew", new
+    {
+        orderId,
+        coffeeType
+    });
+
+    if (!brewResponse.IsSuccessStatusCode)
+        return Results.Problem("Brew error", statusCode: 500);
+
+    return Results.Ok(new
+    {
+        orderId,
+        coffeeType,
+        status = "completed"
+    });
+});
 
 app.MapPost("/orders", async (OrderRequest request, IHttpClientFactory factory, ILogger<Program> logger) =>
 {
@@ -96,4 +139,5 @@ app.MapPost("/orders", async (OrderRequest request, IHttpClientFactory factory, 
 });
 
 
+// explicit URL binding; launchSettings.json is ignored
 app.Run("http://0.0.0.0:8080");

@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using OpenTelemetry.Metrics;
+﻿using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using System.Diagnostics;
@@ -25,7 +22,15 @@ builder2.Services.AddOpenTelemetry()
     {
         m.AddAspNetCoreInstrumentation();   // HTTP request metrics
         m.AddRuntimeInstrumentation();      // GC, threads, memory metrics
-        m.AddOtlpExporter();                // Send metrics via OTLP
+
+        // custom metrics
+        m.AddMeter("brew-service");        // Enable custom metrics from this assembly
+
+        // Export metrics to Prometheus/Mimir via OTLP
+        m.AddOtlpExporter(o =>              // Send metrics via OTLP
+        {
+            o.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf; // Use HTTP Protobuf for better performance
+        });  
     });
 
 
@@ -33,7 +38,17 @@ var app2 = builder2.Build();
 
 var meter = new Meter("brew-service");
 
-var brewDuration = meter.CreateHistogram<double>("coffee_brew_duration_seconds");
+// Average latency (mean). Calculates the average brew time over the last 5 minutes:
+//   rate(coffee_brew_duration_seconds_sum[5m]) / rate(coffee_brew_duration_seconds_count[5m])
+//
+// P95 / P99 latency. Shows how long the slowest requests are. P95 means 95% of brews finish faster than this value.:
+//   histogram_quantile(
+//     0.95,                                   // or 0.99
+//     sum by (le) (
+//       increase(coffee_brew_duration_seconds_bucket[15m])
+//     )
+//   )
+var brewDuration = meter.CreateHistogram<double>("coffee_brew_duration_seconds"); // _sum(total time spent brewing), _count(number of brews), _bucket(latency buckets for percentiles) 
 var brewErrors = meter.CreateCounter<long>("coffee_brew_errors_total");
 
 var random = new Random();
@@ -75,4 +90,5 @@ app2.MapPost("/brew", async (BrewRequest request) =>
 });
 
 
+// explicit URL binding; launchSettings.json is ignored
 app2.Run("http://0.0.0.0:8080");
