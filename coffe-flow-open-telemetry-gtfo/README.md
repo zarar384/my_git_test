@@ -58,16 +58,16 @@ brew-service      /
 
 Host (browser / Postman):
 
-Order Service       http://localhost:5002
-Inventory Service   http://localhost:5003
-Brew Service        http://localhost:5001
+Order Service       http://localhost:5002  
+Inventory Service   http://localhost:5003  
+Brew Service        http://localhost:5001  
 
-Prometheus          http://localhost:9090
-Alloy               http://localhost:12345
+Prometheus          http://localhost:9090  
+Alloy               http://localhost:12345  
 Loki                http://localhost:3100
 
 
-Docker internal network (service to service):
+Docker internal network (service to service):  
 http://orderservice:8080  
 http://inventoryservice:8080  
 http://brewservice:8080  
