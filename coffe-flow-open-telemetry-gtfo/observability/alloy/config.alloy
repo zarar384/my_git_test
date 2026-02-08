@@ -1,38 +1,50 @@
-logging {
-  level  = "info"
-  format = "logfmt"
-}
-
-// OTLP input from .NET services
-otelcol.receiver.otlp "otlp_in" {
-  http {}
-
-  output {
-    metrics = [otelcol.exporter.prometheus.remote_write.input]
-    logs    = [otelcol.exporter.loki.to_loki.input]
+  logging {
+    level  = "debug" // info or debug
+    format = "logfmt"
   }
-}
 
-// metrics exporter
-otelcol.exporter.prometheus "remote_write" {
-  forward_to = [prometheus.remote_write.local.receiver]
-}
+  // OTLP input from .NET services
+  otelcol.receiver.otlp "otlp_in" {
+    grpc {}
+    http {}
 
-// Prometheus remote write sink
-prometheus.remote_write "local" {
-  endpoint {
-    url = "http://prometheus:9090/api/v1/write"
+    output {
+      metrics = [otelcol.exporter.prometheus.remote_write.input]
+      logs    = [otelcol.exporter.loki.to_loki.input]
+      traces = [otelcol.exporter.otlp.to_tempo.input]
+    }
   }
-}
 
-// logs exporter
-otelcol.exporter.loki "to_loki" {
-  forward_to = [loki.write.local.receiver]
-}
-
-// Loki write sink
-loki.write "local" {
-  endpoint {
-    url = "http://loki:3100/loki/api/v1/push"
+  // metrics exporter
+  otelcol.exporter.prometheus "remote_write" {
+    forward_to = [prometheus.remote_write.local.receiver]
   }
-}
+
+  // Prometheus remote write sink
+  prometheus.remote_write "local" {
+    endpoint {
+      url = "http://prometheus:9090/api/v1/write"
+    }
+  }
+
+  // logs exporter
+  otelcol.exporter.loki "to_loki" {
+    forward_to = [loki.write.local.receiver]
+  }
+
+  // Loki write sink
+  loki.write "local" {
+    endpoint {
+      url = "http://loki:3100/loki/api/v1/push"
+    }
+  }
+
+  // traces exporter. Traces are sent via OTLP exporter (to Tempo)
+  otelcol.exporter.otlp "to_tempo" {
+    client {
+      endpoint = "tempo:4317"
+      tls {
+        insecure = true // без tls для Tempo
+      }
+    }
+  }

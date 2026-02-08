@@ -26,18 +26,30 @@ services:
       - "--storage.tsdb.path=/prometheus"
       - "--web.enable-remote-write-receiver"
 
+  tempo:
+    image: grafana/tempo:2.4.1
+    container_name: tempo
+    ports:
+      - "3200:3200" # HTTP API Tempo
+    volumes:
+      - ./observability/tempo/tempo.yaml:/etc/tempo/tempo.yaml # конфиг Tempo
+      - ./observability/tempo/data:/var/tempo/traces # данные Tempo
+    command: -config.file=/etc/tempo/tempo.yaml
+
   alloy:
     image: grafana/alloy:latest
     container_name: alloy
     ports:
       - "12345:12345" # HTTP Alloy (метрики + статус)
       - "4318:4318"   # OTLP/HTTP вход для .NET
+      - "4317:4317"   # OTLP/gRPC вход для .NET
     volumes:
       - ./observability/alloy/config.alloy:/etc/alloy/config.alloy # конфиг Alloy
     command: run /etc/alloy/config.alloy
     depends_on:
       - loki
       - prometheus
+      - tempo
 
 
   # .NET SERVICES
@@ -49,7 +61,7 @@ services:
     ports:
       - "5001:8080" # HTTP API сервиса
     environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4318 # шлём телеметрию в Alloy
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4317 # шлём телеметрию в Alloy
       - OTEL_SERVICE_NAME=brew-service # имя сервиса в трейcах/логах
     depends_on:
       - alloy
@@ -62,7 +74,7 @@ services:
     ports:
       - "5002:8080"
     environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4318
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4317
       - OTEL_SERVICE_NAME=order-service
     depends_on:
       - alloy
@@ -75,7 +87,7 @@ services:
     ports:
       - "5003:8080"
     environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4318
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4317
       - OTEL_SERVICE_NAME=inventory-service
     depends_on:
       - alloy

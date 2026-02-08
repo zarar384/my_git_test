@@ -16,23 +16,23 @@ builder3.Services.AddOpenTelemetry()
     // Tracing pipeline
     .WithTracing(t =>
     {
+        t.AddSource("inventory-service");       // Subscribe to manual spans created via ActivitySource("inventory-service")
+        t.AddHttpClientInstrumentation();   // Trace outgoing HTTP calls
         t.AddAspNetCoreInstrumentation();   // Trace incoming HTTP requests
-        t.AddOtlpExporter();                // Send traces via OTLP -> Alloy
+        t.AddOtlpExporter();                // Send traces via OTLP -> Alloy HTTP -> Tempo);                 
     })
     // Metrics pipeline
     .WithMetrics(m =>
     {
         m.AddAspNetCoreInstrumentation();   // HTTP request metrics
+        m.AddHttpClientInstrumentation();   // HTTP client metrics
         m.AddRuntimeInstrumentation();      // GC, threads, memory metrics
 
         // custom metrics
         m.AddMeter("inventory-service");    // Enable custom metrics from this assembly
 
         // Export metrics to Prometheus/Mimir via OTLP
-        m.AddOtlpExporter(o =>              // Send metrics via OTLP -> Alloy
-        {
-            o.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf; // Use HTTP Protobuf for better performance
-        });  
+        m.AddOtlpExporter();                // Send metrics via OTLP (to Mimir/Prometheus)
     });
 
 

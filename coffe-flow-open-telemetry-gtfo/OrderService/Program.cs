@@ -16,9 +16,10 @@ builder.Services.AddOpenTelemetry()
     // Tracing pipeline
     .WithTracing(t =>
     {
+        t.AddSource("order-service");       // Subscribe to manual spans created via ActivitySource("order-service")
         t.AddAspNetCoreInstrumentation();   // Trace incoming HTTP requests
         t.AddHttpClientInstrumentation();   // Trace outgoing HTTP calls
-        t.AddOtlpExporter();                // Send traces via OTLP (to Alloy/Tempo)
+        t.AddOtlpExporter();                // Send traces via OTLP -> Alloy HTTP -> Tempo);                 
     })
     // Metrics pipeline
     .WithMetrics(m =>
@@ -31,10 +32,7 @@ builder.Services.AddOpenTelemetry()
         m.AddMeter("order-service");        // Enable custom metrics from this assembly
         
         // Export metrics to Prometheus/Mimir via OTLP
-        m.AddOtlpExporter(o =>              // Send metrics via OTLP (to Mimir/Prometheus)
-        {
-            o.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf; // Use HTTP Protobuf for better performance
-        });               
+        m.AddOtlpExporter();                // Send metrics via OTLP (to Mimir/Prometheus)
     });
 
 // Configure Serilog

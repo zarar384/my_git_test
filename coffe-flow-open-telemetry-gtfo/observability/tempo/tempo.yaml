@@ -1,0 +1,25 @@
+server:
+  http_listen_port: 3200 # HTTP API Tempo (запросы трейсов, /api/traces/{traceId})
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc: 
+          endpoint: 0.0.0.0:4317 # трейсы по OTLP/gRPC от Alloy (.NET -> Alloy -> Tempo)
+        http: 
+          endpoint: 0.0.0.0:4318 # трейсы по OTLP/HTTP от Alloy (.NET -> Alloy -> Tempo)
+
+ingester:
+  trace_idle_period: 5m # время, после которого неактивные трейсы считаются завершенными и отправляются в хранилище
+  lifecycler:
+    ring:
+      kvstore:
+        store: inmemory # локальное хранилище состояния (single-node)
+      replication_factor: 1 # один инстанс Tempo, без репликации
+
+storage:
+  trace:
+    backend: local # локальное хранение трейсов (dev / docker)
+    local:
+      path: /var/tempo/traces # куда Tempo пишет трейсы на диск
