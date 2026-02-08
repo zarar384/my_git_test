@@ -37,9 +37,9 @@ brew-service
 
 ```
 order-service     \
-inventory-service  ---> OTLP ---> Alloy ---> Tempo (traces)
-brew-service      /              |
-                                  ---> Prometheus (metrics)
+inventory-service  ---> OTLP (gRPC) ---> Alloy ---> Tempo (OTLP/gRPC, traces)
+brew-service      /                        |
+                                            ---> Prometheus (HTTP Remote Write, metrics)
 
 order-service     \
 inventory-service  -----> Serilog HTTP ---> Loki (HTTP push API)
