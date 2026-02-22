@@ -1,4 +1,5 @@
 ﻿using LeaveMeAloneFuncSkillForge.Interfaces;
+using System.Linq.Expressions;
 
 namespace LeaveMeAloneFuncSkillForge.Services
 {
@@ -104,6 +105,36 @@ namespace LeaveMeAloneFuncSkillForge.Services
 
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
             return content;
+        }
+
+        public async Task<KeysetPage<Film, int>> GetFilmsPageAsync(
+            int? cursor,
+            int pageSize,
+            CancellationToken cancellationToken = default)
+        {
+            Console.WriteLine($"[API] Fetching films after cursor {cursor}");
+
+            await Task.Delay(500, cancellationToken); // simulate I/O
+
+            int start = cursor ?? 0;
+
+            var items = FakeDatabase.FilmFaker
+                .Generate(pageSize)
+                .Select((f, i) =>
+                {
+                    f.Id = start + i + 1;
+                    return f;
+                })
+                .ToList();
+
+            bool hasNext = start + pageSize < 100;
+
+            int? nextCursor = hasNext ? start + pageSize : null;
+
+            return new KeysetPage<Film, int>(
+                items,
+                hasNext,
+                nextCursor);
         }
     }
 }

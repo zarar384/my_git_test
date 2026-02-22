@@ -33,10 +33,19 @@ namespace LeaveMeAloneFuncSkillForge.Functional
                 ? query.OrderBy(keySelector)
                 : query.OrderByDescending(keySelector);
 
-            // fetch one extra item to detect if the next page exists
-            var items = await query
-                .Take(pageSize + 1)
-                .ToListAsync(cancellationToken);
+            // fetch one extra item to check for next page to detect if the next page exists
+            var pageQuery = query.Take(pageSize + 1);
+
+            List<T> items;
+
+            if(query is IAsyncEnumerable<T>)
+            {
+                items = await pageQuery.ToListAsync(cancellationToken);
+            }
+            else
+            {
+                items = pageQuery.ToList();
+            }
 
             var hasNextPage = items.Count > pageSize;
 

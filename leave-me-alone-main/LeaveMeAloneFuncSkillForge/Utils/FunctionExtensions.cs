@@ -1,4 +1,6 @@
-﻿namespace LeaveMeAloneFuncSkillForge.Utils
+﻿using System.Linq.Expressions;
+
+namespace LeaveMeAloneFuncSkillForge.Utils
 {
     public static class FunctionExtensions
     {
@@ -72,5 +74,60 @@
             Func<T, bool> predicate,
             Func<T, T> replacement) =>
             source.Select(x => predicate(x) ? replacement(x) : x);
+
+        // Keyset pagination streaming method for large datasets without loading everything into memory
+        public static async IAsyncEnumerable<T> StreamByKeysetAsync<T, TKey>(
+           this IQueryable<T> query,
+           Expression<Func<T, TKey>> keySelector,
+           int pageSize,
+           bool ascending = true,
+           CancellationToken cancellationToken = default)
+           where TKey : struct, IComparable<TKey>
+        {
+            TKey? cursor = null;
+
+            while (true)
+            {
+                var page = await query.ToKeysetPageAsync(
+                    keySelector,
+                    cursor,
+                    pageSize,
+                    ascending,
+                    cancellationToken);
+
+                foreach (var item in page.Items)
+                    yield return item; // or map to HTML
+
+                if (!page.HasNextPage)
+                    yield break;
+
+                Console.WriteLine($"[INFO] Fetched page with {page.Items.Count} items, next cursor: {page.NextCursor}");
+
+                cursor = page.NextCursor;
+            }
+        }
+
+        // Overload for external services that provide keyset pagination via a loader function
+        public static async IAsyncEnumerable<T> StreamByKeysetAsync<T, TKey>(
+            Func<TKey?, int, CancellationToken, Task<KeysetPage<T, TKey>>> pageLoader,
+            int pageSize,
+            CancellationToken cancellationToken = default)
+            where TKey : struct, IComparable<TKey>
+        {
+            TKey? cursor = null;
+
+            while (true)
+            {
+                var page = await pageLoader(cursor, pageSize, cancellationToken);
+
+                foreach (var item in page.Items)
+                    yield return item;
+
+                if (!page.HasNextPage)
+                    yield break;
+
+                cursor = page.NextCursor;
+            }
+        }
     }
 }

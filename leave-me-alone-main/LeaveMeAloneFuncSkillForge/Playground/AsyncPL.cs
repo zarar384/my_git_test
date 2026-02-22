@@ -8,7 +8,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
     {
         public static async Task Run()
         {
-            await TestValueTaskWhenAllConsuptionAsync();
+            await TestExternalFilmServiceKeysetAsyncStreamDemoAsync();
         }
 
         private static async Task TestApiClientFactoryAsync()
@@ -265,6 +265,32 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             var allFilmsHtml = await filmService.GetFirstSuccessfulResponseAsync(filmIdFromNewService, filmIdFromOldService);
 
             Console.WriteLine(allFilmsHtml);
+        }
+
+        private static async Task TestExternalFilmServiceKeysetAsyncStreamDemoAsync()
+        {
+            Console.WriteLine("KEYSET ASYNC STREAM DEMO");
+            Console.WriteLine();
+
+            using var httpClient = new HttpClient(new FakeHttpMessageHandler())
+            {
+                BaseAddress = new Uri("https://filmDB-fake.api/")
+            };
+
+            IExternalFilmService filmService = new Services.ExternalFilmService(httpClient);
+
+            // stream results using keyset pagination
+            // this allows processing large datasets without loading everything in memory at once
+            await foreach (var film in FunctionExtensions.StreamByKeysetAsync<Film, int>(
+                filmService.GetFilmsPageAsync,
+                pageSize: 10))
+            {
+                Console.WriteLine($"Film ID: {film.Id}, Title: {film.Title}");
+                await Task.Delay(100); // simulate processing time
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("END KEYSET DEMO");
         }
 
         private static async Task TestAsyncExceptionHandling()
