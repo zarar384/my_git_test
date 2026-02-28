@@ -1,6 +1,7 @@
 ﻿using LeaveMeAloneFuncSkillForge.API;
 using LeaveMeAloneFuncSkillForge.Interfaces;
 using System.Diagnostics;
+using System.Linq;
 
 namespace LeaveMeAloneFuncSkillForge.Playground
 {
@@ -8,7 +9,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
     {
         public static async Task Run()
         {
-            await TestExternalFilmServiceKeysetAsyncStreamDemoAsync();
+            await TestAsyncStreamLinqDemoAsync();
         }
 
         private static async Task TestApiClientFactoryAsync()
@@ -293,6 +294,102 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             Console.WriteLine("END KEYSET DEMO");
         }
 
+        private static async Task TestAsyncStreamConsumptionAsync()
+        {
+            Console.WriteLine("ASYNC STREAM CONSUMPTION TEST");
+            Console.WriteLine();
+
+            using var httpClient = new HttpClient(new FakeHttpMessageHandler())
+            {
+                BaseAddress = new Uri("https://fake.api/")
+            };
+
+            IExternalFilmService filmService = new Services.ExternalFilmService(httpClient);
+
+            // consume async stream with cancellation support
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
+            try
+            {
+                await foreach (var film in FunctionExtensions
+                    .StreamByKeysetAsync<Film, int>(
+                        filmService.GetFilmsPageAsync,
+                        pageSize: 5,
+                        cancellationToken: cts.Token)
+                    .ConfigureAwait(false)) // false to avoid capturing context in case of UI apps, no effect in console apps
+                {
+                    // async processing of each film
+                    await Task.Delay(100, cts.Token).ConfigureAwait(false);
+
+                    Console.WriteLine($"Processed Film {film.Id} | {film.Title} | {film.BoxOfficeRevenue:C}");
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("[CANCELLED] Stream processing was cancelled.");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("END ASYNC STREAM CONSUMPTION TEST");
+        }
+
+        private static async Task TestAsyncStreamLinqDemoAsync()
+        {
+            Console.WriteLine("ASYNC STREAM + LINQ DEMO");
+            Console.WriteLine();
+
+            using var httpClient = new HttpClient(new FakeHttpMessageHandler())
+            {
+                BaseAddress = new Uri("https://filmDB-fake.api/")
+            };
+
+            var featureFlagService = new FeatureFlagService(httpClient);
+            IExternalFilmService filmService = new Services.ExternalFilmService(httpClient);
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
+            var stream = FunctionExtensions.StreamByKeysetAsync<Film, int>(
+                    filmService.GetFilmsPageAsync,
+                    pageSize: 10,
+                    cancellationToken: cts.Token)
+                // sync predicate
+                .Where(film => film.BoxOfficeRevenue > 100_000_000)
+                // async predicate
+                .Where(async (Film film, CancellationToken ct) =>
+                {
+                    await Task.Delay(50, ct); // simulate async work
+
+                    return film.Genre == "Action";
+                })
+                // async projection
+                .Select(async (Film film, CancellationToken ct) =>
+                {
+                    var isNewCheckoutEnabled = await featureFlagService.IsNewCheckoutEnabledAsync(ct);
+
+                    return new
+                    {
+                        film.Id,
+                        film.Title,
+                        film.BoxOfficeRevenue,
+                        IsNewCheckoutEnabled = isNewCheckoutEnabled
+                    };
+                });
+
+            await foreach (var filmInfo in stream.ConfigureAwait(false))
+            {
+                Console.WriteLine($"Film {filmInfo.Id} | {filmInfo.Title} | Revenue: {filmInfo.BoxOfficeRevenue:C} | NewCheckout: {filmInfo.IsNewCheckoutEnabled}");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("... TERMINAL OPERATOR");
+
+            int count = await stream.CountAsync(cts.Token);
+
+            Console.WriteLine($"Total films matching criteria: {count}");
+            Console.WriteLine();
+            Console.WriteLine("END ASYNC STREAM + LINQ DEMO");
+        }
+
         private static async Task TestAsyncExceptionHandling()
         {
             Console.WriteLine("ASYNC EXCEPTION HANDLING TEST");
@@ -312,7 +409,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
                 await service.GetPaymentMethodWithExceptionAsync(cts.Token);
                 Console.WriteLine("[OK] Operation succeeded");
             }
-            catch(InvalidOperationException ex)
+            catch (InvalidOperationException ex)
             {
                 Console.WriteLine($"Caught InvalidOperationException: {ex.Message}");
             }
@@ -426,7 +523,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
         {
             // auto-cancel after 3 seconds
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-            
+
             // setup
             Task<string> downloadTask = client.GetStringAsync(uri);
             Task timeoutTask = Task.Delay(Timeout.InfiniteTimeSpan, cts.Token);
@@ -502,7 +599,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             Task<int> task1 = DelayAndReturnAsync(2);
             Task<int> task2 = DelayAndReturnAsync(3);
             Task<int> task3 = DelayAndReturnAsync(1);
-            
+
             Task<int>[] tasks = { task1, task2, task3 };
 
             var tQ = from t in tasks
@@ -593,7 +690,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             // now ValueTask should hit fast path and complete synchronously
             var sw = Stopwatch.StartNew(); // measure time
 
-            for(int i = 0; i < 10; i++)
+            for (int i = 0; i < 10; i++)
             {
                 double price = await service.CalculatePriceSmartWithProgressAsync(transaction);
                 Console.WriteLine($"Price #{i + 1}: {price:N2}");
