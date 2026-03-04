@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using LeaveMeAloneFuncSkillForge.Models;
+using System.Collections.Concurrent;
 
 namespace LeaveMeAloneFuncSkillForge.Playground
 {
@@ -14,7 +15,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
 
         public static void Run()
         {
-            RunParallelAggregationDemo();
+            RunSecurityLogAnalysisDemo();
         }
 
         // chanked to use Partitioner for better performance on large datasets
@@ -219,5 +220,90 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             Console.WriteLine($"Finished {name}");
         }
 
+        public static void RunSecurityLogAnalysisDemo()
+        {
+            const int logCount = 2_000_000;
+
+            var random = new Random();
+
+            var logs = Enumerable.Range(0, logCount)
+                                 .Select(i => new SecurityLog
+                                 {
+                                     UserId = random.Next(1, 1000),
+                                     Action = random.Next(1, 4),
+                                     ResourceId = random.Next(1, 5000),
+                                     Timestamp = DateTime.UtcNow.AddSeconds(-random.Next(0, 100000)),
+                                     Payload = Guid.NewGuid().ToString()
+                                 })
+                                 .ToArray();
+
+            Console.WriteLine("Starting security log analysis...");
+
+            int suspiciousCount = 0; 
+
+            var suspiciousLogs = new ConcurrentBag<SecurityLog>();
+
+            Parallel.ForEach(
+                Partitioner.Create(0, logs.Length), // Create partitions for better performance on large datasets
+                () =>  new LocalStats(), // Initialize local state for each partition
+                (range, state, local) =>
+                {
+                    // Simulate complex analysis for each log in the assigned range
+                    for (int i = range.Item1; i < range.Item2; i++)
+                    {
+                        var log = logs[i];
+
+                        double riskScore = CalculateRiskScore(log);
+
+                        if(riskScore > 0.92)
+                        {
+                            local.SuspiciousCount++;
+                            suspiciousLogs.Add(log);
+                        }
+
+                        local.Processed++;
+                        local.RiskSum += riskScore;
+                    }
+
+                    return local;
+                },
+                // Aggregate results from each partition
+                local => 
+                {
+                    // Aggregate suspicious count
+                    Interlocked.Add(ref suspiciousCount, local.SuspiciousCount); 
+
+                    // Log local stats for this partition
+                    if (local.Processed > 0)
+                    {
+                        Console.WriteLine($"Processed {local.Processed} logs with average risk {local.RiskSum / local.Processed:F4}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("No logs processed in this partition.");
+                    }
+                });
+
+            Console.WriteLine($"Total suspicious logs: {suspiciousCount}");
+            Console.WriteLine($"Collected {suspiciousLogs.Count} suspicious logs for further analysis.");
+        }
+
+        // Simulate a complex risk score calculation based on log properties
+        private static double CalculateRiskScore(SecurityLog log)
+        {
+            double score = 0;
+
+            for(int i =0; i<200; i++)
+            {
+                // Simulate complex calculations
+                score += Math.Sqrt(log.UserId * i + log.ResourceId);
+                score += Math.Sin(log.Action + i);
+                score += Math.Log(i + 1);
+            }
+
+            score = Math.Abs(score % 1); // Normalize to [0,1]
+
+            return score;
+        }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using LeaveMeAloneFuncSkillForge.Interfaces;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 namespace LeaveMeAloneFuncSkillForge.Services
 {

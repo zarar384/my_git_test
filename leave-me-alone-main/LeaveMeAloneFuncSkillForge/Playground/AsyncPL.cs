@@ -9,7 +9,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
     {
         public static async Task Run()
         {
-            await TestAsyncStreamLinqDemoAsync();
+            await TestAsyncStreamRestartBehaviorAsync();
         }
 
         private static async Task TestApiClientFactoryAsync()
@@ -294,6 +294,62 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             Console.WriteLine("END KEYSET DEMO");
         }
 
+        private static async Task TestAsyncStreamRestartBehaviorAsync()
+        {
+            Console.WriteLine("ASYNC STREAM RESTART BEHAVIOR DEMO");
+            Console.WriteLine();
+
+            using var httpClient = new HttpClient(new FakeHttpMessageHandler())
+            {
+                BaseAddress = new Uri("https://fake.api/")
+            };
+
+            IExternalFilmService filmService = new Services.ExternalFilmService(httpClient);
+
+            var stream = FunctionExtensions.StreamByKeysetAsync<Film, int>(
+                filmService.GetFilmsPageAsync,
+                pageSize: 5);
+
+            Console.WriteLine("FIRST CONSUMPTION");
+
+            int count = 0;
+
+            await foreach (var film in stream)
+            {
+                Console.WriteLine($"Film {film.Id} | {film.Title}");
+
+                count++;
+
+                if (count == 6)
+                {
+                    Console.WriteLine("... RESTARTING STREAM");
+                    break; // stop consuming after 3 items
+                }
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("SECOND CONSUMPTION (STREAM RESTART)");
+            Console.WriteLine();
+
+            count = 0;  
+
+            await foreach (var film in stream)
+            {
+                Console.WriteLine($"Film {film.Id} | {film.Title}");
+
+                count++;
+
+                if (count == 6)
+                {
+                    Console.WriteLine("... RESTARTING STREAM AGAIN");
+                    break; // stop consuming after 3 items
+                }
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("END ASYNC STREAM RESTART BEHAVIOR DEMO");
+        }
+
         private static async Task TestAsyncStreamConsumptionAsync()
         {
             Console.WriteLine("ASYNC STREAM CONSUMPTION TEST");
@@ -346,14 +402,16 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             var featureFlagService = new FeatureFlagService(httpClient);
             IExternalFilmService filmService = new Services.ExternalFilmService(httpClient);
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(50));
 
-            var stream = FunctionExtensions.StreamByKeysetAsync<Film, int>(
+            try
+            {
+                var stream = FunctionExtensions.StreamByKeysetAsync<Film, int>(
                     filmService.GetFilmsPageAsync,
                     pageSize: 10,
                     cancellationToken: cts.Token)
                 // sync predicate
-                .Where(film => film.BoxOfficeRevenue > 100_000_000)
+                .Where(film => film.BoxOfficeRevenue > 500_000)
                 // async predicate
                 .Where(async (Film film, CancellationToken ct) =>
                 {
@@ -375,17 +433,23 @@ namespace LeaveMeAloneFuncSkillForge.Playground
                     };
                 });
 
-            await foreach (var filmInfo in stream.ConfigureAwait(false))
+
+                await foreach (var filmInfo in stream.ConfigureAwait(false))
+                {
+                    Console.WriteLine($"Film {filmInfo.Id} | {filmInfo.Title} | Revenue: {filmInfo.BoxOfficeRevenue:C} | NewCheckout: {filmInfo.IsNewCheckoutEnabled}");
+                }
+
+                Console.WriteLine();
+                Console.WriteLine("... TERMINAL OPERATOR");
+
+                int count = await stream.CountAsync(cts.Token);
+                Console.WriteLine($"Total films matching criteria: {count}");
+            }
+            catch (OperationCanceledException)
             {
-                Console.WriteLine($"Film {filmInfo.Id} | {filmInfo.Title} | Revenue: {filmInfo.BoxOfficeRevenue:C} | NewCheckout: {filmInfo.IsNewCheckoutEnabled}");
+                Console.WriteLine("[CANCELLED] Stream processing was cancelled.");
             }
 
-            Console.WriteLine();
-            Console.WriteLine("... TERMINAL OPERATOR");
-
-            int count = await stream.CountAsync(cts.Token);
-
-            Console.WriteLine($"Total films matching criteria: {count}");
             Console.WriteLine();
             Console.WriteLine("END ASYNC STREAM + LINQ DEMO");
         }

@@ -7,7 +7,7 @@ namespace LeaveMeAloneFuncSkillForge
     {
         public static async Task RunApp()
         {
-           await AsyncPL.Run();
+            ParallelLoopsL.Run();
         }
     }
 }

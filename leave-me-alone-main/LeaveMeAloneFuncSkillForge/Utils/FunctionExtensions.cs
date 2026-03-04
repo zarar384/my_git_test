@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 namespace LeaveMeAloneFuncSkillForge.Utils
 {
@@ -81,7 +82,7 @@ namespace LeaveMeAloneFuncSkillForge.Utils
            Expression<Func<T, TKey>> keySelector,
            int pageSize,
            bool ascending = true,
-           CancellationToken cancellationToken = default)
+           [EnumeratorCancellation] CancellationToken cancellationToken = default)
            where TKey : struct, IComparable<TKey>
         {
             TKey? cursor = null;
@@ -111,7 +112,7 @@ namespace LeaveMeAloneFuncSkillForge.Utils
         public static async IAsyncEnumerable<T> StreamByKeysetAsync<T, TKey>(
             Func<TKey?, int, CancellationToken, Task<KeysetPage<T, TKey>>> pageLoader,
             int pageSize,
-            CancellationToken cancellationToken = default)
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
             where TKey : struct, IComparable<TKey>
         {
             TKey? cursor = null;
