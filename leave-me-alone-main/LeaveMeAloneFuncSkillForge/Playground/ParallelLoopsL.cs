@@ -15,7 +15,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
 
         public static void Run()
         {
-            RunSecurityLogAnalysisDemo();
+            RunDynamicParallelFileScannerDemo();
         }
 
         // chanked to use Partitioner for better performance on large datasets
@@ -286,6 +286,183 @@ namespace LeaveMeAloneFuncSkillForge.Playground
 
             Console.WriteLine($"Total suspicious logs: {suspiciousCount}");
             Console.WriteLine($"Collected {suspiciousLogs.Count} suspicious logs for further analysis.");
+        }
+
+        public static void RunDynamicParallelFileScannerDemo()
+        {
+            string root = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+            Console.WriteLine($"Scanning root: {root}");
+
+            long totalSize = 0;
+            int fileCount = 0;
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+
+            Task rootTask = Task.Factory.StartNew(
+                () => TraverseDirectory(root),
+                CancellationToken.None,
+                TaskCreationOptions.None,
+                TaskScheduler.Default);
+
+            rootTask.Wait();
+
+            sw.Stop();
+
+            Console.WriteLine();
+            Console.WriteLine("Scan finished");
+            Console.WriteLine($"Files found: {fileCount}");
+            Console.WriteLine($"Total size: {totalSize / 1024 / 1024} MB");
+            Console.WriteLine($"Time: {sw.ElapsedMilliseconds} ms");
+
+
+            void TraverseDirectory(string path)
+            {
+                try
+                {
+                    // process files in current directory
+                    foreach (var file in Directory.GetFiles(path))
+                    {
+                        try
+                        {
+                            var info = new FileInfo(file);
+
+                            Interlocked.Add(ref totalSize, info.Length);
+                            Interlocked.Increment(ref fileCount);
+                        }
+                        catch
+                        {
+                            // ignore file access errors
+                        }
+                    }
+
+                    // spawn tasks for subdirectories
+                    foreach (var dir in Directory.GetDirectories(path))
+                    {
+                        Task.Factory.StartNew(
+                            () => TraverseDirectory(dir),
+                            CancellationToken.None,
+                            TaskCreationOptions.AttachedToParent,
+                            TaskScheduler.Default);
+                    }
+                }
+                catch
+                {
+                    // ignore directory access errors
+                }
+            }
+        }
+
+        public static void RunParallelInvokeImagePipelineDemo()
+        {
+            const int pixelCount = 4_000_000;
+
+            var random = new Random();
+
+            // simulate grayscale image
+            var pixels = new byte[pixelCount];
+
+            random.NextBytes(pixels);
+
+            Console.WriteLine($"Image loaded with {pixels.Length} pixels");
+
+            int histogramScore = 0;
+            int edgeScore = 0;
+            int noiseScore = 0;
+            int compressionScore = 0;
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+
+            Parallel.Invoke(
+
+                // histogram analysis
+                () =>
+                {
+                    int local = 0;
+
+                    int[] histogram = new int[256];
+
+                    foreach (var p in pixels)
+                        histogram[p]++;
+
+                    for (int i = 0; i < histogram.Length; i++)
+                    {
+                        for (int k = 0; k < 200; k++)
+                            local += (int)Math.Sqrt(histogram[i] + k);
+                    }
+
+                    Interlocked.Add(ref histogramScore, local);
+
+                    Console.WriteLine($"Histogram analysis finished on thread {Thread.CurrentThread.ManagedThreadId}");
+                },
+
+                // Edge detection simulation
+                () =>
+                {
+                    int local = 0;
+
+                    for (int i = 1; i < pixels.Length - 1; i++)
+                    {
+                        int diff = Math.Abs(pixels[i - 1] - pixels[i + 1]);
+
+                        for (int k = 0; k < 100; k++)
+                            local += (int)Math.Sqrt(diff + k);
+                    }
+
+                    Interlocked.Add(ref edgeScore, local);
+
+                    Console.WriteLine($"Edge detection finished on thread {Thread.CurrentThread.ManagedThreadId}");
+                },
+
+                // noise estimation
+                () =>
+                {
+                    int local = 0;
+
+                    for (int i = 2; i < pixels.Length - 2; i++)
+                    {
+                        int variance =
+                            Math.Abs(pixels[i] - pixels[i - 1]) +
+                            Math.Abs(pixels[i] - pixels[i + 1]);
+
+                        for (int k = 0; k < 120; k++)
+                            local += (int)Math.Log(variance + k + 1);
+                    }
+
+                    Interlocked.Add(ref noiseScore, local);
+
+                    Console.WriteLine($"Noise analysis finished on thread {Thread.CurrentThread.ManagedThreadId}");
+                },
+
+                // compression complexity estimation
+                () =>
+                {
+                    int local = 0;
+
+                    foreach (var p in pixels)
+                    {
+                        int value = p;
+
+                        for (int k = 0; k < 150; k++)
+                            local += (int)Math.Sin(value + k);
+                    }
+
+                    Interlocked.Add(ref compressionScore, local);
+
+                    Console.WriteLine($"Compression estimation finished on thread {Thread.CurrentThread.ManagedThreadId}");
+                }
+
+            );
+
+            sw.Stop();
+
+            Console.WriteLine();
+            Console.WriteLine("Pipeline summary:");
+            Console.WriteLine($"Histogram score: {histogramScore}");
+            Console.WriteLine($"Edge score: {edgeScore}");
+            Console.WriteLine($"Noise score: {noiseScore}");
+            Console.WriteLine($"Compression score: {compressionScore}");
+            Console.WriteLine($"Processing time: {sw.ElapsedMilliseconds} ms");
         }
 
         // Simulate a complex risk score calculation based on log properties

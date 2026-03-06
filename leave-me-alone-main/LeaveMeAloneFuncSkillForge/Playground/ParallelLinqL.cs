@@ -4,7 +4,7 @@
     {
         public static void Run()
         {
-            RunPlinqVsLinqDemo();
+            RunPlinqPasswordHashAnalysisDemo();
         }
 
         public static void RunParallelMergeOptionsDemo()
@@ -162,5 +162,63 @@
                 Console.WriteLine(n);
         }
 
+        public static void RunPlinqPasswordHashAnalysisDemo()
+        {
+            const int passwordCount = 2_000_000;
+
+            Console.WriteLine($"Generating {passwordCount} passwords...");
+
+            var passwords = Enumerable.Range(0, passwordCount)
+                .Select(i => $"user{i}_password_{Guid.NewGuid()}")
+                .ToArray();
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+
+            // parallel hash computation + filtering
+            var suspiciousHashes = passwords
+                .AsParallel()
+                .WithDegreeOfParallelism(Environment.ProcessorCount)
+                .Select(password =>
+                {
+                    using var sha = System.Security.Cryptography.SHA256.Create();
+
+                    var bytes = System.Text.Encoding.UTF8.GetBytes(password);
+                    var hashBytes = sha.ComputeHash(bytes);
+
+                    var hash = Convert.ToHexString(hashBytes);
+
+                    return hash;
+                })
+                // filter hashes with specific prefix pattern
+                .Where(hash => hash.StartsWith("000") || hash.StartsWith("FFF"))
+                .ToArray();
+
+            sw.Stop();
+
+            Console.WriteLine();
+            Console.WriteLine($"Suspicious hashes found: {suspiciousHashes.Length}");
+            Console.WriteLine($"Hash analysis time: {sw.ElapsedMilliseconds} ms");
+
+            // parallel grouping analysis
+            var prefixStats = suspiciousHashes
+                .AsParallel()
+                .GroupBy(hash => hash.Substring(0, 3))
+                .Select(group => new
+                {
+                    Prefix = group.Key,
+                    Count = group.Count()
+                })
+                .OrderByDescending(x => x.Count)
+                .Take(5)
+                .ToList();
+
+            Console.WriteLine();
+            Console.WriteLine("Top suspicious hash prefixes:");
+
+            foreach (var stat in prefixStats)
+            {
+                Console.WriteLine($"{stat.Prefix} -> {stat.Count}");
+            }
+        }
     }
 }
