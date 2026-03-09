@@ -1,5 +1,6 @@
 ﻿using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Reactive.Threading.Tasks;
 
 namespace LeaveMeAloneFuncSkillForge.Playground
 {
@@ -98,7 +99,7 @@ namespace LeaveMeAloneFuncSkillForge.Playground
             );
         }
 
-        // Time-based operators are one of Rx's strongest features
+        // Time-based operators are one of Rx strongest features
         public static void RxTimeOperatorsDemo()
         {
             var subscription = Observable.Interval(TimeSpan.FromMilliseconds(300))
@@ -107,6 +108,149 @@ namespace LeaveMeAloneFuncSkillForge.Playground
 
             Thread.Sleep(5000);
             subscription.Dispose();
+        }
+
+        // Converts .NET event into Rx observable stream
+        public static void RxEventToObservableDemo()
+        {
+            var timer = new System.Timers.Timer(500);
+            timer.Start();
+
+            var ticks = Observable.FromEventPattern<System.Timers.ElapsedEventHandler, System.Timers.ElapsedEventArgs>(
+                handler => (s, e) => handler(s, e),
+                handler => timer.Elapsed += handler,
+                handler => timer.Elapsed -= handler);
+
+            var subscription = ticks
+                .Select(e => e.EventArgs.SignalTime)
+                .Subscribe(time => Console.WriteLine($"Tick at {time:HH:mm:ss.fff}"));
+
+            Thread.Sleep(3000);
+            subscription.Dispose();
+            timer.Stop();
+        }
+
+        // Demonstrates switching execution context
+        public static void RxObserveOnDemo()
+        {
+            var uiContext = SynchronizationContext.Current ?? new SynchronizationContext();
+
+            var subscription = Observable.Interval(TimeSpan.FromMilliseconds(500))
+                .Do(x => Console.WriteLine($"Produced {x} on thread {Thread.CurrentThread.ManagedThreadId}"))
+                .ObserveOn(uiContext)
+                .Subscribe(x =>
+                    Console.WriteLine($"Observed {x} on thread {Thread.CurrentThread.ManagedThreadId}")
+                );
+
+            Thread.Sleep(3000);
+            subscription.Dispose();
+        }
+
+        // Groups incoming events into batches
+        public static void RxBufferDemo()
+        {
+            var subscription = Observable.Interval(TimeSpan.FromMilliseconds(400))
+                .Buffer(3)
+                .Subscribe(batch =>
+                {
+                    Console.WriteLine($"Batch received: {string.Join(", ", batch)}");
+                });
+
+            Thread.Sleep(5000);
+            subscription.Dispose();
+        }
+
+        // Window creates streams of streams
+        public static void RxWindowDemo()
+        {
+            var subscription = Observable.Interval(TimeSpan.FromMilliseconds(400))
+                .Window(3)
+                .Subscribe(window =>
+                {
+                    Console.WriteLine("New window");
+
+                    window.Subscribe(
+                        x => Console.WriteLine($"Window item: {x}"),
+                        () => Console.WriteLine("Window completed")
+                    );
+                });
+
+            Thread.Sleep(5000);
+            subscription.Dispose();
+        }
+
+        // Demonstrates event flow control
+        public static void RxThrottleVsSampleDemo()
+        {
+            var source = new Subject<int>();
+
+            var throttleSub = source
+                .Throttle(TimeSpan.FromMilliseconds(500))
+                .Subscribe(x => Console.WriteLine($"Throttle: {x}"));
+
+            var sampleSub = source
+                .Sample(TimeSpan.FromMilliseconds(500))
+                .Subscribe(x => Console.WriteLine($"Sample: {x}"));
+
+            // simulate fast event stream
+            for (int i = 0; i < 20; i++)
+            {
+                source.OnNext(i);
+                Thread.Sleep(100);
+            }
+
+            Thread.Sleep(2000);
+
+            throttleSub.Dispose();
+            sampleSub.Dispose();
+        }
+
+        // Simulates reactive autocomplete search pipeline
+        public static void RxReactiveSearchDemo()
+        {
+            var input = new Subject<string>();
+
+            var subscription = input
+                .Throttle(TimeSpan.FromMilliseconds(500)) // wait until typing pauses
+                .DistinctUntilChanged() // ignore same queries
+                .Do(q => Console.WriteLine($"Searching for: {q}"))
+                .SelectMany(query => FakeSearchApi(query).ToObservable()) // async search
+                .Subscribe(
+                    results =>
+                    {
+                        Console.WriteLine($"Results: {string.Join(", ", results)}");
+                    },
+                    ex => Console.WriteLine($"Error: {ex.Message}")
+                );
+
+            // simulate typing
+            input.OnNext("r");
+            Thread.Sleep(100);
+
+            input.OnNext("re");
+            Thread.Sleep(100);
+
+            input.OnNext("rea");
+            Thread.Sleep(700); // triggers search
+
+            input.OnNext("react");
+            Thread.Sleep(700); // triggers another search
+
+            input.OnCompleted();
+            subscription.Dispose();
+        }
+
+        // Simulated async search request
+        private static async Task<List<string>> FakeSearchApi(string query)
+        {
+            await Task.Delay(300); // simulate network
+
+            return new List<string>
+            {
+                $"{query}_result1",
+                $"{query}_result2",
+                $"{query}_result3"
+            };
         }
     }
 }
