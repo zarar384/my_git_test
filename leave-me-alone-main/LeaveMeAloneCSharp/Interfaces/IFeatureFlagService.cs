@@ -1,0 +1,11 @@
+﻿namespace LeaveMeAloneCSharp.Interfaces
+{
+    public interface IFeatureFlagService
+    {
+        Task<bool> IsNewPaymentMethodEnabledAsync(CancellationToken cancellationToken = default);
+
+        Task<bool> IsNewCheckoutEnabledAsync(CancellationToken cancellationToken = default);
+
+        ValueTask<bool> IsNewCheckoutEnabledFastAsync(CancellationToken cancellationToken = default);
+    }
+}

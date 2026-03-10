@@ -1,0 +1,8 @@
+{
+  "name": "playgrounds-root",
+  "private": true,
+  "scripts": {
+    "js": "npm --prefix leave-me-alone-main/LeaveMeAloneJS start",
+    "ts": "npm --prefix leave-me-alone-main/LeaveMeAloneTS start"
+  }
+}

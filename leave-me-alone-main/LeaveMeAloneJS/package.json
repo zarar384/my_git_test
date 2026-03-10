@@ -1,0 +1,7 @@
+{
+  "name": "js-playground",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js"
+  }
+}

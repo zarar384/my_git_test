@@ -1,0 +1,9 @@
+﻿global using global::LeaveMeAloneCSharp.Domain;
+global using global::LeaveMeAloneCSharp.Data;
+global using global::LeaveMeAloneCSharp.Functional;
+global using global::LeaveMeAloneCSharp.Repositories;
+global using global::LeaveMeAloneCSharp.Utils;
+global using global::LeaveMeAloneCSharp.DTOs;
+global using global::LeaveMeAloneCSharp.Repositories.Interfaces;
+global using global::LeaveMeAloneCSharp.Services;
+global using global::LeaveMeAloneCSharp.Common;
