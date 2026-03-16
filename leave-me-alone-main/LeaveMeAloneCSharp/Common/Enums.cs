@@ -13,4 +13,12 @@
         Lose,
         Draw
     }
+
+    public enum PaymentMethod
+    {
+        None,
+        PayPal,
+        CreditCard,
+        Crypto
+    }
 }
