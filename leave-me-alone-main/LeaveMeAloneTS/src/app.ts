@@ -1,5 +1,5 @@
-import { runRxJsPlayground } from "./playground/rxjsPlayground";
+import { runEvalRPNDemo } from "./tasks/a3";
 
 export async function runApp() {
-    runRxJsPlayground();
+    runEvalRPNDemo();
 }

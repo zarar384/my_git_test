@@ -1,5 +1,4 @@
-import { runAsyncPlayground } from "./playground/asyncPlayground.js";
-
+import { runEvalRPNDemo } from "./tasks/a3.js";
 export async function runApp() {
-    runAsyncPlayground();
+    runEvalRPNDemo();
 }
