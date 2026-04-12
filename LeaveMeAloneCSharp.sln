@@ -21,6 +21,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LeaveMeAloneCSharp", "leave
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LeaveMeAloneCSharp.Test", "leave-me-alone-main\LeaveMeAloneCSharp.Test\LeaveMeAloneCSharp.Test.csproj", "{1B0F7EC1-31C6-592B-C061-808E3332D554}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "military-draft-system-mediatr", "military-draft-system-mediatr", "{9A201432-39E9-4BCC-90C9-EFDF5E8F219C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MilitaryDraftSystem", "military-draft-system-mediatr\MilitaryDraftSystem\MilitaryDraftSystem.csproj", "{36EAE362-19D3-4E65-925A-B6F4AA8EBCA7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,6 +51,10 @@ Global
 		{1B0F7EC1-31C6-592B-C061-808E3332D554}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1B0F7EC1-31C6-592B-C061-808E3332D554}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1B0F7EC1-31C6-592B-C061-808E3332D554}.Release|Any CPU.Build.0 = Release|Any CPU
+		{36EAE362-19D3-4E65-925A-B6F4AA8EBCA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{36EAE362-19D3-4E65-925A-B6F4AA8EBCA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{36EAE362-19D3-4E65-925A-B6F4AA8EBCA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{36EAE362-19D3-4E65-925A-B6F4AA8EBCA7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -57,6 +65,7 @@ Global
 		{E1FDC4CC-BD7F-4836-B6D8-E28C2267DBA9} = {6506FE0F-6F2E-4EF1-9E14-F22BFAB338F5}
 		{6AB6D789-D05F-A431-8E55-831DEB8EDE79} = {C3817E09-D3DB-4216-98BA-06DC7BE1709F}
 		{1B0F7EC1-31C6-592B-C061-808E3332D554} = {C3817E09-D3DB-4216-98BA-06DC7BE1709F}
+		{36EAE362-19D3-4E65-925A-B6F4AA8EBCA7} = {9A201432-39E9-4BCC-90C9-EFDF5E8F219C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8685B23F-976C-4D01-853E-ADAB12C758A0}

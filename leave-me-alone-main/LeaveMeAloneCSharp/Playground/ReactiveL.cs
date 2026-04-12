@@ -1,4 +1,5 @@
-﻿using System.Reactive.Linq;
+﻿using System.Reactive.Concurrency;
+using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reactive.Threading.Tasks;
 
@@ -18,9 +19,7 @@ namespace LeaveMeAloneCSharp.Playground
         // Basic Rx example: push-based stream with LINQ operators
         public static void RxBasicDemo()
         {
-            var subscription = Observable.Interval(TimeSpan.FromSeconds(1)) // emits a long value every second
-                .Where(x => x % 2 == 0)
-                .Select(x => $"Even tick: {x}")
+            var subscription = RxBasicStream() // emits a long value every second
                 .Subscribe(
                     x => Console.WriteLine(x),
                     ex => Console.WriteLine($"Error: {ex.Message}"),
@@ -30,6 +29,14 @@ namespace LeaveMeAloneCSharp.Playground
             Thread.Sleep(5000);
             subscription.Dispose();
         }
+
+        public static IObservable<string> RxBasicStream(IScheduler scheduler = null)
+        {
+            return Observable.Interval(TimeSpan.FromSeconds(1), scheduler)
+                .Where(x => x % 2 == 0)
+                .Select(x => $"Even tick: {x}");
+        }
+
 
         // Demonstrates cold vs hot observables
         public static void RxHotVsColdDemo()
@@ -68,8 +75,7 @@ namespace LeaveMeAloneCSharp.Playground
         {
             var subject = new Subject<int>();
 
-            var subscription = subject
-                .Where(x => x > 10)
+            var subscription = RxSubjectStream(subject)
                 .Subscribe(x => Console.WriteLine($"Received: {x}"));
 
             subject.OnNext(5);   // ignored by filter
@@ -80,17 +86,15 @@ namespace LeaveMeAloneCSharp.Playground
             subscription.Dispose();
         }
 
+        public static IObservable<int> RxSubjectStream(IObservable<int> source)
+        {
+            return source.Where(x => x > 10);
+        }
+
         // Demonstrates error propagation in Rx streams
         public static void RxErrorHandlingDemo()
         {
-            var observable = Observable.Create<int>(observer =>
-                {
-                    observer.OnNext(1);
-                    observer.OnNext(2);
-                    observer.OnError(new InvalidOperationException("Something went wrong"));
-                    observer.OnNext(3); // never executed
-                    return () => { };
-                });
+            var observable = RxErrorStream();
 
             observable.Subscribe(
                 x => Console.WriteLine($"Value: {x}"),
@@ -99,16 +103,35 @@ namespace LeaveMeAloneCSharp.Playground
             );
         }
 
+        public static IObservable<int> RxErrorStream()
+        {
+            return Observable.Create<int>(observer =>
+            {
+                observer.OnNext(1);
+                observer.OnNext(2);
+                observer.OnError(new InvalidOperationException("Something went wrong"));
+                observer.OnNext(3); // never executed
+                return () => { };
+            });
+        }
+
+
         // Time-based operators are one of Rx strongest features
         public static void RxTimeOperatorsDemo()
         {
-            var subscription = Observable.Interval(TimeSpan.FromMilliseconds(300))
-                .Throttle(TimeSpan.FromSeconds(1))
+            var subscription = RxThrottleStream()
                 .Subscribe(x => Console.WriteLine($"Throttled: {x}"));
 
             Thread.Sleep(5000);
             subscription.Dispose();
         }
+
+        public static IObservable<long> RxThrottleStream(IScheduler scheduler = null)
+        {
+            return Observable.Interval(TimeSpan.FromMilliseconds(300), scheduler)
+                .Throttle(TimeSpan.FromSeconds(1), scheduler);
+        }
+
 
         // Converts .NET event into Rx observable stream
         public static void RxEventToObservableDemo()
@@ -210,11 +233,7 @@ namespace LeaveMeAloneCSharp.Playground
         {
             var input = new Subject<string>();
 
-            var subscription = input
-                .Throttle(TimeSpan.FromMilliseconds(500)) // wait until typing pauses
-                .DistinctUntilChanged() // ignore same queries
-                .Do(q => Console.WriteLine($"Searching for: {q}"))
-                .SelectMany(query => FakeSearchApi(query).ToObservable()) // async search
+            var subscription = RxSearchStream(input, FakeSearchApi, withInfo: true)
                 .Subscribe(
                     results =>
                     {
@@ -251,6 +270,22 @@ namespace LeaveMeAloneCSharp.Playground
                 $"{query}_result2",
                 $"{query}_result3"
             };
+        }
+
+        public static IObservable<List<string>> RxSearchStream(
+            IObservable<string> input,
+            Func<string, Task<List<string>>> search,
+            bool withInfo = false)
+        {
+            return input
+                .Throttle(TimeSpan.FromMilliseconds(500))   // wait until typing pauses
+                .DistinctUntilChanged()                     // ignore same queries
+                .Do(q =>
+                {
+                    if (withInfo)
+                        Console.WriteLine($"Searching for: {q}");
+                })
+                .SelectMany(q => search(q).ToObservable()); // async search
         }
     }
 }

@@ -80,7 +80,7 @@ namespace LeaveMeAloneCSharp.Playground
         }
 
         // Error propagation through the pipeline
-        public static async Task ErrorPropagationDemo()
+        public static async Task ErrorPropagationDemo(bool silenceMode = true)
         {
             var block = new TransformBlock<int, int>(x =>
             {
@@ -114,6 +114,9 @@ namespace LeaveMeAloneCSharp.Playground
             {
                 var flat = ex.Flatten();
                 Console.WriteLine($"Caught error: {flat.InnerException?.Message}");
+
+                if(!silenceMode)
+                    throw; // rethrow if not in silence mode
             }
         }
 
