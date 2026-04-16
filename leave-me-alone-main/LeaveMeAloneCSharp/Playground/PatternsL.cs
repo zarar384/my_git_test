@@ -5,7 +5,7 @@ namespace LeaveMeAloneCSharp.Playground
     {
         public static async Task Run()
         {
-            await MediumLevelParallelStrategyPattern();
+            await AdapterPatternEapToTapDemo();
         }
 
         private static void SimpleStrategyPatternDemo()
@@ -141,6 +141,30 @@ namespace LeaveMeAloneCSharp.Playground
 
             Console.WriteLine();
             Console.WriteLine("FINISHED MEDIUM-LEVEL PARALLEL STRATEGY PATTERN EXAMPLE");
+        }
+
+        // The Adapter pattern is used to convert the interface of a Event-based Asynchronous Pattern (EAP) to the Task-based Asynchronous Pattern (TAP)
+        private static async Task AdapterPatternEapToTapDemo()
+        {
+            Console.WriteLine("ADAPTER PATTERN (EAP to TAP) EXAMPLE");
+            Console.WriteLine();
+
+            // imagine we have a legacy file downloader that uses the Event-based Asynchronous Pattern (EAP)
+            var legacyDownloader = new Utils.Adapters.LegacyFileDownloader();
+            var url = "http://example.com/file.txt";
+            try
+            {
+                // use the adapter extension method to call the EAP-based downloader in a TAP style
+                string content = await Utils.LegacyFileDownloaderExtensions.DownloadFileTaskAsync(legacyDownloader, url);
+                Console.WriteLine($"Downloaded Content: {content}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error downloading file: {ex.Message}");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("FINISHED ADAPTER PATTERN (EAP to TAP) EXAMPLE");
         }
     }
 }
