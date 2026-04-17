@@ -1,4 +1,4 @@
-﻿namespace LeaveMeAloneCSharp.Utils.Adapters
+﻿namespace LeaveMeAloneCSharp.Utils
 {
     // This is a legacy file downloader that uses an event-based asynchronous pattern (EAP).
     public class LegacyFileDownloader

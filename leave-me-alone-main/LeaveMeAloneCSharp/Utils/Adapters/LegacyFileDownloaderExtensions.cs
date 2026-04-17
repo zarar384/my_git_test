@@ -1,6 +1,4 @@
-﻿using LeaveMeAloneCSharp.Utils.Adapters;
-
-namespace LeaveMeAloneCSharp.Utils
+﻿namespace LeaveMeAloneCSharp.Utils.Adapters
 {
     // Adapter: converts the event-based asynchronous pattern (EAP) of LegacyFileDownloader
     // into a Task-based asynchronous pattern (TAP).

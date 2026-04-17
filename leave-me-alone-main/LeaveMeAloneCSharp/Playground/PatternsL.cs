@@ -6,7 +6,7 @@ namespace LeaveMeAloneCSharp.Playground
     {
         public static async Task Run()
         {
-            await AdapterPatternApmToTapDemo();
+            await AdapterPatternCustomAsyncToTapDemo();
         }
 
         private static void SimpleStrategyPatternDemo()
@@ -151,12 +151,12 @@ namespace LeaveMeAloneCSharp.Playground
             Console.WriteLine();
 
             // imagine we have a legacy file downloader that uses the Event-based Asynchronous Pattern (EAP)
-            var legacyDownloader = new Utils.Adapters.LegacyFileDownloader();
+            var legacyDownloader = new LegacyFileDownloader();
             var url = "http://example.com/file.txt";
             try
             {
                 // use the adapter extension method to call the EAP-based downloader in a TAP style
-                string content = await Utils.LegacyFileDownloaderExtensions.DownloadFileTaskAsync(legacyDownloader, url);
+                string content = await LegacyFileDownloaderExtensions.DownloadFileTaskAsync(legacyDownloader, url);
                 Console.WriteLine($"Downloaded Content: {content}");
             }
             catch (Exception ex)
@@ -191,6 +191,25 @@ namespace LeaveMeAloneCSharp.Playground
 
             Console.WriteLine();
             Console.WriteLine("FINISHED ADAPTER PATTERN (APM to TAP) EXAMPLE");
+        }
+
+
+        // The Adapter pattern is used to convert the interface of a custom callback-based asynchronous method to the Task-based Asynchronous Pattern (TAP)
+        private static async Task AdapterPatternCustomAsyncToTapDemo()
+        {
+            Console.WriteLine("ADAPTER PATTERN (CUSTOM CALLBACK to TAP) EXAMPLE");
+            Console.WriteLine();
+
+            // Legacy service with non-standard async (callback-based)
+            var legacyService = new LegacyHttpService();
+
+            // Use a custom adapter to convert the callback-based method to a Task-based method
+            string result = await legacyService.DownloadStringAsync("https://example.com");
+
+            Console.WriteLine($"Downloaded content: {result}");
+            Console.WriteLine();
+
+            Console.WriteLine("FINISHED ADAPTER PATTERN (CUSTOM CALLBACK to TAP) EXAMPLE");
         }
     }
 }
