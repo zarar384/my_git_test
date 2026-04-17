@@ -1,11 +1,12 @@
 ﻿using LeaveMeAloneCSharp.Strategies.Interfaces;
+using LeaveMeAloneCSharp.Utils.Adapters;
 namespace LeaveMeAloneCSharp.Playground
 {
     public static class PatternsL
     {
         public static async Task Run()
         {
-            await AdapterPatternEapToTapDemo();
+            await AdapterPatternApmToTapDemo();
         }
 
         private static void SimpleStrategyPatternDemo()
@@ -165,6 +166,31 @@ namespace LeaveMeAloneCSharp.Playground
 
             Console.WriteLine();
             Console.WriteLine("FINISHED ADAPTER PATTERN (EAP to TAP) EXAMPLE");
+        }
+
+        // The Adapter pattern is used to convert the interface of a Asynchronous Programming Model (APM) to the Task-based Asynchronous Pattern (TAP)
+        private static async Task AdapterPatternApmToTapDemo()
+        {
+            Console.WriteLine("ADAPTER PATTERN (APM to TAP) EXAMPLE");
+            Console.WriteLine();
+
+            try
+            {
+                // Legacy service that uses Begin/End pattern (APM)
+                var legacyService = new LegacyCalculationService();
+
+                // Use the adapter extension method to call the APM-based service in a TAP style
+                int result = await legacyService.CalculateSquareAsync(10);
+
+                Console.WriteLine($"Result: {result}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error calculating square: {ex.Message}");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("FINISHED ADAPTER PATTERN (APM to TAP) EXAMPLE");
         }
     }
 }

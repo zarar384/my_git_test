@@ -4,7 +4,7 @@
     public class LegacyFileDownloader
     {
         // Event that is raised when the download is completed
-        public event EventHandler<DownloadCompletedEventArgs> DownloadCompleted;
+        public event EventHandler<DownloadCompletedEventArgs>? DownloadCompleted;
 
         public void DownloadFileAsync(string url)
         {
