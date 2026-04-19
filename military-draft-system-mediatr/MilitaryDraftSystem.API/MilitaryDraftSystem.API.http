@@ -1,0 +1,24 @@
+@MilitaryDraftSystem.API_HostAddress = http://localhost:5008
+
+
+### Send Summons
+
+POST {{MilitaryDraftSystem.API_HostAddress}}/draft/summons
+Content-Type: application/json
+
+{
+"citizenId": "{{citizenId}}",
+"date": "2026-05-01T10:00:00Z"
+}
+
+### Send Summons (invalid date => validation)
+
+POST {{MilitaryDraftSystem.API_HostAddress}}/draft/summons
+Content-Type: application/json
+
+{
+"citizenId": "{{citizenId}}",
+"date": "2020-01-01T10:00:00Z"
+}
+
+###
