@@ -1,4 +1,5 @@
 ﻿using LeaveMeAloneCSharp.Models;
+using System.Reactive.Linq;
 using System.Threading.Tasks.Dataflow;
 
 namespace LeaveMeAloneCSharp.Playground
@@ -504,6 +505,62 @@ namespace LeaveMeAloneCSharp.Playground
             inputBuffer.Complete();
 
             await storageBlock.Completion;
+        }
+
+        public static async Task AsyncStreamToDataflowDemo()
+        {
+            Console.WriteLine("ASYNC STREAM TO DATAFLOW (push async stream into block)");
+            Console.WriteLine();
+
+            var block = new ActionBlock<int>(x =>
+            {
+                Console.WriteLine($"Block processing: {x}");
+            });
+
+            // Simulate an async stream of data
+            async IAsyncEnumerable<int> Generate()
+            {
+                for (int i = 1; i <= 5; i++)
+                {
+                    await Task.Delay(200);
+                    Console.WriteLine($"Generated: {i}");
+                    yield return i;
+                }
+            }
+
+            // Push async stream into Dataflow block
+            await foreach (var item in Generate())
+            {
+                await block.SendAsync(item);
+            }
+
+            block.Complete();
+            await block.Completion;
+
+            Console.WriteLine("All items passed through Dataflow block");
+            Console.WriteLine();
+        }
+
+        public static void ObservableToDataflowDemo()
+        {
+            Console.WriteLine("OBSERVABLE -> DATAFLOW (stream pushes into block)");
+            Console.WriteLine();
+
+            // Simulate an observable stream of data
+            var observable = Observable.Range(1, 5);
+
+            var block = new ActionBlock<int>(x =>
+            {
+                Console.WriteLine($"Block received: {x}");
+            });
+
+            // Observable pushes values into Dataflow block
+            observable.Subscribe(block.AsObserver());
+
+            Thread.Sleep(500);
+
+            Console.WriteLine("Observable stream consumed by Dataflow");
+            Console.WriteLine();
         }
     }
 }

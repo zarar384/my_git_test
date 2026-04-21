@@ -5,17 +5,9 @@ namespace LeaveMeAloneCSharp.Playground
 {
     public static class ParallelLoopsL
     {
-        private static IEnumerable<int> Range(int start, int end, int step = 1)
+        public static async Task Run()
         {
-            for (int i = start; i < end; i += step)
-            {
-                yield return i;
-            }
-        }
-
-        public static void Run()
-        {
-            RunDynamicParallelFileScannerDemo();
+          await  RunParallelToAsyncDemo();
         }
 
         // chanked to use Partitioner for better performance on large datasets
@@ -465,6 +457,38 @@ namespace LeaveMeAloneCSharp.Playground
             Console.WriteLine($"Processing time: {sw.ElapsedMilliseconds} ms");
         }
 
+        public static async Task RunParallelToAsyncDemo()
+        {
+            Console.WriteLine("Starting parallel to async demo...");
+            Console.WriteLine();
+
+
+            var numbers = Enumerable.Range(1, 5);
+
+            Console.WriteLine("Starting parallel work WITHOUT blocking caller thread...");
+            Console.WriteLine($"Running on thread {Thread.CurrentThread.ManagedThreadId}");
+            Console.WriteLine();
+
+            // use Task.Run to offload the parallel work to a background thread, allowing the caller thread to remain responsive
+            // forexample, in a UI app this would prevent freezing the UI while the work is being done
+            await Task.Run(() =>
+            {
+                Parallel.ForEach(numbers, number =>
+                {
+                    Console.WriteLine($"Processing {number} on thread {Thread.CurrentThread.ManagedThreadId}");
+                    Thread.Sleep(300); // Simulate work
+                });
+            });
+
+            Console.WriteLine();
+            Console.WriteLine("All work completed, back to caller thread.");
+
+            Console.WriteLine();
+            Console.WriteLine("End of demo.");
+
+        }
+
+        #region helpers
         // Simulate a complex risk score calculation based on log properties
         private static double CalculateRiskScore(SecurityLog log)
         {
@@ -482,5 +506,14 @@ namespace LeaveMeAloneCSharp.Playground
 
             return score;
         }
+
+        private static IEnumerable<int> Range(int start, int end, int step = 1)
+        {
+            for (int i = start; i < end; i += step)
+            {
+                yield return i;
+            }
+        }
+        #endregion  
     }
 }

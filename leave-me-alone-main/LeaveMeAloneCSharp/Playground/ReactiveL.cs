@@ -7,9 +7,9 @@ namespace LeaveMeAloneCSharp.Playground
 {
     public static class ReactiveL
     {
-        public static void Run()
+        public static async Task Run()
         {
-            RxBasicDemo();
+             TaskToObservableDemo();
             //RxHotVsColdDemo();
             //RxSubjectDemo();
             //RxErrorHandlingDemo();
@@ -286,6 +286,92 @@ namespace LeaveMeAloneCSharp.Playground
                         Console.WriteLine($"Searching for: {q}");
                 })
                 .SelectMany(q => search(q).ToObservable()); // async search
+        }
+
+        public static async Task ObservableToAwaitDemo()
+        {
+            Console.WriteLine("OBSERVABLE TO AWAIT DEMO");
+            Console.WriteLine();
+
+            // Emits values every 0.1 seconds (0,1,2,3,4)
+            // This is a COLD observable:
+            // each subscription creates a new independent sequence (starts from 0 again)
+            var observable = Observable
+                .Interval(TimeSpan.FromSeconds(0.1))
+                .Take(5);
+            //.Publish().RefCount().Take(5); // Uncomment to make it HOT (shared sequence) 0... 5... 6, 7, 8, 9, 10
+
+            Console.WriteLine("Starting FirstAsync (no waiting full stream)...");
+
+            // FirstAsync takes the FIRST value from the stream and converts it to a Task
+            int first = (int)await observable.FirstAsync();
+            Console.WriteLine($"First element: {first}");
+
+            Console.WriteLine();
+
+            Console.WriteLine("Starting LastAsync (waits full stream)...");
+
+            // LastAsync takes the LAST value from the stream and converts it to a Task
+            int last = (int)await observable.LastAsync();
+            Console.WriteLine($"Last element: {last}");
+
+            Console.WriteLine();
+
+            Console.WriteLine("Starting ToList (collect all)...");
+
+            // ToList takes ALL values from the stream and converts them to a List
+            var all = await observable.ToList();
+            Console.WriteLine($"All elements: {string.Join(", ", all)}");
+
+            Console.WriteLine();
+        }
+
+        public static void TaskToObservableDemo()
+        {
+            Console.WriteLine("TASK TO OBSERVABLE DEMO");
+            Console.WriteLine();
+
+            // Simulate an async operation that returns a value
+            Task<string> asyncTask = Task.Run(async () =>
+            {
+                await Task.Delay(500);
+                return "Hello from Task!";
+            });
+
+            // Convert the Task to an Observable
+            var observable = asyncTask.ToObservable();
+
+            // Subscribe to the Observable
+            var subscription = observable.Subscribe(
+                result => Console.WriteLine($"Received: {result}"),
+                ex => Console.WriteLine($"Error: {ex.Message}"),
+                () => Console.WriteLine("Observable task completed")
+            );
+
+            // Wait for the task to complete
+            Thread.Sleep(1000); // simulate waiting for async operation
+
+            subscription.Dispose();
+        }
+
+        public static async Task ObservableToAsyncStreamDemo()
+        {
+            Console.WriteLine("OBSERVABLE TO ASYNC STREAM (push to pull bridge)");
+            Console.WriteLine();
+
+            // Emits values every 0.2 seconds (0,1,2,3,4)
+            var observable = Observable.Interval(TimeSpan.FromMilliseconds(200)).Take(5);
+
+            Console.WriteLine("Consuming observable as async stream...");
+
+            // ToAsyncEnumerable converts the Observable into an IAsyncEnumerable
+            await foreach (var item in observable.ToAsyncEnumerable())
+            {
+                Console.WriteLine($"Pulled value: {item}");
+            }
+
+            Console.WriteLine("Stream completed");
+            Console.WriteLine();
         }
     }
 }
