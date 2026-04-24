@@ -1,0 +1,53 @@
+DOCS(DRIVERS): https://www.mongodb.com/docs/drivers/
+MongoDb Shell: mongosh
+
+OUTLINE:
+
+Introduction
+   ↓
+Basics & Basic CRUD — вот тут база, без этого ты вообще никто
+   ↓
+Data Schema & Relations — если проебёшь, потом база превратится в помойку
+   ↓
+Working with the Shell — начинаешь тыкать руками, как мужик
+   ↓
+Using Compass — типа GUI, чтобы не всё через консоль, но не расслабляйся
+   ↓
+CRUD Deep Dive - Create — начинаешь нормально создавать, не как долбоёб
+   ↓
+CRUD Deep Dive - Read — учишься доставать данные, а не “где мой документ блять”
+   ↓
+CRUD Deep Dive - Update — правки без разрушения всего к херам
+   ↓
+CRUD Deep Dive - Delete — удалять аккуратно, а не сносить всё нахрен
+   ↓
+Using Indexes — вот тут начинается ускорение, иначе база тормозит как говно
+   ↓
+Working with Geospatial Data — прикольная тема, но не всегда нужна
+   ↓
+The Aggregation Framework — мозг начинает плавиться, но это мощно
+   ↓
+Working with Numeric Data — нюансы с числами, не супер интересно, но надо
+   ↓
+Security & Authentication — если пропустишь, тебя взломают за 5 минут
+   ↓
+Performance, Fault Tolerance & Deployment — вот тут уже прод и реальная жизнь
+   ↓
+Transactions — наконец-то норм работа с данными без косяков
+   ↓
+From Shell to Drivers — переходишь в код, как настоящий разработчик
+   ↓
+MongoDB Stitch — магия серверлесса, если не хочешь ебаться с серверами
+
+
+show dbs
+use shop  // db name
+db.products.insertOne({name: "Dildo", price: 69.69})
+db.products.find()
+db.products.find().pertty()
+db.products.insertOne({name: "Shit", price 1.99, description:"some shit"})
+db.products.find().pertty()
+db.products.insertOne({name: "Another Shit", price 3.99, description:"the same some shit but more expensive",
+details:{color:"brown", details:["corn", "flies"]}})
+
+
