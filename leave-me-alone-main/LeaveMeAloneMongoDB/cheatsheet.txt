@@ -51,3 +51,44 @@ db.products.insertOne({name: "Another Shit", price 3.99, description:"the same s
 details:{color:"brown", details:["corn", "flies"]}})
 
 
+db.createCollection("users", {
+    validator: {
+        $jsonSchema: {
+            bsonType: "object",
+            required: ["name", "email"],
+            properties: {
+                name: {
+                    bsonType: "string",
+                    description: "must be a string"
+                },
+                email: {
+                    bsonType: "string",
+                    pattern: "^.+@.+$",
+                    description: "must be a valid email"
+                },
+                age: {
+                    bsonType: "int",
+                    minimum: 0
+                }
+            }
+        }
+    }
+});
+
+
+// Run Transactions
+POWERSHELL: & "C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe" --replSet rs0 --dbpath "C:\Musorka\Code\MongoDB"
+POWERSHELL: net stop MongoDB
+mongosh: rs.initiate()
+mongosh: rs.status()
+POWERSHELL: net start MongoDB
+cnange connection: mongodb://localhost:27017/?replicaSet=rs0
+
+OR
+C:\Program Files\MongoDB\Server\8.2\bin\mongod.cfg
+ADD:
+"replication:
+  replSetName: rs0"
+RESTART: net stop MongoDB
+         net start MongoDB
+mongosh: rs.initiate()
