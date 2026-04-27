@@ -50,6 +50,102 @@ db.products.find().pertty()
 db.products.insertOne({name: "Another Shit", price 3.99, description:"the same some shit but more expensive",
 details:{color:"brown", details:["corn", "flies"]}})
 
+sudo mongod
+sudo mongod --port _
+
+-- creating db && collections
+show dbs
+use someDb -- and it necessary to insert some data
+--db.someTbl.insertOne({...})
+db.someTbl.insertOne({someData : "some data"})
+db.find().pretty()
+
+-- MongoDB use BSON(binary data)
+db.someTbl.insertOne
+(
+   {
+      someData : "some data",
+      createdAt: new Date()
+   }
+)
+
+-- CRUD && MongoDB
+C:
+insertOne(data, options)
+insertMany(data, options)
+
+R:
+find(filter, options)
+findOne(filter, options)
+
+U:
+updateOne(filter, data, options)
+updateMany(filter, data, options)
+replaceOne(filter, data, Options)
+
+D:
+deleteOne(filter, options)
+deleteMany(filter, options)
+
+--db.someTbl.deleteOne({someData: "some data"})
+db.someData.updateOne(
+   {
+      someData: "some data"
+   },
+   {
+      $set: {someData: "some shit"}
+   }
+)
+
+db.someData.updateMany(
+   {}, // all
+   { 
+      $set: {someData: "some data"}
+   }
+)
+
+db.someData.deleteMany({someData: "some data"})
+
+db.someData.insertMany([
+   {
+      someData: "some data 1",
+      someNumeric: 1000
+   },
+   {
+      someData: "some data 2",
+      someNumeric: 2000
+   }
+])
+
+db.someData.find({name: "some data 1})
+db.someData.find({someNumeric: {$gt: 1000}}) --greater than
+
+-- also exist an update func and that works similarly to updateMany
+-- be aware of the behavior of update
+-- IT OVERWROTE ALL THE OTHER KEY VALUE PAIRS!!!
+db.someData.update({someData: "some data 1", {someData: "shit data}})
+result:
+{"_id": ObjectId("..."), "someData": "shit data"}, // without someNumeric!
+{
+      _id: ObjectId("..."),
+      "someData": "some data 2",
+      "someNumeric": 2000
+}
+
+db.someData.find().forEach((sd)=> {printjson(sd)})
+
+-- Projection
+db.someData.find({}, { someNumeric: 2000}).pretty()
+
+-- Embedded Documents && Arrays
+-- Embedded
+db.someData.updateMany({}, {someNumeric: 9999})
+
+-- Arrays
+db.someData.updateOne({someData: "some data"}, {$set: {someArray: ["bla_1", "bla_2"]}})
+
+-- Accessing structed data
+db.someData.find({someData: "some data"}).someArray
 
 db.createCollection("users", {
     validator: {
