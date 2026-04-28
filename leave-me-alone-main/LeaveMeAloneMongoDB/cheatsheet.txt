@@ -53,6 +53,20 @@ details:{color:"brown", details:["corn", "flies"]}})
 sudo mongod
 sudo mongod --port _
 
+mongod --help
+db.help()
+
+-- IMPORT JSON (MongoDB)
+mongoimport file.json -d movieData -c movies --jsonArray --drop
+file.json - file
+-d movieData - database (auto created)
+-c movies - collection
+--jsonArray - file contains array of documents
+--drop - drop collection before import (clean state)
+show dbs
+use movieData
+db.movies.find().pretty()
+
 -- creating db && collections
 show dbs
 use someDb -- and it necessary to insert some data
@@ -170,6 +184,108 @@ db.createCollection("users", {
         }
     }
 });
+
+-- drop
+use('dbName');
+db.dropDatabase();
+db.someData.drop();
+
+-- RELATIONS
+1:1
+- embed:
+user { profile: {} }
+- ref:
+user { profileId }
+
+1:N
+- embed (small):
+user { orders: [] }
+- ref (normal):
+order { userId }
+
+M:N
+- arrays:
+student { courseIds: [] }
+- join (better):
+enrollment { studentId, courseId }
+
+RULE:
+small -> embed
+big -> reference
+
+
+-- join with $lookup
+db.books.aggregate(
+   [$lookup: 
+      {from: "autors", localField: "autors", 
+       foreignField: "_id", as: "creators"}
+   ] 
+)
+
+-- changing the validation action
+db.runCommand({
+   collMod: 'someTbl',
+   validator: {
+      $jsonSchema: {
+         ...
+      }
+   },
+   validationAction: 'warn'
+})
+
+-- WRITE CONCERN & JOURNALING
+
+-- WHAT IS THIS:
+writeConcern = how sure MongoDB is that your data is actually saved
+
+-- PARAMS:
+w -> how many nodes confirm
+j -> write to journal (disk) or not
+
+-- SAFE (don’t lose data)
+db.companies.insertOne(
+{
+  name: "SafeCompany"
+},
+{
+  writeConcern:
+  {
+    w: "majority",
+    j: true
+  }
+})
+
+-- result:
+-- survives crash
+-- data recoverable
+-- slower
+
+-- FAST (can lose data)
+db.companies.insertOne(
+{
+  name: "FastCompany"
+},
+{
+  writeConcern:
+  {
+    w: 1,
+    j: false
+  }
+})
+
+-- result:
+-- fast
+-- may lose data on crash
+
+-- DEFAULT:
+{ w: 1, j: false }
+
+-- WHEN TO USE:
+-- j: true => safe
+-- important data (payments, users)
+
+-- j: false => risk
+-- logs, cache, temp data
 
 
 // Run Transactions
