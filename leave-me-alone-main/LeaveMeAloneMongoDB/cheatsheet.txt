@@ -299,6 +299,116 @@ find({ "meta.rating": { $gt: 9 } })
 
 ALWAYS filter in DB, not client!
 
+-- UPDATE OPERATORS
+-- $min =  lower only  
+set value ONLY if new < current
+
+db.movies.updateOne(
+  { title: "X" },
+  { $min: { "meta.rating": 8 } }
+)
+
+if current = 9 -> becomes 8  
+if current = 7 -> stays 7  
+
+-- $max = higher only  
+set value ONLY if new > current
+
+db.movies.updateOne(
+  { title: "X" },
+  { $max: { "meta.rating": 10 } }
+)
+
+if current = 9 -> becomes 10  
+if current = 10 -> stays 10  
+
+-- $mul = multiply
+multiply current value
+
+db.movies.updateOne(
+  { title: "X" },
+  { $mul: { visitors: 2 } }
+)
+
+visitors: 1000 -> 2000  
+
+-- $unset =- getting rid of fields
+db.someTbl.updateMany({isArchive: true}, {$unset: {userId: ""}})
+
+-- $rename = renaming fields
+db.someData.updateMany({}, {$rename: {someData: "someShit"}})
+
+-- {upsert: true} - create if it does not exist
+
+-- $ = update FIRST matched element in array
+"hobbies.$.field"
+-- $[] = update ALL elements
+"hobbies.$[].field"
+
+-- $[el] update ONLY elements that match condition
+"hobbies.$[el].field"
+
+arrayFilters: [
+  { "el.field": condition }
+]
+
+example:
+db.users.updateMany(
+  { "hobbies.frequency": { $gt: 2 } },
+  {
+    $set: {
+      "hobbies.$[el].good": true
+    }
+  },
+  {
+    arrayFilters: [
+      { "el.frequency": { $gt: 2 } }
+    ]
+  }
+)
+
+-- $push add one
+$push: {
+  hobbies: { ... }
+}
+
+-- $push + $each = add many
+$push: {
+  hobbies: {
+    $each: [ {...}, {...} ]
+  }
+}
+
+-- $sort (with push)
+$push: {
+  hobbies: {
+    $each: [...],
+    $sort: { field: -1 }
+  }
+}
+
+
+-- $pull = remove by condition
+$pull: {
+  hobbies: { field: value }
+}
+
+-- $pop = remove edge
+$pop: {
+  hobbies: 1   // last
+  // -1 → first
+}
+
+-- $addToSet = adds ONLY unique value to array
+db.users.updateOne(
+  { name: "Maria" },
+  {
+    $addToSet: {
+      hobbies: { title: "Hiking", frequency: 2 }
+    }
+  }
+)
+
 
 -- join with $lookup
 db.books.aggregate(
