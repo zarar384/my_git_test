@@ -1,0 +1,122 @@
+[
+  {
+    "title": "Midnight Code Breakers",
+    "meta": { "rating": 9.4, "aired": 2021, "runtime": 95 },
+    "visitors": 1800000,
+    "expectedVisitors": 1500000,
+    "genre": ["thriller", "tech"],
+    "ratings": [10, 9, 9]
+  },
+  {
+    "title": "Silent Data",
+    "meta": { "rating": 8.7, "aired": 2019, "runtime": 110 },
+    "visitors": 800000,
+    "expectedVisitors": 900000,
+    "genre": ["drama", "mystery"],
+    "ratings": [9, 8, 9]
+  },
+  {
+    "title": "Quantum Errors",
+    "meta": { "rating": 9.6, "aired": 2022, "runtime": 88 },
+    "visitors": 2200000,
+    "expectedVisitors": 2000000,
+    "genre": ["sci-fi", "thriller"],
+    "ratings": [10, 10, 9]
+  },
+  {
+    "title": "Broken Loop",
+    "meta": { "rating": 7.9, "aired": 2018, "runtime": 102 },
+    "visitors": 450000,
+    "expectedVisitors": 600000,
+    "genre": ["drama"],
+    "ratings": [8, 7, 8]
+  },
+  {
+    "title": "Firewall Dreams",
+    "meta": { "rating": 9.3, "aired": 2020, "runtime": 97 },
+    "visitors": 1400000,
+    "expectedVisitors": 1300000,
+    "genre": ["action", "tech"],
+    "ratings": [9, 10, 9]
+  },
+  {
+    "title": "Neon City Rush",
+    "meta": { "rating": 8.2, "aired": 2017, "runtime": 105 },
+    "visitors": 670000,
+    "expectedVisitors": 700000,
+    "genre": ["action"],
+    "ratings": [8, 8, 9]
+  },
+  {
+    "title": "Binary Souls",
+    "meta": { "rating": 9.7, "aired": 2023, "runtime": 92 },
+    "visitors": 2500000,
+    "expectedVisitors": 2400000,
+    "genre": ["drama", "sci-fi"],
+    "ratings": [10, 10, 9]
+  },
+  {
+    "title": "Echoes of Runtime",
+    "meta": { "rating": 8.9, "aired": 2021, "runtime": 85 },
+    "visitors": 900000,
+    "expectedVisitors": 850000,
+    "genre": ["thriller"],
+    "ratings": [9, 9, 8]
+  },
+  {
+    "title": "Stack Overflowed",
+    "meta": { "rating": 9.1, "aired": 2022, "runtime": 99 },
+    "visitors": 1200000,
+    "expectedVisitors": 1100000,
+    "genre": ["comedy", "tech"],
+    "ratings": [9, 9, 10]
+  },
+  {
+    "title": "Dark Commit",
+    "meta": { "rating": 8.4, "aired": 2016, "runtime": 112 },
+    "visitors": 500000,
+    "expectedVisitors": 550000,
+    "genre": ["thriller"],
+    "ratings": [8, 9, 8]
+  },
+  {
+    "title": "Hidden Variables",
+    "meta": { "rating": 9.8, "aired": 2024, "runtime": 94 },
+    "visitors": 3000000,
+    "expectedVisitors": 2800000,
+    "genre": ["mystery", "drama"],
+    "ratings": [10, 10, 10]
+  },
+  {
+    "title": "Last Debug",
+    "meta": { "rating": 7.8, "aired": 2015, "runtime": 108 },
+    "visitors": 400000,
+    "expectedVisitors": 450000,
+    "genre": ["drama"],
+    "ratings": [7, 8, 8]
+  },
+  {
+    "title": "Infinite Loopers",
+    "meta": { "rating": 9.2, "aired": 2020, "runtime": 89 },
+    "visitors": 1600000,
+    "expectedVisitors": 1700000,
+    "genre": ["sci-fi"],
+    "ratings": [9, 9, 10]
+  },
+  {
+    "title": "AI Awakens",
+    "meta": { "rating": 9.5, "aired": 2023, "runtime": 93 },
+    "visitors": 2700000,
+    "expectedVisitors": 2600000,
+    "genre": ["sci-fi", "action"],
+    "ratings": [10, 9, 10]
+  },
+  {
+    "title": "Ghost in Database",
+    "meta": { "rating": 8.6, "aired": 2019, "runtime": 101 },
+    "visitors": 750000,
+    "expectedVisitors": 800000,
+    "genre": ["horror", "tech"],
+    "ratings": [9, 8, 9]
+  }
+]

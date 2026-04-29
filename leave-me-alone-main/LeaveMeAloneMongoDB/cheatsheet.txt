@@ -214,6 +214,92 @@ small -> embed
 big -> reference
 
 
+-- READ OPERATIONS
+db.someCollection.find({age: 32})
+db.someCollection.find({age: {$gt: 30}})
+
+Query Operators: $eq, $ne, $lt, $gt, $in, $nin, $or, $nor, $and, $not, $exists, $type, $regex, $expr, $size, $all, $elemMatch
+Projection Operators: $, $elemMatch, $meta, $slice, $expr
+Update Operator: $inc
+
+CURSOR (MongoDB)
+
+find() -> returns cursor (NOT data)
+
+db.movies.find()
+
+-- CURSOR - BASIC
+db.movies.find().count()   // number of docs
+db.movies.find().pretty()  // formatted output
+
+shell:
+- shows 20 docs
+- type "it" -> next 20
+
+-- NEXT / HASNEXT
+const cursor = db.movies.find()
+
+cursor.next()     // get 1 doc
+cursor.hasNext()  // check if more
+
+IMPORTANT:
+- cursor keeps position
+- no var -> new query every time
+
+-- FOREACH
+db.movies.find().forEach(doc => printjson(doc))
+
+- loops all docs
+- DON'T filter here (shit performance)
+
+-- SORT
+db.movies.find().sort({ "meta.rating": -1 }) // DESC
+db.movies.find().sort({ "meta.rating": 1 })  // ASC
+
+multi sort:
+.sort({ "meta.rating": -1, "meta.runtime": -1 })
+
+-- SKIP (pagination)
+db.movies.find().skip(10)
+
+-- LIMIT
+db.movies.find().limit(10)
+
+-- SKIP + LIMIT
+db.movies.find().skip(10).limit(10)
+
+page 2 (10 per page)
+
+-- ORDER (Mongo handles it)
+.find().sort().skip().limit()
+
+real execution:
+sort -> skip -> limit
+
+-- IMPORTANT
+cursor = stream, NOT array
+data NOT loaded all at once
+
+next() -> one by one
+forEach() -> all
+
+-- ERROR
+cursor.next() -> error if empty
+
+fix:
+cursor.hasNext()
+
+-- BEST PRACTICE
+
+BAD:
+find().forEach(doc => if (doc.rating > 9))
+
+GOOD:
+find({ "meta.rating": { $gt: 9 } })
+
+ALWAYS filter in DB, not client!
+
+
 -- join with $lookup
 db.books.aggregate(
    [$lookup: 
