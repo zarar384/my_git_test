@@ -396,7 +396,7 @@ $pull: {
 -- $pop = remove edge
 $pop: {
   hobbies: 1   // last
-  // -1 → first
+  // -1 -> first
 }
 
 -- $addToSet = adds ONLY unique value to array
@@ -483,6 +483,336 @@ db.companies.insertOne(
 -- j: false => risk
 -- logs, cache, temp data
 
+-- INDEXES 
+index = ordered list of field values + pointer to document
+for speed up: find - update - delete
+
+-- WITHOUT INDEX
+MongoDB scans ALL documents
+and slow on big collections
+
+-- WITH INDEX
+INDEX SCAN
+MongoDB uses sorted index, jumps directly to needed values then fetches documents
+
+-- CREATE
+db.collection.createIndex({ field: 1 })   -- ASC
+db.collection.createIndex({ field: -1 })  -- DESC
+
+-- IMPORTANT
+index != data, index = separate structure
+
+-- COST, indexes are NOT free:
+- slower inserts
+- slower updates
+(because index must be updated)
+
+-- RULE: many indexes -> slower writes
+-- WHEN INDEX GOOD, when query returns SMALL subset (e.g. <20%)
+-- WHEN INDEX BAD, when query returns MOST documents -> collection scan can be faster
+-- EXPLAIN
+db.collection.find({...}).explain("executionStats")
+check:
+- stage: COLLSCAN vs IXSCAN
+- totalDocsExamined
+- totalKeysExamined
+
+GOOD: keys ≈ returned docs
+BAD: docsExamined >> returned docs
+
+-- DEFAULT INDEX
+_id always indexed
+
+-- SORT
+index helps sorting:
+db.collection.find().sort({ field: 1 })
+
+WITHOUT index:
+- MongoDB sorts in memory
+- limit: 32MB
+-> can FAIL
+
+-- INDEX ON NESTED FIELD
+db.collection.createIndex({ "dob.age": 1 })
+
+-- EDGE CASE
+query returns ALL docs:
+index = extra step -> slower
+
+COLLSCAN: already has all docs
+
+INDEX: scan index then fetch all docs
+-> waste of time
+
+-- DATASET SIZE MATTERS
+small collection: difference ≈ nothing
+big collection: difference = HUGE
+
+-- GEOSPATIAL DATA
+query by location: near me - within radius - inside area
+
+-- FORMAT (GeoJSON)
+field: {
+  type: "Point",
+  coordinates: [longitude, latitude]
+}
+IMPORTANT: - order = [lng, lat] (NOT lat,lng)
+
+-- INSERT
+db.places.insertOne({
+  name: "...",
+  location: {
+    type: "Point",
+    coordinates: [lng, lat]
+  }
+})
+
+-- GEO INDEX (REQUIRED for $near)
+db.places.createIndex({ location: "2dsphere" })
+
+-- NEAR QUERY
+db.places.find({
+  location: {
+    $near: {
+      $geometry: {
+        type: "Point",
+        coordinates: [lng, lat]
+      },
+      $maxDistance: 500,   -- meters
+      $minDistance: 10
+    }
+  }
+})
+RESULT sorted by distance (nearest first)
+WITHOUT INDEX $near -> ERROR
+
+-- GEO WITHIN (AREA)
+db.places.find({
+  location: {
+    $geoWithin: {
+      $geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            P1, P2, P3, P4, P1
+          ]
+        ]
+      }
+    }
+  }
+})
+
+IMPORTANT: polygon = array of points
+!MUST repeat first point at end
+RESULT returns points inside area
+
+-- GEO INTERSECTS
+db.areas.find({
+  area: {
+    $geoIntersects: {
+      $geometry: {
+        type: "Point",
+        coordinates: [lng, lat]
+      }
+    }
+  }
+})
+find which area contains point
+
+-- DIFFERENCE
+$geoWithin: find docs INSIDE area
+$geoIntersects:  check overlap (point in area / area in area)
+
+-- RADIUS SEARCH (ALTERNATIVE)
+db.places.find({
+  location: {
+    $geoWithin: {
+      $centerSphere: [
+        [lng, lat],
+        radius
+      ]
+    }
+  }
+})
+radius: distance / earth_radius
+example (1km): 1 / 6378.1
+RESULT NOT sorted
+
+-- DIFFERENCE
+$near:  requires index - sorted - supports min/max distance
+$geoWithin + $centerSphere: not sorted - manual radius - simpler
+
+--AGGREGATION  = pipeline (array of stages)
+each stage = transforms data
+output of stage -> input of next stage
+db.collection.aggregate([ {stage1}, {stage2}, ... ])
+
+-- CORE IDEA
+find -> simple query
+aggregate -> transform + compute + reshape
+
+pipeline = step by step transformation
+each stage = new dataset
+
+-- BASIC STAGES
+$match
+-- filter (like find)
+{ $match: { gender: "female" } }
+
+$group
+-- many -> one (aggregation)
+{
+  $group: {
+    _id: "$location.state",
+    total: { $sum: 1 }
+  }
+}
+
+$project
+-- one -> one (transform)
+{
+  $project: {
+    _id: 0,
+    name: 1,
+    fullName: {
+      $concat: ["$name.first", " ", "$name.last"]
+    }
+  }
+}
+
+$sort
+{ $sort: { total: -1 } }
+
+$limit / $skip
+{ $limit: 10 }
+{ $skip: 10 }
+
+
+-- IMPORTANT DIFFERENCE
+$group -> merges documents
+$project -> transforms document
+
+-- MUST REMEMBER
+$match ≈ find
+$project ≈ select + transform
+$group ≈ GROUP BY (SQL)
+
+-- FIELD ACCESS
+"$field" -> value from document
+"$$var" -> variable (in $filter etc)
+
+-- GROUP OPERATORS
+count:
+{ $sum: 1 }
+
+sum field:
+{ $sum: "$price" }
+
+avg:
+{ $avg: "$age" }
+
+max / min:
+{ $max: "$value" }
+{ $min: "$value" }
+
+
+-- PROJECT TRICKS
+rename field:
+newName: "$oldName"
+
+nested access:
+"$location.state"
+
+concat:
+{ $concat: ["$a", " ", "$b"] }
+
+-- TYPE CONVERT
+$toDate: "$dob.date"
+$toDouble: "$value"
+
+(full version)
+{
+  $convert: {
+    input: "$value",
+    to: "double",
+    onError: 0,
+    onNull: 0
+  }
+}
+
+-- ARRAY OPERATIONS
+$unwind
+-- array -> multiple docs
+{ $unwind: "$hobbies" }
+
+$push
+-- add values (duplicates allowed)
+
+$addToSet
+-- add unique values
+
+$size
+-- array length
+{ num: { $size: "$arr" } }
+
+$slice
+-- get part of array
+{ $slice: ["$arr", 2] }
+
+$filter
+-- filter array
+{
+  $filter: {
+    input: "$arr",
+    as: "item",
+    cond: { $gt: ["$$item.score", 60] }
+  }
+}
+
+-- ARRAY FLOW (IMPORTANT)
+$unwind -> split array
+$group -> rebuild / aggregate
+
+-- PIPELINE RULES
+1) order matters
+2) first stage uses indexes
+3) use $match early (performance)
+
+-- ORDER EXAMPLES
+GOOD: $match -> $group -> $sort -> $limit
+BAD: $sort -> $match   (slow)
+
+-- PAGINATION
+$sort -> $skip -> $limit
+
+-- GEO
+coordinates = [longitude, latitude]  <-- IMPORTANT
+index: { location: "2dsphere" }
+$geoNear MUST be first
+{
+  $geoNear: {
+    near: {
+      type: "Point",
+      coordinates: [lng, lat]
+    },
+    distanceField: "dist",
+    maxDistance: 1000
+  }
+}
+
+-- BUCKET
+$bucket -> manual ranges
+$bucketAuto -> auto ranges
+
+-- SAVE RESULT
+{ $out: "newCollection" }
+
+-- COMMON FLOW 
+1) $match
+2) $project (clean / transform)
+3) $group (aggregate)
+4) $sort
+5) $limit
 
 // Run Transactions
 POWERSHELL: & "C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe" --replSet rs0 --dbpath "C:\Musorka\Code\MongoDB"

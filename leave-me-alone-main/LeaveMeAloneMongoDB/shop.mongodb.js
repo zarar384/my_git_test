@@ -1,6 +1,9 @@
 use("shopDb");
-let dropDb = true;
+const dropDb = true;
 if (dropDb) db.dropDatabase();
+
+const test1 = false;
+const test2 = true;
 
 // Create transaction session
 const session = db.getMongo().startSession();
@@ -431,135 +434,278 @@ finally {
     session.endSession();
 }
 
-// Find users with age greater than 25 and print their name and email
-print("\nUsers with age greater than 25:");
-db.users.find({
-    age: { $gt: 25 }
-}).forEach(function (user) {
-    print("User: " + user.name + ", Email: " + user.email);
-})
+if (test1) {
 
-// Find products with price less than 50 and print their name and price
-print("\nProducts with price less than $50:");
-db.products.find({
-    price: { $lt: 50 }
-}).forEach(function (product) {
-    print("Product: " + product.name + ", Price: $" + product.price);
-})
+    // Find users with age greater than 25 and print their name and email
+    print("\nUsers with age greater than 25:");
+    db.users.find({
+        age: { $gt: 25 }
+    }).forEach(function (user) {
+        print("User: " + user.name + ", Email: " + user.email);
+    })
 
-// Find orders with status "completed" and print the user's name and total amount
-print("\nCompleted orders with user name and total amount:");
-db.orders.find({
-    status: "completed"
-}).forEach(function (order) {
-    var user = db.users.findOne({ _id: order.userId });
-    print("Order for user: " + user.name + ", Total Amount: $" + order.totalAmount);
-});
+    // Find products with price less than 50 and print their name and price
+    print("\nProducts with price less than $50:");
+    db.products.find({
+        price: { $lt: 50 }
+    }).forEach(function (product) {
+        print("Product: " + product.name + ", Price: $" + product.price);
+    })
 
-// Lookup to join orders with users
-print("\nOrders with user details:");
-var completedOrders = db.orders.aggregate(
-    [
-        {
-            $match: {
-                status: "completed"
-            }
-        },
-        {
-            $lookup: {
-                from: "users",
-                localField: "userId",
-                foreignField: "_id",
-                as: "user"
+    // Find orders with status "completed" and print the user's name and total amount
+    print("\nCompleted orders with user name and total amount:");
+    db.orders.find({
+        status: "completed"
+    }).forEach(function (order) {
+        var user = db.users.findOne({ _id: order.userId });
+        print("Order for user: " + user.name + ", Total Amount: $" + order.totalAmount);
+    });
+
+    // Lookup to join orders with users
+    print("\nOrders with user details:");
+    var completedOrders = db.orders.aggregate(
+        [
+            {
+                $match: {
+                    status: "completed"
+                }
             },
-            $lookup: {
-                from: "products",
-                localField: "products.productId",
-                foreignField: "_id",
-                as: "products"
-            }
-        }
-    ]
-).toArray();
-
-print(completedOrders);
-
-// Lookup to join orders with users and products for pending orders
-print("\nPending orders with user and product details:");
-var pendingOrders = db.orders.aggregate(
-    [
-        {
-            $match: {
-                status: "pending"
-            }
-        },
-        {
-            $lookup: {
-                from: "users",
-                localField: "userId",
-                foreignField: "_id",
-                as: "user"
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "userId",
+                    foreignField: "_id",
+                    as: "user"
+                }
             },
-        },
-        {
-            $lookup: {
-                from: "products",
-                let: { orderProducts: "$products" },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $in: ["$_id", "$$orderProducts.productId"]
+            {
+                $lookup: {
+                    from: "products",
+                    localField: "products.productId",
+                    foreignField: "_id",
+                    as: "products"
+                }
+            }
+        ]
+    ).toArray();
+
+    print(completedOrders);
+
+    // Lookup to join orders with users and products for pending orders
+    print("\nPending orders with user and product details:");
+    var pendingOrders = db.orders.aggregate(
+        [
+            {
+                $match: {
+                    status: "pending"
+                }
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "userId",
+                    foreignField: "_id",
+                    as: "user"
+                },
+            },
+            {
+                $lookup: {
+                    from: "products",
+                    let: { orderProducts: "$products" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $in: ["$_id", "$$orderProducts.productId"]
+                                }
                             }
-                        }
-                    },
-                ],
-                as: "productDetails"
+                        },
+                    ],
+                    as: "productDetails"
+                }
             }
-        }
-    ]
-).toArray();
+        ]
+    ).toArray();
 
-print(pendingOrders);
+    print(pendingOrders);
 
-// Get current product stock and total quantity ordered (all time)
-db.orders.aggregate(
-    [
-        {
-            // Flatten the products array (one document per product in order)
-            $unwind: "$products"
-        },
-        {
-            // Group by productId and sum total ordered quantity
-            $group: {
-                _id: "$products.productId",
-                totalOrdered: { $sum: "$products.quantity" }
+    // Get current product stock and total quantity ordered (all time)
+    db.orders.aggregate(
+        [
+            {
+                // Flatten the products array (one document per product in order)
+                $unwind: "$products"
+            },
+            {
+                // Group by productId and sum total ordered quantity
+                $group: {
+                    _id: "$products.productId",
+                    totalOrdered: { $sum: "$products.quantity" }
+                }
+            },
+            {
+                // Join with products collection to get product details
+                $lookup: {
+                    from: "products",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "productDetails"
+                }
+            },
+            {
+                // Convert productDetails array to object
+                $unwind: "$productDetails"
+            },
+            {
+                // Shape final output
+                $project: {
+                    _id: 0,
+                    productId: "$_id",
+                    productName: "$productDetails.name",
+                    currentStock: "$productDetails.stock",
+                    totalOrdered: 1 // include totalOrdered in output
+                }
             }
-        },
-        {
-            // Join with products collection to get product details
-            $lookup: {
-                from: "products",
-                localField: "_id",
-                foreignField: "_id",
-                as: "productDetails"
-            }
-        },
-        {
-            // Convert productDetails array to object
-            $unwind: "$productDetails"
-        },
-        {
-            // Shape final output
-            $project: {
-                _id: 0,
-                productId: "$_id",
-                productName: "$productDetails.name",
-                currentStock: "$productDetails.stock",
-                totalOrdered: 1 // include totalOrdered in output
-            }
-        }
-    ]
-);
+        ]
+    );
 
-pendingOrders
+    pendingOrders
+}
+
+if (test2) {
+    const session2 = db.getMongo().startSession();
+    const sessionDb2 = session2.getDatabase("shopDb");
+    session2.startTransaction();
+
+    const alice = db.users.findOne({ name: "Alice Smith" });
+
+    try {
+        // Checkout process for Alice Smith's order
+        const items = [
+            { name: "Wireless Mouse", quantity: 2 },
+            { name: "Yoga Mat", quantity: 1 }
+        ];
+
+        const products = items.map(i => {
+            const p = db.products.findOne({ name: i.name });
+            if (!p) throw new Error("Product not found: " + i.name);
+            if (p.stock < i.quantity) throw new Error("Not enough stock for product: " + i.name);
+
+            return {
+                productId: p._id,
+                quantity: i.quantity,
+                priceAtPurchase: p.price
+            };
+        });
+
+        // totalAmount = sum[i] (products[i].priceAtPurchase * products[i].quantity)
+        const totalAmount = products.reduce((sum, p) => sum + (p.priceAtPurchase * p.quantity), 0);
+
+        // Insert the order document
+        const order = {
+            userId: alice._id,
+            products: products,
+            totalAmount: totalAmount,
+            status: "pending",
+            createdAt: new Date()
+        };
+
+        db.orders.insertOne(order);
+
+        // Decrement the stock of the products
+        products.forEach(p => {
+            const res = db.products.updateOne(
+                {
+                    _id: p.productId, stock: { $gte: p.quantity } // Ensure there is enough stock before decrementing
+                },
+                {
+                    $inc: { stock: -p.quantity }
+                }
+            );
+
+            if (res.matchedCount === 0) throw new Error("Failed to update stock for productId: " + p.productId);
+        });
+
+        session2.commitTransaction();
+        session2.endSession();
+    } catch (error) {
+        print("Error during checkout: " + error.message);
+        session2.abortTransaction();
+        session2.endSession();
+    }
+
+    // Verify the order was created and stock was updated
+    const aliceLastOrder = db.orders
+        .aggregate([
+            { $match: { userId: alice._id } },
+            { $sort: { createdAt: -1 } },
+            { $limit: 1 },
+
+            // join user
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "userId", // orders.userId
+                    foreignField: "_id",
+                    as: "userProfile"
+                }
+            },
+
+            // unwrap user
+            // because lookup always returns an array, so extract the first element
+            {
+                $addFields: {
+                    userProfile: { $arrayElemAt: ["$userProfile", 0] }
+                }
+            },
+
+            // unwind products 
+            // because products is an array 
+            // need to get one document per product
+            { $unwind: "$products" },
+
+            // join each product
+            {
+                $lookup: {
+                    from: "products",
+                    localField: "products.productId", // orders.products.productId
+                    foreignField: "_id",
+                    as: "productInfo"
+                }
+            },
+
+            // unwrap product
+            // because lookup always returns an array, so extract the first element
+            {
+                $addFields: {
+                    productInfo: { $arrayElemAt: ["$productInfo", 0] }
+                }
+            },
+
+            // final shape
+            {
+                $project: {
+                    _id: 0,
+
+                    // order
+                    totalAmount: 1,
+                    status: 1,
+                    createdAt: 1,
+
+                    // user
+                    userName: "$userProfile.name",
+                    userEmail: "$userProfile.email",
+
+                    // product
+                    productName: "$productInfo.name",
+                    quantity: "$products.quantity",
+                    priceAtPurchase: "$products.priceAtPurchase"
+                }
+            }
+        ])
+        .toArray();
+
+    print("\nAlice's Last Order:");
+    print(aliceLastOrder);
+    aliceLastOrder
+}
