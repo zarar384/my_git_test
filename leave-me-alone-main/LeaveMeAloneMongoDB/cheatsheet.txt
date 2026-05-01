@@ -814,6 +814,396 @@ $bucketAuto -> auto ranges
 4) $sort
 5) $limit
 
+-- NUMBER TYPES 
+int32 (NumberInt("10"))
+int64 (NumberLong("10000000000"))
+double (64-bit float) - default in MongoDB Shell (JS)
+decimal128 (NumberDecimal("9.99"))
+!!!ALWAYS use string for large numbers
+
+-- DEFAULT BEHAVIOR 
+Mongo Shell = JavaScript
+ALL numbers → double (64-bit float)
+12 == 12.0 → same type
+so:
+{ age: 29 } → stored as double (NOT int)
+
+!!! if types mix → auto convert to double (lose precision)
+
+-- PRECISION PROBLEM (DOUBLE)
+0.3 - 0.1 = 0.199999999999...
+because double is approximate
+-- SOLUTION
+use NumberDecimal
+NumberDecimal("0.3")
+NumberDecimal("0.1")
+result → EXACT (0.2)
+
+-- IMPORTANT RULE when updating decimals:
+BAD: $inc: { price: 0.1 }
+GOOD: $inc: { price: NumberDecimal("0.1") }
+
+-- avoids float issues
+
+-- MONGODB SECURITY (DEV VIEW)
+Security = NOT only your job (developer)
+BUT you are part of it
+1) Authentication / Authorization
+2) Transport Encryption (TLS/SSL)
+3) Encryption at Rest
+(+ backups, auditing, network → admin tasks)
+-- 1) AUTHENTICATION vs AUTHORIZATION
+Authentication = WHO are you?
+Authorization = WHAT can you do?
+
+Example:
+login → authentication
+permissions → authorization
+
+-- MONGODB USERS (IMPORTANT)
+User ≠ app user (customer)
+
+User = 
+* your backend app
+* developer
+* admin
+* data analyst
+
+-- ROLE-BASED ACCESS CONTROL (RBAC)
+MongoDB uses:
+
+User → Role → Privileges
+
+Privilege = (Action + Resource)
+
+example:
+Action: insert
+Resource: shop.products
+=> can insert into products collection
+
+-- ROLES (BUILT-IN)
+
+Basic:
+-- read → only read data
+-- readWrite → CRUD
+
+Admin:
+-- dbAdmin → manage DB
+-- userAdmin → manage users
+
+Global:
+-- readAnyDatabase
+-- readWriteAnyDatabase
+-- userAdminAnyDatabase
+
+Super:
+-- root → EVERYTHING
+
+-- IMPORTANT PRINCIPLE
+Least privilege
+Give ONLY what is needed
+BAD → full access everywhere
+GOOD → minimal rights
+
+-- CREATE USER
+
+use admin
+
+db.createUser({
+  user: "max",
+  pwd: "max",
+  roles: [ "userAdminAnyDatabase" ]
+})
+
+first user via localhost exception
+
+-- LOGIN
+
+Option 1: db.auth("user", "pwd")
+
+Option 2: mongo -u user -p pwd --authenticationDatabase dbName
+
+-- USER SCOPE
+
+User belongs to a DB
+BUT access depends on roles
+Default: role applies to that DB
+Custom: { role: "readWrite", db: "blog" }
+
+-- UPDATE USER
+
+db.updateUser("appdev", {
+  roles: [
+    "readWrite",
+    { role: "readWrite", db: "blog" }
+  ]
+})
+
+IMPORTANT: roles are replaced (not merged)
+
+-- COMMON USERS (REAL APP)
+Admin: manage DB, users
+App (developer): CRUD only
+Data analyst: read only
+
+-- 2) TRANSPORT ENCRYPTION (TLS/SSL)
+Goal: protect data in transit
+App → MongoDB → encrypted
+Prevents:
+-- sniffing
+-- man-in-the-middle
+
+-- START SERVER
+mongod --sslMode requireSSL \
+       --sslPEMKeyFile mongodb.pem
+
+-- CONNECT CLIENT
+mongo --ssl \
+      --sslCAFile mongodb.pem \
+      --host localhost
+
+IMPORTANT:
+production → use real certificate (CA)
+NOT self-signed
+
+-- 3) ENCRYPTION AT REST
+Two levels:
+1) Disk encryption (MongoDB Enterprise)
+2) Field-level encryption (YOU as developer)
+
+-- example (important)
+passwords:
+NO store plain text
+YES store hashed
+
+-- FINAL MENTAL MODEL
+
+App → (TLS) → MongoDB
+       |
+       ↓
+   Auth + Roles
+       |
+       ↓
+   Allowed actions only
+
+!!!! MOST IMPORTANT FOR DEV
+* connect with user + password
+* use correct roles (read / readWrite)
+* NEVER use root in production
+* hash sensitive data
+* understand access limits
+
+
+==============================
+MONGODB PERFORMANCE & DEPLOYMENT
+==============================
+
+
+-- BIG IDEA
+
+Until now → local MongoDB (simple)
+
+Now → real world:
+-- performance
+-- scaling
+-- fault tolerance
+-- deployment (cloud)
+
+-- WHAT AFFECTS PERFORMANCE
+2 groups:
+1) YOU (developer)
+* write efficient queries
+* fetch only needed data
+* use indexes
+* good data schema
+
+BAD example:
+-- too many transformations
+-- no indexes
+-- overfetching data
+
+GOOD example:
+-- simple queries
+-- indexed fields
+-- optimized schema
+
+2) INFRASTRUCTURE (admin side)
+-- hardware (CPU, RAM)
+-- network
+-- replica sets
+-- sharding
+
+You don’t control directly
+BUT you must understand
+
+-- CAPPED COLLECTIONS
+Special collection with LIMIT
+* fixed size
+* old data auto-deleted
+* insertion order preserved
+
+create:
+
+db.createCollection("capped", {
+  capped: true,
+  size: 10000,
+  max: 3
+})
+
+behavior:
+insert 4th doc →
+X no error
+v oldest doc removed
+
+USE CASES:
+* logs
+* cache
+* temporary data
+
+DO NOT USE:
+* users
+* products
+* important data
+
+* REPLICA SETS
+Goal:
+* fault tolerance
+* better read performance
+
+Structure:
+Primary (main node)
+Secondary (copies)
+
+Flow:
+write →  primary → replicated to secondary
+
+If primary dies:
+→ election → new primary selected
+
+BENEFITS:
+* backup (data copies)
+* high availability
+* distribute read load
+
+IMPORTANT:
+writes → ONLY primary
+reads → can be distributed
+
+-- SHARDING (HORIZONTAL SCALING)
+Problem: one server = limit
+Solution: multiple servers (shards)
+
+BUT:
+X not copies
+V split data
+
+Example:
+Shard 1 → A–F
+Shard 2 → G–M
+Shard 3 → N–Z
+
+-- SHARD KEY
+
+Key concept
+Field used to distribute data
+BAD shard key:  uneven distribution
+GOOD shard key: evenly distributed and used in queries
+
+-- QUERY TYPES
+1) WITHOUT shard key
+- broadcast to ALL shards
+- slow
+
+
+2) WITH shard key
+- direct to ONE shard
+- fast 
+
+-- MONGOS (ROUTER)
+Client → mongos → shards
+
+mongos decides:
+-- where to read
+-- where to write
+
+-- SCALING TYPES
+Vertical scaling:
+V bigger server (more RAM/CPU)
+X limit exists
+
+Horizontal scaling (sharding):
+V more servers
+V infinite scaling (theoretically)
+
+-- DEPLOYMENT (REAL WORLD)
+Localhost → NOT enough
+Need:
+- cloud server
+- accessible from anywhere
+
+-- PROBLEMS WITH SELF-HOSTING
+You must handle:
+-- security
+-- backups
+-- updates
+-- scaling
+-- replication
+-- networking
+=> VERY complex
+
+-- SOLUTION → MONGODB ATLAS
+Managed cloud MongoDB
+-- auto scaling
+-- built-in replica sets
+-- backups
+-- security
+-- monitoring
+FREE tier available
+
+-- CLUSTER = YOUR DATABASE
+Cluster includes:
+-- servers
+-- replica sets
+-- (optional) shards
+
+-- SETUP STEPS (SIMPLIFIED)
+1) Create project
+2) Build cluster
+3) Choose:
+   -- provider (AWS, etc.)
+   -- region
+   -- tier (M0 free)
+
+4) Create DB user
+5) Add IP whitelist
+6) Connect
+
+CONNECT COMMAND
+mongo "mongodb+srv://..." --username user
+Then enter password
+
+AFTER CONNECTION
+Same MongoDB:
+
+db.products.insertOne({
+  name: "Book",
+  price: 10
+})
+
+works exactly like local
+
+LOCAL: app → localhost MongoDB
+
+PRODUCTION: app → internet → MongoDB Atlas
+
+!!!! MOST IMPORTANT FOR DEV
+* write efficient queries
+* understand indexes
+* know shard key importance
+* NEVER assume single server
+* use Atlas for real projects
+
+
 // Run Transactions
 POWERSHELL: & "C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe" --replSet rs0 --dbpath "C:\Musorka\Code\MongoDB"
 POWERSHELL: net stop MongoDB
