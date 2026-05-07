@@ -708,4 +708,102 @@ if (test2) {
     print("\nAlice's Last Order:");
     print(aliceLastOrder);
     aliceLastOrder
+
+    // Charlie Brown tries to order 15 Bluetooth Headphones
+    const bluetoothHeadphones = db.products.findOne({ name: "Bluetooth Headphones" });
+    const charlie = db.users.findOne({ name: "Charlie Brown" });
+
+    db.orders.insertMany(
+        [
+            {
+                userId: charlie._id,
+                products: [
+                    {
+                        productId: bluetoothHeadphones._id,
+                        quantity: 15,
+                        priceAtPurchase: bluetoothHeadphones.price
+                    }
+                ],
+                status: "pending",
+                createdAt: new Date()
+            }
+        ]
+    )
+
+    // Update the order status to completed and calculate totalAmount for Charlie Brown's order
+    db.orders.updateOne(
+        {
+            userId: charlie._id,
+            "products.productId": bluetoothHeadphones._id
+        },
+        [
+            {
+                $set: {
+                    status: "completed",
+                    totalAmount: {
+                        $toDouble: {
+                            $sum: {
+                                $map: {
+                                    input: "$products",
+                                    as: "p",
+                                    in: {
+                                        $multiply: [
+                                            "$$p.priceAtPurchase",
+                                            "$$p.quantity"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+    );
+
+    var charlieLastOrder = db.orders.aggregate(
+        { $match: { userId: charlie._id, "products.productId": bluetoothHeadphones._id } },
+        {
+            $lookup: {
+                from: "users",
+                localField: "userId",
+                foreignField: "_id",
+                as: "userProfile"
+            }
+        },
+        {
+            $addFields: {
+                userProfile: { $arrayElemAt: ["$userProfile", 0] }
+            }
+        },
+        { $unwind: "$products" },
+        {
+            $lookup: {
+                from: "products",
+                localField: "products.productId",
+                foreignField: "_id",
+                as: "productInfo"
+            }
+        },
+        {
+            $addFields: {
+                productInfo: { $arrayElemAt: ["$productInfo", 0] }
+            }
+        },
+        {
+            $project: {
+                _id: 1,
+                totalAmount: 1,
+                status: 1,
+                userName: "$userProfile.name",
+                productName: "$productInfo.name",
+                quantity: "$products.quantity",
+                priceAtPurchase: "$products.priceAtPurchase"
+            }
+        }
+    ).toArray();
+
+    print("\nCharlie's Last Order:");
+    print(charlieLastOrder);
+    charlieLastOrder
 }
