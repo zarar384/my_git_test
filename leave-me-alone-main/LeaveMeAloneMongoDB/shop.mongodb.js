@@ -573,11 +573,14 @@ if (test1) {
 }
 
 if (test2) {
+    // create order index for faster queries on userId, status, and createdAt
+    db.orders.createIndex({ userId: 1, status: 1, createdAt: 1 });
+    
     const session2 = db.getMongo().startSession();
     const sessionDb2 = session2.getDatabase("shopDb");
     session2.startTransaction();
 
-    const alice = db.users.findOne({ name: "Alice Smith" });
+    const alice = sessionDb2.users.findOne({ name: "Alice Smith" });
 
     try {
         // Checkout process for Alice Smith's order
@@ -587,7 +590,7 @@ if (test2) {
         ];
 
         const products = items.map(i => {
-            const p = db.products.findOne({ name: i.name });
+            const p = sessionDb2.products.findOne({ name: i.name });
             if (!p) throw new Error("Product not found: " + i.name);
             if (p.stock < i.quantity) throw new Error("Not enough stock for product: " + i.name);
 
@@ -610,11 +613,11 @@ if (test2) {
             createdAt: new Date()
         };
 
-        db.orders.insertOne(order);
+        sessionDb2.orders.insertOne(order);
 
         // Decrement the stock of the products
         products.forEach(p => {
-            const res = db.products.updateOne(
+            const res = sessionDb2.products.updateOne(
                 {
                     _id: p.productId, stock: { $gte: p.quantity } // Ensure there is enough stock before decrementing
                 },
@@ -627,10 +630,11 @@ if (test2) {
         });
 
         session2.commitTransaction();
-        session2.endSession();
     } catch (error) {
         print("Error during checkout: " + error.message);
         session2.abortTransaction();
+    }
+    finally {
         session2.endSession();
     }
 
@@ -710,6 +714,7 @@ if (test2) {
     aliceLastOrder
 
     // Charlie Brown tries to order 15 Bluetooth Headphones
+    const gty = 15;
     const bluetoothHeadphones = db.products.findOne({ name: "Bluetooth Headphones" });
     const charlie = db.users.findOne({ name: "Charlie Brown" });
 
@@ -720,7 +725,7 @@ if (test2) {
                 products: [
                     {
                         productId: bluetoothHeadphones._id,
-                        quantity: 15,
+                        quantity: gty,
                         priceAtPurchase: bluetoothHeadphones.price
                     }
                 ],
@@ -785,20 +790,36 @@ if (test2) {
                 as: "productInfo"
             }
         },
+        // {
+        //     $addFields: {
+        //         productInfo: { $arrayElemAt: ["$productInfo", 0] }
+        //     }
+        // },
+        // {
+        //     $project: {
+        //         _id: 1,
+        //         totalAmount: 1,
+        //         status: 1,
+        //         userName: "$userProfile.name",
+        //         productName: "$productInfo.name",
+        //         quantity: "$products.quantity",
+        //         priceAtPurchase: "$products.priceAtPurchase"
+        //     }
+        // }
+        { $unwind: "$productInfo" },
         {
-            $addFields: {
-                productInfo: { $arrayElemAt: ["$productInfo", 0] }
-            }
-        },
-        {
-            $project: {
-                _id: 1,
-                totalAmount: 1,
-                status: 1,
-                userName: "$userProfile.name",
-                productName: "$productInfo.name",
-                quantity: "$products.quantity",
-                priceAtPurchase: "$products.priceAtPurchase"
+            $group: {
+                _id: "$_id",
+                user: { $first: "$userProfile.name" },
+                totalAmount: { $first: "$totalAmount" },
+                status: { $first: "$status" },
+                products: {
+                    $push: {
+                        productName: "$productInfo.name",
+                        price: "$products.priceAtPurchase",
+                        quantity: "$products.quantity"
+                    }
+                }
             }
         }
     ).toArray();
@@ -806,4 +827,84 @@ if (test2) {
     print("\nCharlie's Last Order:");
     print(charlieLastOrder);
     charlieLastOrder
+
+    // safe stock update
+    const res = db.products.updateOne(
+        {
+            _id: bluetoothHeadphones._id,
+            stock: { $gte: gty } // Ensure there is enough stock before decrementing
+        },
+        {
+            $inc: { stock: -gty }
+        }
+    );
+
+    if (res.matchedCount === 0) {
+        print("Not enough stock to fulfill Charlie's order for Bluetooth Headphones");
+    }
+    else{
+        print("Stock updated successfully for Bluetooth Headphones after Charlie's order");
+    }
+
+    // Build a filter object based on query parameters for finding orders
+    function buildOrderFilter(q) {
+        const f = {};
+
+        if (q.status) f.status = q.status;
+        if (q.userId) f.userId = ObjectId(q.userId);
+
+        if (q.from || q.to) {
+            f.createdAt = {};
+            if (q.from) f.createdAt.$gte = new Date(q.from);
+            if (q.to) f.createdAt.$lte = new Date(q.to);
+        }
+
+        return f;
+    }
+
+    var completedOrders = db.orders.find(buildOrderFilter({ userId: charlie._id, status: "completed", from: "2026-01-01", to: "2026-12-31" })).toArray();
+    completedOrders
+
+    // Dashboard: Get total number of orders, total revenue, average order value, and total number of users
+   var dashboardStats = db.orders.aggregate([
+        {
+            // $facet - allows to run multiple pipelines in parallel and combine results into a single document
+            $facet: {
+                stats: [{
+                    $group: {
+                        _id: null,
+                        totalOrders: { $sum: 1 },
+                        totalRevenue: { $sum: "$totalAmount" },
+                        averageOrderValue: { $avg: "$totalAmount" }
+                    }
+                }],
+                users: [{
+                    $count: "totalUsers"
+                }]
+            }
+        }],
+    ).toArray();
+
+    print("\nDashboard Stats:");
+    print(dashboardStats);
+    dashboardStats
+
+    // Chalie snapshot
+    var charlieSnapshot = {
+        userId: charlie._id,
+        userSnapshot: {
+            name: charlie.name,
+            email: charlie.email,
+        }
+    }
+
+    charlieSnapshot
+
+    // Explain plan for finding Charlie's completed orders in 2026
+    // is used to analyze the query performance and understand how MongoDB executes it
+    var ordersExplain = db.orders.find(buildOrderFilter({ userId: charlie._id, status: "completed", from: "2026-01-01", to: "2026-12-31" })).explain("executionStats");
+    print("\nOrders Explain:");
+    print(ordersExplain);
+    ordersExplain
+
 }
