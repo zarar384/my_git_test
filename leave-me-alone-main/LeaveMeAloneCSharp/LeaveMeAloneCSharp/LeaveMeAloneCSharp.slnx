@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../LeaveMeAloneCSharp.Test/LeaveMeAloneCSharp.Test.csproj" />
+  <Project Path="LeaveMeAloneCSharp.csproj" />
+</Solution>
