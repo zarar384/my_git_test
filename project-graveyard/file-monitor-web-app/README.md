@@ -1,6 +1,44 @@
 ### Task: ASP.NET application for detecting changes in a local directory
 
-[![Demo](https://i.imgur.com/tc67RT1.gif)](https://i.imgur.com/tc67RT1.mp4)
+**[ENG]**
+
+Write a simple program that can detect changes in a local directory specified as input.
+
+On the first run, the program analyzes the contents of the given directory, and on each subsequent run it reports changes since its last execution, i.e.:
+
+a) a list of new files,
+
+b) a list of modified files (a modification means a change in the content of the given file),
+
+c) a list of deleted files and subdirectories.
+
+For each file, keep track of its current version number (initially, all files will have version 1; with each detected change to a given file, its version will be increased by 1).
+
+Implement the program as a simple ASP.NET application written in C#. Create the UI as a web application of your choice (Core MVC, MVC, REST API).
+
+You may assume that the size of files in the directory will be up to 50 MB and that the number of files in each directory will be at most 100.
+
+The program will be started manually from the UI by pressing a button (do not detect file system changes automatically).
+
+Do not use a database for data persistence.
+
+The UI should contain at least a textbox (text input) for entering the path to the analyzed directory, a button for starting the analysis, and a display of its results.
+
+Briefly describe your solution and mention any limitations it may have.
+
+## Solution Description
+
+[![Demo](https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNTB6MWxxZjl1eXR2d3RzOGs5YnJsZnRmdTVlcTNjMTh5eWYzbXZ2ZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3z69AXnbkFZzNDQl99/giphy.gif)](https://imgur.com/a/8G56NDk)
+
+ASP.NET Core MVC application. It scans a user-specified directory, calculates SHA256 hashes for all files, and stores their metadata (path, hash, and version) in a JSON snapshot file. On each subsequent scan, the current state is compared with the previously saved snapshot to detect new, modified, and deleted files. File versions are automatically incremented when content changes are detected.
+
+## Limitations
+
+* Only one directory snapshot is stored. Scanning a different directory overwrites the previously saved state.
+* Renamed files are detected as a deleted file and a new file.
+* File comparison requires reading the entire file to calculate its hash, which may affect performance for larger files.
+
+---
 
 **[ESP]**
 
@@ -27,34 +65,6 @@ No utilice una base de datos para la persistencia de datos.
 La interfaz debe contener al menos un textbox (campo de texto) para introducir la ruta del directorio analizado, un botón para iniciar el análisis y una visualización de sus resultados.
 
 Describa brevemente su solución y mencione también sus posibles limitaciones.
-
----
-
-**[ENG]**
-
-Write a simple program that can detect changes in a local directory specified as input.
-
-On the first run, the program analyzes the contents of the given directory, and on each subsequent run it reports changes since its last execution, i.e.:
-
-a) a list of new files,
-
-b) a list of modified files (a modification means a change in the content of the given file),
-
-c) a list of deleted files and subdirectories.
-
-For each file, keep track of its current version number (initially, all files will have version 1; with each detected change to a given file, its version will be increased by 1).
-
-Implement the program as a simple ASP.NET application written in C#. Create the UI as a web application of your choice (Core MVC, MVC, REST API).
-
-You may assume that the size of files in the directory will be up to 50 MB and that the number of files in each directory will be at most 100.
-
-The program will be started manually from the UI by pressing a button (do not detect file system changes automatically).
-
-Do not use a database for data persistence.
-
-The UI should contain at least a textbox (text input) for entering the path to the analyzed directory, a button for starting the analysis, and a display of its results.
-
-Briefly describe your solution and mention any limitations it may have.
 
 ---
 
