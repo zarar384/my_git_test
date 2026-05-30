@@ -1,5 +1,7 @@
 ### Task: ASP.NET application for detecting changes in a local directory
 
+[![Demo](https://i.imgur.com/tc67RT1.gif)](https://i.imgur.com/tc67RT1.mp4)
+
 **[ESP]**
 
 Escriba un programa sencillo que sea capaz de detectar cambios en un directorio local especificado como entrada.
