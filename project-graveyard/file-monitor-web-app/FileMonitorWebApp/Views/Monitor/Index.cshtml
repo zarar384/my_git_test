@@ -1,7 +1,61 @@
-﻿
+﻿@model FileMonitorWebApp.Models.ScanResult?
+
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Directory Scan";
 }
 
-<h1>Index</h1>
+<form asp-controller="Monitor" asp-action="Scan" method="post">
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <input type="text" name="directoryPath" placeholder="Directory Path" />
 
+    <button type="submit">Scan</button>
+</form>
+
+@if (Model != null)
+{
+    // New files
+    @if (Model.NewFiles != null && Model.NewFiles.Count > 0)
+    {
+        <h3>New files</h3>
+
+        @foreach (var file in Model.NewFiles)
+        {
+            <div>
+                @file.Path (v:@file.Version)
+            </div>
+        }
+    }
+
+    // Modified files
+    @if (Model.ModifiedFiles != null && Model.ModifiedFiles.Count > 0)
+    {
+        <h3>Modified files</h3>
+
+        @foreach (var file in Model.ModifiedFiles)
+        {
+            <div>
+                @file.Path (v:@file.Version)
+            </div>
+        }
+    }
+
+    // Deleted files
+    @if (Model.DeletedFiles != null && Model.DeletedFiles.Count > 0)
+    {
+        <h3>Deleted files</h3>
+        @foreach (var file in Model.DeletedFiles)
+        {
+            <div>
+                @file.Path (v:@file.Version)
+            </div>
+        }
+    }
+
+    // No changes
+    @if ((Model.NewFiles == null || Model.NewFiles.Count == 0) &&
+         (Model.ModifiedFiles == null || Model.ModifiedFiles.Count == 0) &&
+         (Model.DeletedFiles == null || Model.DeletedFiles.Count == 0))
+    {
+        <p>No changes detected.</p>
+    }
+}
