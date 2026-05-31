@@ -1,33 +1,5 @@
 ### Task: ASP.NET application for detecting changes in a local directory
 
-**[ESP]**
-
-Escriba un programa sencillo que sea capaz de detectar cambios en un directorio local especificado como entrada.
-
-En la primera ejecución, el programa analizará el contenido del directorio indicado y, en cada ejecución posterior, informará de los cambios desde su última ejecución, es decir:
-
-a) lista de archivos nuevos,
-
-b) lista de archivos modificados (una modificación significa un cambio en el contenido del archivo),
-
-c) lista de archivos y subdirectorios eliminados.
-
-Para cada archivo, registre el número de su versión actual (al principio todos los archivos tendrán la versión 1; con cada cambio detectado en un archivo, su versión aumentará en 1).
-
-Implemente el programa como una aplicación ASP.NET sencilla desarrollada en C#. Cree la interfaz de usuario como una aplicación web de su elección (Core MVC, MVC, REST API).
-
-Puede asumir que el tamaño de los archivos en el directorio será de hasta 50 MB y que el número de archivos en cada directorio será como máximo de 100.
-
-El programa se ejecutará manualmente desde la interfaz de usuario mediante un botón (no detecte automáticamente los cambios del sistema de archivos).
-
-No utilice una base de datos para la persistencia de datos.
-
-La interfaz debe contener al menos un textbox (campo de texto) para introducir la ruta del directorio analizado, un botón para iniciar el análisis y una visualización de sus resultados.
-
-Describa brevemente su solución y mencione también sus posibles limitaciones.
-
----
-
 **[ENG]**
 
 Write a simple program that can detect changes in a local directory specified as input.
@@ -53,6 +25,46 @@ Do not use a database for data persistence.
 The UI should contain at least a textbox (text input) for entering the path to the analyzed directory, a button for starting the analysis, and a display of its results.
 
 Briefly describe your solution and mention any limitations it may have.
+
+## Solution Description
+
+[![Demo](https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNTB6MWxxZjl1eXR2d3RzOGs5YnJsZnRmdTVlcTNjMTh5eWYzbXZ2ZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3z69AXnbkFZzNDQl99/giphy.gif)](https://imgur.com/a/8G56NDk)
+
+ASP.NET Core MVC application. It scans a user-specified directory, calculates SHA256 hashes for all files, and stores their metadata (path, hash, and version) in a JSON snapshot file. On each subsequent scan, the current state is compared with the previously saved snapshot to detect new, modified, and deleted files. File versions are automatically incremented when content changes are detected.
+
+## Limitations
+
+* Only one directory snapshot is stored. Scanning a different directory overwrites the previously saved state.
+* Renamed files are detected as a deleted file and a new file.
+* File comparison requires reading the entire file to calculate its hash, which may affect performance for larger files.
+
+---
+
+**[ESP]**
+
+Escriba un programa sencillo que sea capaz de detectar cambios en un directorio local especificado como entrada.
+
+En la primera ejecución, el programa analizará el contenido del directorio indicado y, en cada ejecución posterior, informará de los cambios desde su última ejecución, es decir:
+
+a) lista de archivos nuevos,
+
+b) lista de archivos modificados (una modificación significa un cambio en el contenido del archivo),
+
+c) lista de archivos y subdirectorios eliminados.
+
+Para cada archivo, registre el número de su versión actual (al principio todos los archivos tendrán la versión 1; con cada cambio detectado en un archivo, su versión aumentará en 1).
+
+Implemente el programa como una aplicación ASP.NET sencilla desarrollada en C#. Cree la interfaz de usuario como una aplicación web de su elección (Core MVC, MVC, REST API).
+
+Puede asumir que el tamaño de los archivos en el directorio será de hasta 50 MB y que el número de archivos en cada directorio será como máximo de 100.
+
+El programa se ejecutará manualmente desde la interfaz de usuario mediante un botón (no detecte automáticamente los cambios del sistema de archivos).
+
+No utilice una base de datos para la persistencia de datos.
+
+La interfaz debe contener al menos un textbox (campo de texto) para introducir la ruta del directorio analizado, un botón para iniciar el análisis y una visualización de sus resultados.
+
+Describa brevemente su solución y mencione también sus posibles limitaciones.
 
 ---
 
