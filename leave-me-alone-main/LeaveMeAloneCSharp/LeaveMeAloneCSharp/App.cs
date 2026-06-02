@@ -7,7 +7,7 @@ namespace LeaveMeAloneCSharp
     {
         public static async Task RunApp()
         {
-          await ReactiveL.Run();
+          await CancellationTokenL.Run();
         }
     }
 }
