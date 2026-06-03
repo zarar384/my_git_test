@@ -1,4 +1,6 @@
-﻿using LeaveMeAloneCSharp.Strategies.Interfaces;
+﻿using LeaveMeAloneCSharp.Colleagues;
+using LeaveMeAloneCSharp.Mediators;
+using LeaveMeAloneCSharp.Strategies.Interfaces;
 using LeaveMeAloneCSharp.Utils.Adapters;
 namespace LeaveMeAloneCSharp.Playground
 {
@@ -6,7 +8,7 @@ namespace LeaveMeAloneCSharp.Playground
     {
         public static async Task Run()
         {
-            await AdapterPatternCustomAsyncToTapDemo();
+            MediatorPatternFormDemo();
         }
 
         private static void SimpleStrategyPatternDemo()
@@ -210,6 +212,39 @@ namespace LeaveMeAloneCSharp.Playground
             Console.WriteLine();
 
             Console.WriteLine("FINISHED ADAPTER PATTERN (CUSTOM CALLBACK to TAP) EXAMPLE");
+        }
+
+        // A simple demonstration of the Mediator pattern in a form example,
+        // where the mediator coordinates the interactions between a text box and a button
+        private static void MediatorPatternFormDemo()
+        {
+            Console.WriteLine("MEDIATOR PATTERN FORM EXAMPLE");
+            Console.WriteLine();
+
+            // Create the mediator
+            var formMediator = new FormMediator();
+
+            // Create colleagues and register them with the mediator
+            var textBox = new TextBox(formMediator);
+            var button = new Button();
+
+            formMediator.TextBox = textBox;
+            formMediator.Button = button;
+
+            // Simulate user input
+            Console.WriteLine("User types 'Hello' in the text box...");
+            textBox.SetText("Hello");
+
+            Console.WriteLine($"Button enabled: {button.Enablerd}");
+            Console.WriteLine();
+
+            Console.WriteLine("User clears the text box...");
+            textBox.SetText("");
+
+            Console.WriteLine($"Button enabled: {button.Enablerd}");
+            Console.WriteLine();
+
+            Console.WriteLine("FINISHED MEDIATOR PATTERN FORM EXAMPLE");
         }
     }
 }
