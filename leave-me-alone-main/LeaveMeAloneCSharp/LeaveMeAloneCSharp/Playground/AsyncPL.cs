@@ -805,6 +805,142 @@ namespace LeaveMeAloneCSharp.Playground
             Console.WriteLine("END OF VALUETASK CONSUMPTION TEST");
         }
 
+        // async is an implementation detail - interface only declares Task<T>,
+        // implementation adds async, stub can stay synchronous
+        private static async Task TestAsyncInterface()
+        {
+            using var http = new HttpClient();
+
+            // real async implementation
+            IByteCounter real = new RealByteCounter();
+            int realCount = await real.CountBytesAsync(http, "https://example.com");
+            Console.WriteLine($"[REAL] byte count: {realCount}");
+
+            // sync stub - same interface, no async keyword needed
+            IByteCounter stub = new StubByteCounter();
+            int stubCount = await stub.CountBytesAsync(http, "https://example.com");
+            Console.WriteLine($"[STUB] byte count: {stubCount}");
+
+            Console.WriteLine();
+        }
+
+        // constructor can't be async - static factory method owns initialization
+        // caller can't get an uninitialized instance
+        private static async Task TestAsyncFactory()
+        {
+            var instance = await AsyncResource.CreateAsync();
+            Console.WriteLine($"[FACTORY] value after async init: {instance.Value}");
+
+            Console.WriteLine();
+        }
+
+        // when DI / Activator.CreateInstance creates instances via reflection,
+        // factory isn't an option - IAsyncInitialization exposes initialization task
+        private static async Task TestAsyncInitPattern()
+        {
+            // simulate creation via DI container
+            var fundamental = new FundamentalService();
+            if (fundamental is IAsyncInitialization f)
+                await f.Initialization;
+            Console.WriteLine($"[FUNDAMENTAL] ready: {fundamental.IsReady}");
+
+            // composed type waits for its dependencies before its own init
+            var composed = new ComposedService(fundamental);
+            if (composed is IAsyncInitialization c)
+                await c.Initialization;
+            Console.WriteLine($"[COMPOSED] ready: {composed.IsReady}");
+
+            // helper to await multiple instances at once
+            var a = new FundamentalService();
+            var b = new FundamentalService();
+            await AsyncInitializationHelper.WhenAllInitializedAsync(a, b);
+            Console.WriteLine($"[WHEN ALL] both initialized: {a.IsReady}, {b.IsReady}");
+
+            Console.WriteLine();
+        }
+
+        // there is no such thing as an async property
+        // two valid patterns: per-call method or lazy-cached Task<T>
+        private static async Task TestAsyncProperties()
+        {
+            var svc = new DataService();
+
+            // per-call: each read starts a new async operation - should be a method
+            int v1 = await svc.GetValueAsync();
+            int v2 = await svc.GetValueAsync();
+            Console.WriteLine($"[PER-CALL] v1: {v1}, v2: {v2}");
+
+            // cached: computed once, reused on subsequent reads
+            int c1 = await svc.CachedValue;
+            int c2 = await svc.CachedValue;
+            Console.WriteLine($"[CACHED] c1: {c1}, c2: {c2}");
+
+            Console.WriteLine();
+        }
+
+        // two kinds of events: notification (fire-and-forget) and command (must await completion)
+        // notification handlers can be async void - caller doesn't need to wait
+        // command events use deferrals so the raiser knows when all handlers are done
+        private static async Task TestAsyncEvents()
+        {
+            // notification event - handler is async void, raiser doesn't wait
+            var notifier = new NotificationSource();
+            notifier.DataReceived += async (s, e) =>
+            {
+                await Task.Delay(20);
+                Console.WriteLine($"[NOTIFICATION] data: {e.Data}");
+            };
+            notifier.Raise("ping");
+            await Task.Delay(60); // give the fire-and-forget handler time to complete
+
+            // command event - handler takes a deferral, raiser awaits all deferrals
+            var commander = new CommandSource();
+            commander.ProcessingRequested += async (s, e) =>
+            {
+                using var deferral = e.GetDeferral();
+                await Task.Delay(40);
+                Console.WriteLine($"[COMMAND] processed: {e.Item}");
+            };
+
+            await commander.RaiseAsync("order-7");
+            Console.WriteLine("[COMMAND] all handlers completed");
+
+            Console.WriteLine();
+        }
+
+        // two patterns for async disposal:
+        // treat Dispose as cancellation - cancel ongoing operations, don't wait for them
+        // IAsyncDisposable - await using, DisposeAsync returns ValueTask
+        private static async Task TestAsyncDisposal()
+        {
+            // dispose as cancellation
+            Task<int>? task;
+            using (var resource = new CancellableResource())
+            {
+                task = resource.CalculateAsync(default);
+            } // Dispose() cancels the token
+
+            try
+            {
+                var result = await task;
+                Console.WriteLine($"[CANCEL-DISPOSE] result: {result}");
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("[CANCEL-DISPOSE] operation was cancelled by Dispose");
+            }
+
+            // true async disposal via IAsyncDisposable
+            await using (var asyncResource = new AsyncDisposableResource())
+            {
+                Console.WriteLine("[ASYNC-DISPOSE] using resource");
+            } // DisposeAsync is awaited here
+
+            Console.WriteLine("[ASYNC-DISPOSE] DisposeAsync completed");
+
+            Console.WriteLine();
+        }
+
         #region helpers
         private sealed class Order
         {
@@ -813,6 +949,208 @@ namespace LeaveMeAloneCSharp.Playground
         private sealed class Product
         {
             public decimal Price { get; set; }
+        }
+
+        private interface IByteCounter
+        {
+            Task<int> CountBytesAsync(HttpClient client, string url);
+        }
+
+        private sealed class RealByteCounter : IByteCounter
+        {
+            public async Task<int> CountBytesAsync(HttpClient client, string url)
+            {
+                byte[] bytes = await client.GetByteArrayAsync(url).ConfigureAwait(false);
+                return bytes.Length;
+            }
+        }
+
+        private sealed class StubByteCounter : IByteCounter
+        {
+            public Task<int> CountBytesAsync(HttpClient client, string url)
+                => Task.FromResult(13);
+        }
+
+        private sealed class AsyncResource
+        {
+            public int Value { get; private set; }
+
+            private AsyncResource() { }
+
+            private async Task<AsyncResource> InitializeAsync()
+            {
+                await Task.Delay(50); // simulate async init work
+                Value = 42;
+                return this;
+            }
+
+            public static Task<AsyncResource> CreateAsync()
+            {
+                var instance = new AsyncResource();
+                return instance.InitializeAsync();
+            }
+        }
+
+        private interface IAsyncInitialization
+        {
+            Task Initialization { get; }
+        }
+
+        private sealed class FundamentalService : IAsyncInitialization
+        {
+            public bool IsReady { get; private set; }
+            public Task Initialization { get; }
+
+            public FundamentalService()
+            {
+                Initialization = InitializeAsync();
+            }
+
+            private async Task InitializeAsync()
+            {
+                await Task.Delay(30);
+                IsReady = true;
+            }
+        }
+
+        private sealed class ComposedService : IAsyncInitialization
+        {
+            private readonly FundamentalService _dep;
+            public bool IsReady { get; private set; }
+            public Task Initialization { get; }
+
+            public ComposedService(FundamentalService dep)
+            {
+                _dep = dep;
+                Initialization = InitializeAsync();
+            }
+
+            private async Task InitializeAsync()
+            {
+                // wait for dependency first if it needs async init
+                if (_dep is IAsyncInitialization ai)
+                    await ai.Initialization;
+
+                await Task.Delay(20);
+                IsReady = true;
+            }
+        }
+
+        private static class AsyncInitializationHelper
+        {
+            public static Task WhenAllInitializedAsync(params object[] instances)
+                => Task.WhenAll(instances
+                    .OfType<IAsyncInitialization>()
+                    .Select(x => x.Initialization));
+        }
+
+        private sealed class DataService
+        {
+            private static int _counter;
+
+            // each call starts a new async operation - method, not property
+            public async Task<int> GetValueAsync()
+            {
+                await Task.Delay(10);
+                return Interlocked.Increment(ref _counter);
+            }
+
+            // computed once and reused - backed by Lazy<Task<T>>
+            public Task<int> CachedValue => _cached.Value;
+
+            private readonly Lazy<Task<int>> _cached = new(async () =>
+            {
+                await Task.Delay(20);
+                return 99;
+            });
+        }
+
+        private sealed class DataReceivedEventArgs : EventArgs
+        {
+            public string Data { get; init; } = "";
+        }
+
+        private sealed class NotificationSource
+        {
+            public event EventHandler<DataReceivedEventArgs>? DataReceived;
+
+            public void Raise(string data)
+                => DataReceived?.Invoke(this, new DataReceivedEventArgs { Data = data });
+        }
+
+        private sealed class DeferralManager
+        {
+            private readonly List<Task> _deferrals = new();
+            private readonly object _lock = new();
+
+            public IDisposable GetDeferral()
+            {
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                lock (_lock) _deferrals.Add(tcs.Task);
+                return new Deferral(tcs);
+            }
+
+            public Task WaitForDeferralsAsync()
+            {
+                Task[] snapshot;
+                lock (_lock) snapshot = _deferrals.ToArray();
+                return Task.WhenAll(snapshot);
+            }
+
+            private sealed class Deferral : IDisposable
+            {
+                private readonly TaskCompletionSource _tcs;
+                public Deferral(TaskCompletionSource tcs) => _tcs = tcs;
+                public void Dispose() => _tcs.TrySetResult();
+            }
+        }
+
+        private sealed class ProcessingRequestedEventArgs : EventArgs
+        {
+            private readonly DeferralManager _deferrals = new();
+
+            public string Item { get; init; } = "";
+
+            public IDisposable GetDeferral() => _deferrals.GetDeferral();
+            internal Task WaitForDeferralsAsync() => _deferrals.WaitForDeferralsAsync();
+        }
+
+        private sealed class CommandSource
+        {
+            public event EventHandler<ProcessingRequestedEventArgs>? ProcessingRequested;
+
+            public async Task RaiseAsync(string item)
+            {
+                var handler = ProcessingRequested;
+                if (handler == null) return;
+
+                var args = new ProcessingRequestedEventArgs { Item = item };
+                handler(this, args);
+                await args.WaitForDeferralsAsync();
+            }
+        }
+
+        private sealed class CancellableResource : IDisposable
+        {
+            private readonly CancellationTokenSource _cts = new();
+
+            public async Task<int> CalculateAsync(CancellationToken externalToken)
+            {
+                using var linked = CancellationTokenSource
+                    .CreateLinkedTokenSource(externalToken, _cts.Token);
+                await Task.Delay(TimeSpan.FromSeconds(2), linked.Token);
+                return 13;
+            }
+
+            public void Dispose() => _cts.Cancel();
+        }
+
+        private sealed class AsyncDisposableResource : IAsyncDisposable
+        {
+            public async ValueTask DisposeAsync()
+            {
+                await Task.Delay(30); // simulate async cleanup
+            }
         }
         #endregion
     }

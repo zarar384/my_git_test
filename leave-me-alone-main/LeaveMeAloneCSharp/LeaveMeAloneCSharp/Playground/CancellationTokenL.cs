@@ -7,7 +7,7 @@ namespace LeaveMeAloneCSharp.Playground
     {
         public static async Task Run()
         {
-            await DemoBackgroundWorkerAsync();
+            await DemoCallbackRegistrationAsync();
         }
 
         // Basic cancellation
