@@ -11,7 +11,7 @@ namespace LeaveMeAloneCSharp.Playground
         }
 
         // chanked to use Partitioner for better performance on large datasets
-        public static void RunPartitionerSquareEachValueDemo()
+        private static void RunPartitionerSquareEachValueDemo()
         {
             const int count = 1000000;
             var numbers = Enumerable.Range(1, count).ToArray();
@@ -31,7 +31,7 @@ namespace LeaveMeAloneCSharp.Playground
             Console.WriteLine("All numbers have been squared.");
         }
         
-        public static void RunLocalStateDemo()
+        private static void RunLocalStateDemo()
         {
             var sum = 0;
             Parallel.For(0, 10,
@@ -51,7 +51,7 @@ namespace LeaveMeAloneCSharp.Playground
             Console.WriteLine($"Total Sum: {sum}");
         }
 
-        public static void RunStupLoopsDemo()
+        private static void RunStupLoopsDemo()
         {
             try
             {
@@ -100,7 +100,7 @@ namespace LeaveMeAloneCSharp.Playground
             }
         }
 
-        public static void RunParallelDemo()
+        private static void RunParallelDemo()
         {
             int item = 42;
 
@@ -154,7 +154,7 @@ namespace LeaveMeAloneCSharp.Playground
             });
         }
 
-        public static void RunParallelAggregationDemo()
+        private static void RunParallelAggregationDemo()
         {
             var numbers = Enumerable.Range(1, 1_000_000);
 
@@ -175,7 +175,7 @@ namespace LeaveMeAloneCSharp.Playground
             Console.WriteLine($"Parallel sum: {total}");
         }
 
-        public static void RunBreakVsStopDemo()
+        private static void RunBreakVsStopDemo()
         {
             Parallel.For(
                 0, 
@@ -194,7 +194,7 @@ namespace LeaveMeAloneCSharp.Playground
             });
         }
 
-        public static void RunParallelInvokeCpuDemo()
+        private static void RunParallelInvokeCpuDemo()
         {
             Parallel.Invoke(
                 () => HeavyCalculation("A"),
@@ -212,7 +212,7 @@ namespace LeaveMeAloneCSharp.Playground
             Console.WriteLine($"Finished {name}");
         }
 
-        public static void RunSecurityLogAnalysisDemo()
+        private static void RunSecurityLogAnalysisDemo()
         {
             const int logCount = 2_000_000;
 
@@ -280,7 +280,7 @@ namespace LeaveMeAloneCSharp.Playground
             Console.WriteLine($"Collected {suspiciousLogs.Count} suspicious logs for further analysis.");
         }
 
-        public static void RunDynamicParallelFileScannerDemo()
+        private static void RunDynamicParallelFileScannerDemo()
         {
             string root = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
@@ -345,7 +345,7 @@ namespace LeaveMeAloneCSharp.Playground
             }
         }
 
-        public static void RunParallelInvokeImagePipelineDemo()
+        private static void RunParallelInvokeImagePipelineDemo()
         {
             const int pixelCount = 4_000_000;
 
@@ -457,7 +457,7 @@ namespace LeaveMeAloneCSharp.Playground
             Console.WriteLine($"Processing time: {sw.ElapsedMilliseconds} ms");
         }
 
-        public static async Task RunParallelToAsyncDemo()
+        private static async Task RunParallelToAsyncDemo()
         {
             Console.WriteLine("Starting parallel to async demo...");
             Console.WriteLine();
@@ -486,6 +486,32 @@ namespace LeaveMeAloneCSharp.Playground
             Console.WriteLine();
             Console.WriteLine("End of demo.");
 
+        }
+
+        private static void TestParallelWithScheduler()
+        {
+            // process order batches in parallel, cap total threads across all batches at 4
+            var pair = new ConcurrentExclusiveSchedulerPair(
+                TaskScheduler.Default, maxConcurrencyLevel: 4);
+
+            var options = new ParallelOptions { TaskScheduler = pair.ConcurrentScheduler };
+
+            var orderBatches = Enumerable.Range(0, 3)
+                .Select(b => Enumerable.Range(b * 10, 5).ToList())
+                .ToList();
+
+            var processed = new System.Collections.Concurrent.ConcurrentBag<int>();
+
+            Parallel.ForEach(orderBatches, options, batch =>
+                Parallel.ForEach(batch, options, orderId =>
+                {
+                    Thread.Sleep(5); // simulate order validation
+                    processed.Add(orderId);
+                })
+            );
+
+            Console.WriteLine($"[PARALLEL SCHEDULER] processed {processed.Count} orders across nested loops");
+            Console.WriteLine();
         }
 
         #region helpers

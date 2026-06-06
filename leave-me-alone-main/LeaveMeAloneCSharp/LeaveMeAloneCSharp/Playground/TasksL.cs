@@ -2,30 +2,6 @@
 {
     public static class TasksL
     {
-        public static void Write(char c)
-        {
-            int i = 1000;
-            while (i-- > 0)
-            {
-                Console.Write(c);
-            }
-        }
-
-        public static void Write(object o)
-        {
-            int i = 1000;
-            while (i-- > 0)
-            {
-                Console.Write(o);
-            }
-        }
-
-        public static int TextLength(object o)
-        {
-            Console.WriteLine($"Task id {Task.CurrentId} processing obj {o}");
-            return o.ToString().Length;
-        }
-
         public static void Run()
         {
             RunDynamicTaskParallelismDemo();
@@ -93,7 +69,7 @@
             }
         }
 
-        public static void Run1()
+        private static void Run1()
         {
             // async
             Task.Factory.StartNew(() => Write('1'));
@@ -105,7 +81,7 @@
             Write('3');
         }
 
-        public static void Run2()
+        private static void Run2()
         {
             // async
             Task t = new Task(Write, "Hello from Task");
@@ -114,7 +90,7 @@
             Task.Factory.StartNew(Write, 12345);
         }
 
-        public static void Run3()
+        private static void Run3()
         {
             // async
             string text1 = "testing", text2 = "1234567890";
@@ -128,7 +104,7 @@
             Console.WriteLine($"Length of '{text2}' is {task2.Result}");
         }
 
-        public static void RunWithToken1()
+        private static void RunWithToken1()
         {
             var cts = new CancellationTokenSource();
             var token = cts.Token;
@@ -171,7 +147,7 @@
             cts.Cancel();
         }
 
-        public static void RunWithToken2()
+        private static void RunWithToken2()
         {
             var planned = new CancellationTokenSource();
             var preventative = new CancellationTokenSource();
@@ -202,7 +178,7 @@
             emergency.Cancel();
         }
 
-        public static void RunWaitInsideTask()
+        private static void RunWaitInsideTask()
         {
             var cts = new CancellationTokenSource();
             var token = cts.Token;
@@ -224,7 +200,7 @@
             cts.Cancel();
         }
 
-        public static void RunWaitAll() 
+        private static void RunWaitAll() 
         {
             var cts = new CancellationTokenSource();
             var token = cts.Token;
@@ -263,7 +239,7 @@
             Console.WriteLine("Task t2 status: " + t2.Status);
         }
 
-        public static void RunDynamicTaskParallelismDemo()
+        private static void RunDynamicTaskParallelismDemo()
         {
             var results = new int[5];
             Task parent = Task.Factory.StartNew(() =>
@@ -287,5 +263,56 @@
 
             Console.WriteLine("Results: " + string.Join(", ", results));
         }
+
+        private static async Task TestThreadPoolSchedulingAsync()
+        {
+            // offload blocking file scan to thread pool - keep caller free
+            Task<long> scanTask = Task.Run(() =>
+            {
+                long total = 0;
+                foreach (var _ in Enumerable.Range(0, 1_000_000))
+                    total++;
+                return total;
+            });
+
+            // async lambda - returns Task<T>, not just Task
+            Task<string> reportTask = Task.Run(async () =>
+            {
+                await Task.Delay(30); // simulate fetching report metadata
+                return "report-2024-q4.pdf";
+            });
+
+            await Task.WhenAll(scanTask, reportTask);
+
+            Console.WriteLine($"[THREAD POOL] scanned {scanTask.Result} items");
+            Console.WriteLine($"[THREAD POOL] report: {reportTask.Result}");
+            Console.WriteLine();
+        }
+
+        #region helpers
+        private static void Write(char c)
+        {
+            int i = 1000;
+            while (i-- > 0)
+            {
+                Console.Write(c);
+            }
+        }
+
+        private static void Write(object o)
+        {
+            int i = 1000;
+            while (i-- > 0)
+            {
+                Console.Write(o);
+            }
+        }
+
+        private static int TextLength(object o)
+        {
+            Console.WriteLine($"Task id {Task.CurrentId} processing obj {o}");
+            return o.ToString().Length;
+        }
+        #endregion
     }
 }

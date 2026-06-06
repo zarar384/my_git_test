@@ -9,7 +9,7 @@
 
         static ReaderWriterLockSlim rwLock = new ReaderWriterLockSlim();
         static Random random = new Random();
-        public static void ReaderWriterLockSlimDemo()
+        private static void ReaderWriterLockSlimDemo()
         {
             int x = 0;
 
@@ -87,7 +87,7 @@
             }
         }
 
-        public static void AccountTransferWithMutexDemo()
+        private static void AccountTransferWithMutexDemo()
         {
             var tasks = new List<Task>();
             var a = new Account(1000);
@@ -170,7 +170,7 @@
 
         }
 
-        public static void AccountSpinLockDemo()
+        private static void AccountSpinLockDemo()
         {
             var tasks = new List<Task>();
             var a = new AccountWithLock(1000);
@@ -224,7 +224,7 @@
             Console.WriteLine($"Final Balance: {a.Balance}");
         }
 
-        public static void AccountLockDemo()
+        private static void AccountLockDemo()
         {
             var tasks = new List<Task>();
             var a = new AccountWithLock(1000);
@@ -257,7 +257,7 @@
         // Ensures that only a single instance of the application runs at a time.
         // If another instance is already running, the new instance will exit.
         // Also demonstrates multiple threads within the same process competing for the same named mutex.
-        public static void MutexSingleInstanceAppDemo(string appName)
+        private static void MutexSingleInstanceAppDemo(string appName)
         {
             string processName = $"Process_{Guid.NewGuid().ToString().Substring(0, 4)}";
 
@@ -302,17 +302,74 @@
             processMutex.ReleaseMutex();
         }
 
+        private static async Task TestExclusiveSchedulerAsync()
+        {
+            var pair = new ConcurrentExclusiveSchedulerPair();
+            var factory = new TaskFactory(pair.ExclusiveScheduler);
+
+            // simulate audit log writer - entries must never interleave
+            var log = new List<string>();
+
+            var tasks = Enumerable.Range(1, 5).Select(i =>
+                factory.StartNew(() =>
+                {
+                    Thread.Sleep(10);
+                    log.Add($"[entry {i}] thread {Thread.CurrentThread.ManagedThreadId}");
+                })
+            ).ToArray();
+
+            await Task.WhenAll(tasks);
+
+            foreach (var entry in log)
+                Console.WriteLine($"[EXCLUSIVE] {entry}");
+
+            Console.WriteLine();
+        }
+
+        private static async Task TestThrottledSchedulerAsync()
+        {
+            // cap concurrent report generation at 3 - protect downstream pdf service
+            var pair = new ConcurrentExclusiveSchedulerPair(
+                TaskScheduler.Default, maxConcurrencyLevel: 3);
+
+            var factory = new TaskFactory(pair.ConcurrentScheduler);
+
+            var running = 0;
+            var maxObserved = 0;
+            var gate = new object();
+
+            var tasks = Enumerable.Range(1, 12).Select(i =>
+                factory.StartNew(() =>
+                {
+                    int current = Interlocked.Increment(ref running);
+                    lock (gate) { if (current > maxObserved) maxObserved = current; }
+
+                    Thread.Sleep(30); // simulate pdf rendering
+
+                    Interlocked.Decrement(ref running);
+                })
+            ).ToArray();
+
+            await Task.WhenAll(tasks);
+
+            Console.WriteLine($"[THROTTLED SCHEDULER] peak concurrency: {maxObserved} (cap was 3)");
+            Console.WriteLine();
+        }
+
+
+        #region helpers
+
         private class AccountWithLock
         {
-            public object _lock = new object();
-            public int Balance { get; private set; }
+            private object _lock = new object();
+            private int Balance { get; private set; }
 
-            public AccountWithLock(int initialBalance)
+            private AccountWithLock(int initialBalance)
             {
                 Balance = initialBalance;
             }
 
-            public void Deposit(int amount)
+            private void Deposit(int amount)
             {
                 // +=
                 // operation is not atomic
@@ -326,7 +383,7 @@
                 }
             }
 
-            public void Withdraw(int amount)
+            private void Withdraw(int amount)
             {
                 lock (_lock)
                 {
@@ -339,18 +396,18 @@
         {
             private int balance;
 
-            public int Balance
+            private int Balance
             {
                 get { return balance; }
                 private set { balance = value; }
             }
 
-            public AccountWithInterlocked(int initialBalance)
+            private AccountWithInterlocked(int initialBalance)
             {
                 Balance = initialBalance;
             }
 
-            public void Deposit(int amount)
+            private void Deposit(int amount)
             {
                 // +=
                 // operation 1: temp = get_Balance() + amount
@@ -358,7 +415,7 @@
                 Interlocked.Add(ref balance, amount);
             }
 
-            public void Withdraw(int amount)
+            private void Withdraw(int amount)
             {
                 Interlocked.Add(ref balance, -amount);
             }
@@ -368,18 +425,18 @@
         {
             private int balance;
 
-            public int Balance
+            private int Balance
             {
                 get { return balance; }
                 private set { balance = value; }
             }
 
-            public Account(int initialBalance)
+            private Account(int initialBalance)
             {
                 Balance = initialBalance;
             }
 
-            public void Deposit(int amount)
+            private void Deposit(int amount)
             {
                 // +=
                 // operation 1: temp = get_Balance() + amount
@@ -387,16 +444,17 @@
                 balance += amount;
             }
 
-            public void Withdraw(int amount)
+            private void Withdraw(int amount)
             {
                 balance -= amount;
             }
 
-            public void Transfer(Account to, int amount)
+            private void Transfer(Account to, int amount)
             {
                 this.Withdraw(amount);
                 to.Deposit(amount);
             }
         }
+        #endregion
     }
 }

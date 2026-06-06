@@ -9,13 +9,10 @@ namespace LeaveMeAloneCSharp.Playground
         public static async Task Run()
         {
             await SimplePipelineDemo();
-            //await ParallelBlockDemo();
-            //await ErrorPropagationDemo();
-            //await BoundedCapacityDemo();
         }
 
         // Simple pipeline: input -> transform -> action
-        public static async Task SimplePipelineDemo()
+        private static async Task SimplePipelineDemo()
         {
             // Transforms input data (like LINQ Select)
             var multiplyBlock = new TransformBlock<int, int>(x =>
@@ -50,7 +47,7 @@ namespace LeaveMeAloneCSharp.Playground
         }
 
         // Parallel processing inside a block
-        public static async Task ParallelBlockDemo()
+        private static async Task ParallelBlockDemo()
         {
             var block = new TransformBlock<int, int>(
                 async x =>
@@ -81,7 +78,7 @@ namespace LeaveMeAloneCSharp.Playground
         }
 
         // Error propagation through the pipeline
-        public static async Task ErrorPropagationDemo(bool silenceMode = true)
+        private static async Task ErrorPropagationDemo(bool silenceMode = true)
         {
             var block = new TransformBlock<int, int>(x =>
             {
@@ -122,7 +119,7 @@ namespace LeaveMeAloneCSharp.Playground
         }
 
         // Bounded capacity to control buffering
-        public static async Task BoundedCapacityDemo()
+        private static async Task BoundedCapacityDemo()
         {
             var slowBlock = new ActionBlock<int>(
                 x =>
@@ -146,7 +143,7 @@ namespace LeaveMeAloneCSharp.Playground
         }
 
         // linear dataflow pipeline
-        public static async Task LinearPipelineDemo()
+        private static async Task LinearPipelineDemo()
         {
             // st. 1: multiply
             var multiply = new TransformBlock<int, int>(x =>
@@ -182,7 +179,7 @@ namespace LeaveMeAloneCSharp.Playground
         }
 
         // routing with filters
-        public static async Task BranchingPipelineDemo()
+        private static async Task BranchingPipelineDemo()
         {
             var source = new BufferBlock<int>();
 
@@ -215,7 +212,7 @@ namespace LeaveMeAloneCSharp.Playground
         }
 
         // load balancing workers with bounded capacity
-        public static async Task LoadBalancingPipelineDemo()
+        private static async Task LoadBalancingPipelineDemo()
         {
             var source = new BufferBlock<int>();
 
@@ -251,7 +248,7 @@ namespace LeaveMeAloneCSharp.Playground
         }
 
         // streaming log processing pipeline
-        public static async Task LogProcessingPipelineDemo()
+        private static async Task LogProcessingPipelineDemo()
         {
             var random = new Random();
 
@@ -319,7 +316,7 @@ namespace LeaveMeAloneCSharp.Playground
         }
 
         // TransformMany: one input produces multiple outputs
-        public static async Task TransformManyDemo()
+        private static async Task TransformManyDemo()
         {
             // split sentence into words
             var splitBlock = new TransformManyBlock<string, string>(sentence =>
@@ -355,7 +352,7 @@ namespace LeaveMeAloneCSharp.Playground
         }
 
         // multiple workers send results to one collector
-        public static async Task FanInMergeDemo()
+        private static async Task FanInMergeDemo()
         {
             var source = new BufferBlock<int>();
 
@@ -392,7 +389,7 @@ namespace LeaveMeAloneCSharp.Playground
         }
 
         // custom block built from multiple blocks
-        public static async Task CustomBlockEncapsulationDemo()
+        private static async Task CustomBlockEncapsulationDemo()
         {
             var customBlock = CreateCustomMathBlock();
 
@@ -431,7 +428,7 @@ namespace LeaveMeAloneCSharp.Playground
         }
 
         // high-throughput message processing pipeline
-        public static async Task HighThroughputMessagePipelineDemo()
+        private static async Task HighThroughputMessagePipelineDemo()
         {
             var random = new Random();
 
@@ -507,7 +504,7 @@ namespace LeaveMeAloneCSharp.Playground
             await storageBlock.Completion;
         }
 
-        public static async Task AsyncStreamToDataflowDemo()
+        private static async Task AsyncStreamToDataflowDemo()
         {
             Console.WriteLine("ASYNC STREAM TO DATAFLOW (push async stream into block)");
             Console.WriteLine();
@@ -541,7 +538,7 @@ namespace LeaveMeAloneCSharp.Playground
             Console.WriteLine();
         }
 
-        public static void ObservableToDataflowDemo()
+        private static void ObservableToDataflowDemo()
         {
             Console.WriteLine("OBSERVABLE -> DATAFLOW (stream pushes into block)");
             Console.WriteLine();
@@ -560,6 +557,39 @@ namespace LeaveMeAloneCSharp.Playground
             Thread.Sleep(500);
 
             Console.WriteLine("Observable stream consumed by Dataflow");
+            Console.WriteLine();
+        }
+
+        private static async Task TestDataflowWithSchedulerAsync()
+        {
+            // parse prices on thread pool, write to UI-bound list on exclusive scheduler
+            var pair = new ConcurrentExclusiveSchedulerPair();
+
+            var uiOptions = new ExecutionDataflowBlockOptions
+            {
+                TaskScheduler = pair.ExclusiveScheduler // simulates UI thread affinity
+            };
+
+            var displayed = new List<string>();
+
+            var parseBlock = new TransformBlock<string, decimal>(
+                raw => decimal.Parse(raw) * 1.2m); // apply tax
+
+            var displayBlock = new ActionBlock<decimal>(price =>
+            {
+                displayed.Add($"${price:F2}");
+                Console.WriteLine($"[DATAFLOW SCHEDULER] displayed ${price:F2} on thread {Thread.CurrentThread.ManagedThreadId}");
+            }, uiOptions);
+
+            parseBlock.LinkTo(displayBlock, new DataflowLinkOptions { PropagateCompletion = true });
+
+            foreach (var raw in new[] { "100", "250", "89", "310", "45" })
+                await parseBlock.SendAsync(raw);
+
+            parseBlock.Complete();
+            await displayBlock.Completion;
+
+            Console.WriteLine($"[DATAFLOW SCHEDULER] {displayed.Count} prices rendered");
             Console.WriteLine();
         }
     }

@@ -1,7 +1,6 @@
 ﻿using LeaveMeAloneCSharp.API;
 using LeaveMeAloneCSharp.Interfaces;
 using System.Diagnostics;
-using System.Linq;
 
 namespace LeaveMeAloneCSharp.Playground
 {
@@ -9,7 +8,7 @@ namespace LeaveMeAloneCSharp.Playground
     {
         public static async Task Run()
         {
-            await TestAsyncStreamRestartBehaviorAsync();
+            await TestAsyncDisposal();
         }
 
         private static async Task TestApiClientFactoryAsync()
@@ -908,6 +907,80 @@ namespace LeaveMeAloneCSharp.Playground
             Console.WriteLine();
         }
 
+        /* How it works:
+         1. The event is raised and all handlers are invoked immediately.
+            Async handlers start executing and may continue after the event invocation returns.
+        
+         2. Any handler that performs asynchronous work acquires a deferral
+            from the event args before its first await.
+        
+         3. The DeferralManager keeps track of all active deferrals.
+        
+         4. Each handler releases its deferral when its work is finished.
+            Using 'using' ensures the deferral is released even if an exception occurs.
+        
+         5. After invoking all handlers, the event raiser awaits
+            WaitForDeferralsAsync().
+        
+         6. WaitForDeferralsAsync() completes only when all acquired
+            deferrals have been released.
+        
+         7. At that point the raiser knows that every async handler
+            has finished its work and can safely continue.
+        
+         This pattern is useful for command-style events where the event
+         source must wait until all handlers finish processing before
+         proceeding.
+        
+          RaiseAsync("task-42")
+            |
+            +--> Handler 1 starts
+            |       GetDeferral() -> count = 1
+            |
+            +--> Handler 2 starts
+            |       GetDeferral() -> count = 2
+            |
+            +--> Handler 3 starts
+            |       GetDeferral() -> count = 3
+            |
+            +--> WaitForDeferralsAsync()
+            waits...
+         */
+        private static async Task DefferalsWithMultipleHandlersAsync()
+        {
+            var commander = new CommandSource();
+
+            // Deferral 1
+            commander.ProcessingRequested += async (s, e) =>
+            {
+                using var deferral = e.GetDeferral();
+                await Task.Delay(30);
+                Console.WriteLine($"[DEFERRAL 1] processed: {e.Item}");
+            };
+
+            // Deferral 2
+            commander.ProcessingRequested += async (s, e) =>
+            {
+                using var deferral = e.GetDeferral();
+                await Task.Delay(50);
+                Console.WriteLine($"[DEFERRAL 2] processed: {e.Item}");
+            };
+
+            // Deferral 3
+            commander.ProcessingRequested += async (s, e) =>
+            {
+                using var deferral = e.GetDeferral();
+                await Task.Delay(20);
+                Console.WriteLine($"[DEFERRAL 3] processed: {e.Item}");
+            };
+
+            // Raise command and await all deferrals
+            await commander.RaiseAsync("task-42");
+
+            Console.WriteLine("Deferral example completed");
+            Console.WriteLine();
+        }
+
         // two patterns for async disposal:
         // treat Dispose as cancellation - cancel ongoing operations, don't wait for them
         // IAsyncDisposable - await using, DisposeAsync returns ValueTask
@@ -1124,7 +1197,7 @@ namespace LeaveMeAloneCSharp.Playground
                 var handler = ProcessingRequested;
                 if (handler == null) return;
 
-                var args = new ProcessingRequestedEventArgs { Item = item };
+               var args = new ProcessingRequestedEventArgs { Item = item };
                 handler(this, args);
                 await args.WaitForDeferralsAsync();
             }
