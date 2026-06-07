@@ -361,15 +361,15 @@
 
         private class AccountWithLock
         {
-            private object _lock = new object();
-            private int Balance { get; private set; }
+            public object _lock = new object();
+            public int Balance { get; private set; }
 
-            private AccountWithLock(int initialBalance)
+            public AccountWithLock(int initialBalance)
             {
                 Balance = initialBalance;
             }
 
-            private void Deposit(int amount)
+            public void Deposit(int amount)
             {
                 // +=
                 // operation is not atomic
@@ -383,7 +383,7 @@
                 }
             }
 
-            private void Withdraw(int amount)
+            public void Withdraw(int amount)
             {
                 lock (_lock)
                 {
@@ -396,18 +396,18 @@
         {
             private int balance;
 
-            private int Balance
+            public int Balance
             {
                 get { return balance; }
                 private set { balance = value; }
             }
 
-            private AccountWithInterlocked(int initialBalance)
+            public AccountWithInterlocked(int initialBalance)
             {
                 Balance = initialBalance;
             }
 
-            private void Deposit(int amount)
+            public void Deposit(int amount)
             {
                 // +=
                 // operation 1: temp = get_Balance() + amount
@@ -415,7 +415,7 @@
                 Interlocked.Add(ref balance, amount);
             }
 
-            private void Withdraw(int amount)
+            public void Withdraw(int amount)
             {
                 Interlocked.Add(ref balance, -amount);
             }
@@ -425,18 +425,18 @@
         {
             private int balance;
 
-            private int Balance
+            public int Balance
             {
                 get { return balance; }
                 private set { balance = value; }
             }
 
-            private Account(int initialBalance)
+            public Account(int initialBalance)
             {
                 Balance = initialBalance;
             }
 
-            private void Deposit(int amount)
+            public void Deposit(int amount)
             {
                 // +=
                 // operation 1: temp = get_Balance() + amount
@@ -444,12 +444,12 @@
                 balance += amount;
             }
 
-            private void Withdraw(int amount)
+            public void Withdraw(int amount)
             {
                 balance -= amount;
             }
 
-            private void Transfer(Account to, int amount)
+            public void Transfer(Account to, int amount)
             {
                 this.Withdraw(amount);
                 to.Deposit(amount);

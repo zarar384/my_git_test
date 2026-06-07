@@ -373,5 +373,108 @@ namespace LeaveMeAloneCSharp.Playground
             Console.WriteLine("Stream completed");
             Console.WriteLine();
         }
+
+        // Observable.Defer: creates a fresh observable per subscriber
+        // without Defer, all subscribers share one cold observable instance
+        // with Defer, each subscription triggers its own independent data fetch
+        private static async Task TestObservableDeferAsync()
+        {
+            int callCount = 0;
+
+            // without Defer - factory runs once, all subscribers see same sequence
+            var shared = Observable.FromAsync(async () =>
+            {
+                callCount++;
+                await Task.Delay(20);
+                return $"exchange-rate-snapshot-{callCount}";
+            });
+
+            // with Defer - factory runs per subscription, each gets a fresh call
+            var deferred = Observable.Defer(() => Observable.FromAsync(async () =>
+            {
+                callCount++;
+                await Task.Delay(20);
+                return $"exchange-rate-snapshot-{callCount}";
+            }));
+
+            callCount = 0;
+            var r1 = await shared.FirstAsync();
+            var r2 = await shared.FirstAsync();
+            Console.WriteLine($"[DEFER] shared:   sub1={r1}, sub2={r2}  (same snapshot)");
+
+            callCount = 0;
+            r1 = await deferred.FirstAsync();
+            r2 = await deferred.FirstAsync();
+            Console.WriteLine($"[DEFER] deferred: sub1={r1}, sub2={r2}  (fresh each time)");
+
+            Console.WriteLine();
+        }
+
+        // IProgress<T> flooding UI thread: naive approach chokes the message pump
+        // progress.Report called thousands of times per second overwhelms the UI scheduler
+        private static async Task TestProgressThrottledAsync()
+        {
+            // ObservableProgress bridges IProgress<T> to IObservable<T>
+            // Sample(100ms) drops all but one update per window - UI stays responsive
+            var (observable, progress) = ObservableProgress.CreateForUi<long>(
+                TimeSpan.FromMilliseconds(100));
+
+            var reported = new List<long>();
+            using var sub = observable.Subscribe(v =>
+            {
+                reported.Add(v);
+                Console.WriteLine($"[PROGRESS THROTTLED] ui update: {v:N0}");
+            });
+
+            // simulate cpu-bound work that reports progress as fast as possible
+            string result = await Task.Run(() => CountFast(progress));
+
+            Console.WriteLine($"[PROGRESS THROTTLED] done, result={result}, ui updates={reported.Count} (raw reports >> {reported.Count})");
+            Console.WriteLine();
+        }
+
+        #region helpers
+        private static string CountFast(IProgress<long> progress)
+        {
+            var end = DateTime.UtcNow.AddSeconds(1);
+            long value = 0;
+            while (DateTime.UtcNow < end)
+            {
+                value++;
+                progress.Report(value);
+            }
+            return value.ToString("N0");
+        }
+
+        private static class ObservableProgress
+        {
+            private sealed class EventProgress<T> : IProgress<T>
+            {
+                public event Action<T>? OnReport;
+                void IProgress<T>.Report(T value) => OnReport?.Invoke(value);
+            }
+
+            public static (IObservable<T>, IProgress<T>) Create<T>()
+            {
+                var progress = new EventProgress<T>();
+                var observable = Observable.FromEvent<T>(
+                    h => progress.OnReport += h,
+                    h => progress.OnReport -= h);
+                return (observable, progress);
+            }
+
+            // must be called from UI thread - captures current SynchronizationContext
+            public static (IObservable<T>, IProgress<T>) CreateForUi<T>(
+                TimeSpan? sampleInterval = null)
+            {
+                var (observable, progress) = Create<T>();
+                observable = observable
+                    .Sample(sampleInterval ?? TimeSpan.FromMilliseconds(100))
+                    .ObserveOn(SynchronizationContext.Current ?? new SynchronizationContext());
+                return (observable, progress);
+            }
+        }
+
+        #endregion
     }
 }

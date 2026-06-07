@@ -1,5 +1,6 @@
 ﻿using LeaveMeAloneCSharp.API;
 using LeaveMeAloneCSharp.Interfaces;
+using System.Collections.Immutable;
 using System.Diagnostics;
 
 namespace LeaveMeAloneCSharp.Playground
@@ -1014,7 +1015,99 @@ namespace LeaveMeAloneCSharp.Playground
             Console.WriteLine();
         }
 
+        // AsyncLocal<T>: implicit state that flows through async call chains
+        // no need to pass correlation id as parameter to every method
+        private static async Task TestAsyncLocalStateAsync()
+        {
+            var correlationId = new AsyncLocal<Guid>();
+
+            async Task ProcessOrderAsync(int orderId)
+            {
+                correlationId.Value = Guid.NewGuid();
+                await ValidateOrderAsync(orderId, correlationId);
+                await ChargePaymentAsync(orderId, correlationId);
+            }
+
+            async Task ValidateOrderAsync(int orderId, AsyncLocal<Guid> cid)
+            {
+                await Task.Delay(20);
+                Console.WriteLine($"[ASYNC LOCAL] validate order {orderId} | correlation: {cid.Value}");
+            }
+
+            async Task ChargePaymentAsync(int orderId, AsyncLocal<Guid> cid)
+            {
+                await Task.Delay(20);
+                Console.WriteLine($"[ASYNC LOCAL] charge order {orderId}  | correlation: {cid.Value}");
+            }
+
+            // each concurrent order gets its own correlation id - no cross-contamination
+            await Task.WhenAll(
+                ProcessOrderAsync(1001),
+                ProcessOrderAsync(1002),
+                ProcessOrderAsync(1003));
+
+            Console.WriteLine();
+        }
+
+        // AsyncLocal<ImmutableStack<T>>: nested scopes with push/pop via IDisposable
+        // models structured logging scopes - inner scope sees outer values too
+        private static async Task TestAsyncLocalStackAsync()
+        {
+            var scopeStack = new AsyncLocalStack<string>();
+
+            async Task HandleRequestAsync(string requestId)
+            {
+                using (scopeStack.Push($"request:{requestId}"))
+                {
+                    await Task.Delay(10);
+                    Console.WriteLine($"[ASYNC LOCAL STACK] outer scope: {string.Join(" > ", scopeStack.Values)}");
+
+                    using (scopeStack.Push($"db-query"))
+                    {
+                        await Task.Delay(10);
+                        Console.WriteLine($"[ASYNC LOCAL STACK] inner scope: {string.Join(" > ", scopeStack.Values)}");
+                    }
+
+                    // inner scope popped automatically
+                    Console.WriteLine($"[ASYNC LOCAL STACK] after inner: {string.Join(" > ", scopeStack.Values)}");
+                }
+            }
+
+            await Task.WhenAll(
+                HandleRequestAsync("req-A"),
+                HandleRequestAsync("req-B"));
+
+            Console.WriteLine();
+        }
+
         #region helpers
+        private sealed class AsyncLocalStack<T>
+        {
+            private readonly AsyncLocal<ImmutableStack<T>> _local = new();
+            private ImmutableStack<T> Current => _local.Value ?? ImmutableStack<T>.Empty;
+
+            public IDisposable Push(T value)
+            {
+                _local.Value = Current.Push(value);
+                return new PopOnDispose(this);
+            }
+
+            private void Pop()
+            {
+                var popped = Current.Pop();
+                _local.Value = popped.IsEmpty ? null! : popped;
+            }
+
+            public IEnumerable<T> Values => Current.Reverse();
+
+            private sealed class PopOnDispose : IDisposable
+            {
+                private AsyncLocalStack<T>? _stack;
+                public PopOnDispose(AsyncLocalStack<T> stack) => _stack = stack;
+                public void Dispose() { _stack?.Pop(); _stack = null; }
+            }
+        }
+
         private sealed class Order
         {
             public int Quantity { get; set; }

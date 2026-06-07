@@ -2,9 +2,9 @@
 {
     public static class TasksL
     {
-        public static void Run()
+        public static async Task Run()
         {
-            RunDynamicTaskParallelismDemo();
+            await TestThreadPoolSchedulingAsync();
         }
 
         private static void RunTaskExceptionDemo()

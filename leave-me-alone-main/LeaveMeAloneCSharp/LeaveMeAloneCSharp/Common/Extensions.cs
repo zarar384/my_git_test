@@ -1,5 +1,6 @@
 ﻿using LeaveMeAloneCSharp.DiscriminatedUnions;
 using LeaveMeAloneCSharp.Functional.Monads;
+using System.Threading.Tasks.Dataflow;
 
 namespace LeaveMeAloneCSharp.Common
 {
@@ -479,5 +480,12 @@ namespace LeaveMeAloneCSharp.Common
             this StateMaybe<TS, TVIn> state,
             Func<TS, TVIn, Maybe<TVOut>> f
             ) =>  new StateMaybe<TS, TVOut>( state.CurrentState, state.CurrentValue.Bind(v => f(state.CurrentState, v)));
+
+        /// <summary>
+        /// Creates a TransformBlock that applies a function to the successful value of a Try, while propagating any exceptions as failures.
+        /// </summary>
+        public static TransformBlock<Try<TIn>, Try<TOut>> RailwayTransform<TIn, TOut>(
+            Func<TIn, TOut> func)
+            => new(t => t.Map(func));
     }
 }

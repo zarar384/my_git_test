@@ -2,6 +2,8 @@
 using LeaveMeAloneCSharp.Mediators;
 using LeaveMeAloneCSharp.Strategies.Interfaces;
 using LeaveMeAloneCSharp.Utils.Adapters;
+using Nito.AsyncEx;
+using System.ComponentModel;
 namespace LeaveMeAloneCSharp.Playground
 {
     public static class PatternsL
@@ -246,5 +248,203 @@ namespace LeaveMeAloneCSharp.Playground
 
             Console.WriteLine("FINISHED MEDIATOR PATTERN FORM EXAMPLE");
         }
+
+        // 14.1 - Lazy<T>: shared resource initialized exactly once
+        // factory runs on first Value access, result cached for all callers
+        private static void TestLazySharedResource()
+        {
+            // simulate shared config loaded from disk - expensive, done once
+            var config = new Lazy<AppConfig>(() =>
+            {
+                Thread.Sleep(50); // simulate file read
+                return new AppConfig { MaxRetries = 3, TimeoutMs = 5000 };
+            });
+
+            // multiple threads all get the same instance
+            var threads = Enumerable.Range(0, 5)
+                .Select(_ => new Thread(() =>
+                {
+                    var cfg = config.Value;
+                    Console.WriteLine($"[LAZY] MaxRetries={cfg.MaxRetries} thread={Thread.CurrentThread.ManagedThreadId}");
+                }))
+                .ToList();
+
+            threads.ForEach(t => t.Start());
+            threads.ForEach(t => t.Join());
+
+            Console.WriteLine();
+        }
+
+        // 14.1 - Lazy<Task<T>>: async shared resource, initialized once
+        // all callers await the same Task - factory never runs twice
+        private static async Task TestLazyAsyncSharedResourceAsync()
+        {
+            // simulate shared auth token fetched from identity server - one request, many consumers
+            var tokenSource = new Lazy<Task<string>>(async () =>
+            {
+                await Task.Delay(60); // simulate HTTP call to auth server
+                return $"token-{Guid.NewGuid():N}";
+            });
+
+            var tasks = Enumerable.Range(0, 5).Select(async i =>
+            {
+                string token = await tokenSource.Value;
+                Console.WriteLine($"[LAZY ASYNC] caller {i} got token: {token[..12]}...");
+            });
+
+            await Task.WhenAll(tasks);
+            Console.WriteLine();
+        }
+
+        // Lazy<Task<T>> with Task.Run: factory always runs on thread pool
+        // prevents context issues when callers come from different synchronization contexts
+        private static async Task TestLazyAsyncOnThreadPoolAsync()
+        {
+            // wrap factory in Task.Run - guaranteed to run on thread pool regardless of caller context
+            var schemaSource = new Lazy<Task<string>>(() => Task.Run(async () =>
+            {
+                await Task.Delay(40);
+                return "{ \"version\": 2, \"fields\": [\"id\", \"name\", \"amount\"] }";
+            }));
+
+            string schema = await schemaSource.Value;
+            Console.WriteLine($"[LAZY THREAD POOL] schema loaded: {schema[..30]}...");
+            Console.WriteLine();
+        }
+
+        //  AsyncLazy<T>: retries on failure, unlike Lazy<Task<T>> which caches the faulted task
+        private static async Task TestAsyncLazyWithRetryAsync()
+        {
+            int attempt = 0;
+
+            // first call fails, AsyncLazy retries on next access - Lazy<Task<T>> would cache the failure
+            var priceList = new AsyncLazy<decimal[]>(async () =>
+            {
+                attempt++;
+                if (attempt == 1)
+                    throw new HttpRequestException("price service temporarily unavailable");
+
+                await Task.Delay(30);
+                return new[] { 9.99m, 24.99m, 4.49m };
+            }, AsyncLazyFlags.RetryOnFailure);
+
+            try { await priceList; } catch (HttpRequestException ex) { Console.WriteLine($"[ASYNC LAZY] attempt 1 failed: {ex.Message}"); }
+
+            decimal[] prices = await priceList;
+            Console.WriteLine($"[ASYNC LAZY] attempt 2 succeeded, {prices.Length} prices loaded");
+            Console.WriteLine();
+        }
+
+        // BindableTask<T>: wraps async operation for data binding
+        // exposes IsNotCompleted / IsSuccessfullyCompleted / IsFaulted / Result
+        // without this, UI has no way to react to async state transitions
+        private static async Task TestBindableTaskAsync()
+        {
+            // simulate ViewModel loading user profile
+            var profileLoad = new BindableTask<UserProfile>(LoadUserProfileAsync());
+
+            Console.WriteLine($"[BINDABLE] IsNotCompleted: {profileLoad.IsNotCompleted}");
+
+            await Task.Delay(150); // let the task finish
+
+            Console.WriteLine($"[BINDABLE] IsSuccessfullyCompleted: {profileLoad.IsSuccessfullyCompleted}");
+            Console.WriteLine($"[BINDABLE] Result: {profileLoad.Result?.Name}");
+
+            // simulate a faulted task
+            var failedLoad = new BindableTask<UserProfile>(Task.FromException<UserProfile>(
+                new InvalidOperationException("user not found")));
+
+            await Task.Delay(20);
+
+            Console.WriteLine($"[BINDABLE] IsFaulted: {failedLoad.IsFaulted}");
+            Console.WriteLine();
+        }
+
+        // bool trick: single core method serves both sync and async callers
+        // avoids duplicating business logic; sync API must never hit an incomplete task
+        private static async Task TestSyncAsyncDualApiAsync()
+        {
+            var processor = new InvoiceProcessor();
+
+            // async caller awaits naturally
+            decimal asyncResult = await processor.CalculateTaxAsync(1500m);
+            Console.WriteLine($"[DUAL API] async result: {asyncResult:C}");
+
+            // sync caller blocks safely - core guarantees task is already complete
+            decimal syncResult = processor.CalculateTax(1500m);
+            Console.WriteLine($"[DUAL API] sync result:  {syncResult:C}");
+
+            Console.WriteLine();
+        }
+
+        #region helpers
+        private static async Task<UserProfile> LoadUserProfileAsync()
+        {
+            await Task.Delay(100); // simulate db fetch
+            return new UserProfile { Name = "Alice", Role = "Admin" };
+        }
+
+        private sealed class AppConfig
+        {
+            public int MaxRetries { get; set; }
+            public int TimeoutMs { get; set; }
+        }
+
+        private sealed class UserProfile
+        {
+            public string Name { get; set; } = "";
+            public string Role { get; set; } = "";
+        }
+
+        private sealed class BindableTask<T> : INotifyPropertyChanged
+        {
+            private readonly Task<T> _task;
+
+            public BindableTask(Task<T> task)
+            {
+                _task = task;
+                var _ = WatchAsync();
+            }
+
+            private async Task WatchAsync()
+            {
+                try { await _task; } catch { }
+
+                OnPropertyChanged(nameof(IsNotCompleted));
+                OnPropertyChanged(nameof(IsSuccessfullyCompleted));
+                OnPropertyChanged(nameof(IsFaulted));
+                OnPropertyChanged(nameof(Result));
+            }
+
+            public bool IsNotCompleted => !_task.IsCompleted;
+            public bool IsSuccessfullyCompleted => _task.Status == TaskStatus.RanToCompletion;
+            public bool IsFaulted => _task.IsFaulted;
+            public T? Result => IsSuccessfullyCompleted ? _task.Result : default;
+
+            public event PropertyChangedEventHandler? PropertyChanged;
+            private void OnPropertyChanged(string name) =>
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
+
+        private sealed class InvoiceProcessor
+        {
+            // single implementation - sync flag decides which delay API to use
+            private async Task<decimal> CalculateTaxCore(decimal amount, bool sync)
+            {
+                if (sync)
+                    Thread.Sleep(20); // sync path: blocking call
+                else
+                    await Task.Delay(20); // async path: non-blocking
+
+                return Math.Round(amount * 0.21m, 2);
+            }
+
+            public Task<decimal> CalculateTaxAsync(decimal amount) =>
+                CalculateTaxCore(amount, sync: false);
+
+            public decimal CalculateTax(decimal amount) =>
+                CalculateTaxCore(amount, sync: true).GetAwaiter().GetResult();
+        }
+        #endregion
     }
 }

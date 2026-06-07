@@ -1,4 +1,5 @@
-﻿using LeaveMeAloneCSharp.Models;
+﻿using LeaveMeAloneCSharp.Functional.Monads;
+using LeaveMeAloneCSharp.Models;
 using System.Reactive.Linq;
 using System.Threading.Tasks.Dataflow;
 
@@ -590,6 +591,38 @@ namespace LeaveMeAloneCSharp.Playground
             await displayBlock.Completion;
 
             Console.WriteLine($"[DATAFLOW SCHEDULER] {displayed.Count} prices rendered");
+            Console.WriteLine();
+        }
+
+        // railway dataflow: exceptions become data, pipeline never faults
+        // without Try<T>, one bad item kills the whole block
+        // with Try<T>, bad items travel the error track, good items continue normally
+        private static async Task TestRailwayDataflowAsync()
+        {
+            // pipeline: parse string -> divide 100 by value -> format result
+            // second item will be "0" — causes divide by zero on the error track
+            var parseBlock = Extensions.RailwayTransform<string, int>(raw => int.Parse(raw));
+            var divideBlock = Extensions.RailwayTransform<int, double>(val => 100.0 / val);
+            var formatBlock = Extensions.RailwayTransform<double, string>(val => $"${val:F2}");
+
+            var opts = new DataflowLinkOptions { PropagateCompletion = true };
+            parseBlock.LinkTo(divideBlock, opts);
+            divideBlock.LinkTo(formatBlock, opts);
+
+            foreach (var raw in new[] { "5", "0", "abc", "4", "25" })
+                await parseBlock.SendAsync(Try.FromValue(raw));
+
+            parseBlock.Complete();
+            await formatBlock.Completion;
+
+            while (formatBlock.TryReceive(out var item))
+            {
+                if (item.IsSuccess)
+                    Console.WriteLine($"[RAILWAY] ok:    {item.Value}");
+                else
+                    Console.WriteLine($"[RAILWAY] error: {item.Exception.Message}");
+            }
+
             Console.WriteLine();
         }
     }
