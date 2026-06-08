@@ -2,6 +2,6 @@
 {
     public class Button
     {
-        public bool Enablerd { get; set; }
+        public bool Enabled { get; set; }
     }
 }

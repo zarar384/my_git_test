@@ -2,9 +2,9 @@
 {
     public static class DataSharingSynchronizationL
     {
-        public static void Run()
+        public static async Task Run()
         {
-            ReaderWriterLockSlimDemo();
+           await TestThrottledSchedulerAsync();
         }
 
         static ReaderWriterLockSlim rwLock = new ReaderWriterLockSlim();

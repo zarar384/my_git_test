@@ -16,7 +16,7 @@ namespace LeaveMeAloneCSharp.Mediators
             if(ev == "TextChanged")
             {
                 // Enable the button only if the text box is not empty
-                Button.Enablerd = !string.IsNullOrEmpty(TextBox.Text);
+                Button.Enabled = !string.IsNullOrEmpty(TextBox.Text);
             }
         }
     }

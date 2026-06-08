@@ -7,7 +7,7 @@ namespace LeaveMeAloneCSharp.Playground
     {
         public static async Task Run()
         {
-          await  RunParallelToAsyncDemo();
+           TestParallelWithScheduler();
         }
 
         // chanked to use Partitioner for better performance on large datasets

@@ -9,7 +9,7 @@ namespace LeaveMeAloneCSharp.Playground
     {
         public static async Task Run()
         {
-            await SimplePipelineDemo();
+            await TestDataflowWithSchedulerAsync();
         }
 
         // Simple pipeline: input -> transform -> action
@@ -79,7 +79,7 @@ namespace LeaveMeAloneCSharp.Playground
         }
 
         // Error propagation through the pipeline
-        private static async Task ErrorPropagationDemo(bool silenceMode = true)
+        public static async Task ErrorPropagationDemo(bool silenceMode = true)
         {
             var block = new TransformBlock<int, int>(x =>
             {
@@ -579,7 +579,8 @@ namespace LeaveMeAloneCSharp.Playground
             var displayBlock = new ActionBlock<decimal>(price =>
             {
                 displayed.Add($"${price:F2}");
-                Console.WriteLine($"[DATAFLOW SCHEDULER] displayed ${price:F2} on thread {Thread.CurrentThread.ManagedThreadId}");
+                decimal original = price / 1.2m;
+                Console.WriteLine($"[DATAFLOW SCHEDULER] displayed ${price:F2} (original ${original:F2}) on thread {Thread.CurrentThread.ManagedThreadId}");
             }, uiOptions);
 
             parseBlock.LinkTo(displayBlock, new DataflowLinkOptions { PropagateCompletion = true });

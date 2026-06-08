@@ -10,7 +10,7 @@ namespace LeaveMeAloneCSharp.Playground
     {
         public static async Task Run()
         {
-            MediatorPatternFormDemo();
+            TestLazySharedResource();
         }
 
         private static void SimpleStrategyPatternDemo()
@@ -237,19 +237,19 @@ namespace LeaveMeAloneCSharp.Playground
             Console.WriteLine("User types 'Hello' in the text box...");
             textBox.SetText("Hello");
 
-            Console.WriteLine($"Button enabled: {button.Enablerd}");
+            Console.WriteLine($"Button enabled: {button.Enabled}");
             Console.WriteLine();
 
             Console.WriteLine("User clears the text box...");
             textBox.SetText("");
 
-            Console.WriteLine($"Button enabled: {button.Enablerd}");
+            Console.WriteLine($"Button enabled: {button.Enabled}");
             Console.WriteLine();
 
             Console.WriteLine("FINISHED MEDIATOR PATTERN FORM EXAMPLE");
         }
 
-        // 14.1 - Lazy<T>: shared resource initialized exactly once
+        //  Lazy<T>: shared resource initialized exactly once
         // factory runs on first Value access, result cached for all callers
         private static void TestLazySharedResource()
         {
@@ -275,7 +275,7 @@ namespace LeaveMeAloneCSharp.Playground
             Console.WriteLine();
         }
 
-        // 14.1 - Lazy<Task<T>>: async shared resource, initialized once
+        // Lazy<Task<T>>: async shared resource, initialized once
         // all callers await the same Task - factory never runs twice
         private static async Task TestLazyAsyncSharedResourceAsync()
         {
