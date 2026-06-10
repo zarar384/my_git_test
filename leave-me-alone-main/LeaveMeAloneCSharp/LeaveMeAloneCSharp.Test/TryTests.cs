@@ -1,4 +1,5 @@
-﻿using LeaveMeAloneCSharp.Functional.Monads;
+﻿using LeaveMeAloneCSharp.DiscriminatedUnions;
+using LeaveMeAloneCSharp.Functional.Monads;
 
 namespace LeaveMeAloneCSharp.Test
 {
@@ -54,6 +55,38 @@ namespace LeaveMeAloneCSharp.Test
 
             // Assert
             Assert.Equal(default, result.Value);
+        }
+
+        // Implicit operator
+
+        [Fact]
+        public void ImplicitOperator_FromValue_ShouldBeSuccess()
+        {
+            // Arrange & Act
+            Try<int> result = 42;
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(42, result.Value);
+        }
+
+        [Fact]
+        public void ImplicitOperator_DoesNotExistForException_ShouldUseFromExplicitly()
+        {
+            // This test documents the intentional design decision:
+            // there is no implicit operator Try<T>(Exception), because if T were an
+            // Exception subtype the compiler would silently produce a Failure instead
+            // of a Success. FromException must always be called explicitly.
+
+            // Arrange
+            var ex = new InvalidOperationException("deliberate");
+
+            // Act
+            var result = Try<string>.FromException(ex);
+
+            // Assert
+            Assert.True(result.IsFailure);
+            Assert.Same(ex, result.Exception);
         }
 
         // Try.Of
@@ -216,7 +249,54 @@ namespace LeaveMeAloneCSharp.Test
             Assert.True(result.IsFailure);
         }
 
-        // Bind - success path
+        // MapAsync
+
+        [Fact]
+        public async Task MapAsync_OnSuccess_TransformsValue()
+        {
+            // Arrange
+            var sut = Try<int>.FromValue(5);
+
+            // Act
+            var result = await sut.MapAsync(x => Task.FromResult(x * 2));
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(10, result.Value);
+        }
+
+        [Fact]
+        public async Task MapAsync_OnFailure_PropagatesExceptionWithoutCallingMapper()
+        {
+            // Arrange
+            var ex = new Exception("original");
+            var mapperCalled = false;
+            var sut = Try<int>.FromException(ex);
+
+            // Act
+            var result = await sut.MapAsync(x => { mapperCalled = true; return Task.FromResult(x); });
+
+            // Assert
+            Assert.True(result.IsFailure);
+            Assert.Same(ex, result.Exception);
+            Assert.False(mapperCalled);
+        }
+
+        [Fact]
+        public async Task MapAsync_WhenMapperThrows_CapturesException()
+        {
+            // Arrange
+            var sut = Try<int>.FromValue(1);
+
+            // Act
+            var result = await sut.MapAsync<string>(_ => throw new InvalidOperationException("async boom"));
+
+            // Assert
+            Assert.True(result.IsFailure);
+            Assert.IsType<InvalidOperationException>(result.Exception);
+        }
+
+        // Bind (Try overload) - success path
 
         [Fact]
         public void Bind_OnSuccess_ReturnsBinderResult()
@@ -263,7 +343,7 @@ namespace LeaveMeAloneCSharp.Test
             Assert.Same(innerEx, result.Exception);
         }
 
-        // Bind - failure path
+        // Bind (Try overload) - failure path
 
         [Fact]
         public void Bind_OnFailure_PropagatesExceptionWithoutCallingBinder()
@@ -289,11 +369,85 @@ namespace LeaveMeAloneCSharp.Test
             var sut = Try<int>.FromValue(1);
 
             // Act
-            var result = sut.Bind<string>(_ => throw new OverflowException("boom"));
+            var result = sut.Bind<string>(_ =>
+            {
+                throw new OverflowException("boom");
+                return default(Try<string>); // Unreachable, but required for compilation
+            });
 
             // Assert
             Assert.True(result.IsFailure);
             Assert.IsType<OverflowException>(result.Exception);
+        }
+
+        // Bind (Result overload)
+
+        [Fact]
+        public void Bind_WithResultBinder_OnSuccess_ReturnsConvertedResult()
+        {
+            // Arrange
+            var sut = Try<int>.FromValue(10);
+
+            // Act
+            var result = sut.Bind(x => (Result<string>)new Success<string>($"value={x}"));
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal("value=10", result.Value);
+        }
+
+        [Fact]
+        public void Bind_WithResultBinder_OnSuccess_WhenBinderReturnsFailure_PropagatesError()
+        {
+            // Arrange
+            var innerEx = new InvalidOperationException("result failure");
+            var sut = Try<int>.FromValue(5);
+
+            // Act
+            var result = sut.Bind(_ => (Result<string>)new Failure<string>(innerEx));
+
+            // Assert
+            Assert.True(result.IsFailure);
+            Assert.Same(innerEx, result.Exception);
+        }
+
+        [Fact]
+        public void Bind_WithResultBinder_OnFailure_PropagatesExceptionWithoutCallingBinder()
+        {
+            // Arrange
+            var ex = new Exception("original");
+            var binderCalled = false;
+            var sut = Try<int>.FromException(ex);
+
+            // Act
+            var result = sut.Bind(x =>
+            {
+                binderCalled = true;
+                return (Result<int>)new Success<int>(x);
+            });
+
+            // Assert
+            Assert.True(result.IsFailure);
+            Assert.Same(ex, result.Exception);
+            Assert.False(binderCalled);
+        }
+
+        [Fact]
+        public void Bind_WithResultBinder_WhenBinderThrows_CapturesException()
+        {
+            // Arrange
+            var sut = Try<int>.FromValue(1);
+
+            // Act
+            var result = sut.Bind<string>(_ => 
+            { 
+                throw new NotImplementedException("result binder boom"); 
+                return default(Try<string>); 
+            });
+
+            // Assert
+            Assert.True(result.IsFailure);
+            Assert.IsType<NotImplementedException>(result.Exception);
         }
 
         // GetOrElse
@@ -337,7 +491,7 @@ namespace LeaveMeAloneCSharp.Test
             Assert.Null(result);
         }
 
-        // Match
+        // Match (void overload)
 
         [Fact]
         public void Match_OnSuccess_CallsOnSuccess()
@@ -402,6 +556,188 @@ namespace LeaveMeAloneCSharp.Test
 
             // Assert
             Assert.False(successCalled);
+        }
+
+        // Match (returning overload)
+
+        [Fact]
+        public void Match_Returning_OnSuccess_ReturnsOnSuccessResult()
+        {
+            // Arrange
+            var sut = Try<int>.FromValue(42);
+
+            // Act
+            var result = sut.Match(
+                onSuccess: v => $"ok:{v}",
+                onFailure: e => $"err:{e.Message}");
+
+            // Assert
+            Assert.Equal("ok:42", result);
+        }
+
+        [Fact]
+        public void Match_Returning_OnFailure_ReturnsOnFailureResult()
+        {
+            // Arrange
+            var sut = Try<int>.FromException(new Exception("boom"));
+
+            // Act
+            var result = sut.Match(
+                onSuccess: v => $"ok:{v}",
+                onFailure: e => $"err:{e.Message}");
+
+            // Assert
+            Assert.Equal("err:boom", result);
+        }
+
+        [Fact]
+        public void Match_Returning_OnSuccess_DoesNotCallOnFailure()
+        {
+            // Arrange
+            var failureCalled = false;
+            var sut = Try<int>.FromValue(1);
+
+            // Act
+            sut.Match(
+                onSuccess: v => v,
+                onFailure: _ => { failureCalled = true; return -1; });
+
+            // Assert
+            Assert.False(failureCalled);
+        }
+
+        [Fact]
+        public void Match_Returning_OnFailure_DoesNotCallOnSuccess()
+        {
+            // Arrange
+            var successCalled = false;
+            var sut = Try<int>.FromException(new Exception());
+
+            // Act
+            sut.Match(
+                onSuccess: _ => { successCalled = true; return "ok"; },
+                onFailure: _ => "err");
+
+            // Assert
+            Assert.False(successCalled);
+        }
+
+        // FromResult / ToResult
+
+        [Fact]
+        public void FromResult_WithSuccess_ShouldBeSuccess()
+        {
+            // Arrange
+            var result = new Success<int>(42);
+
+            // Act
+            var sut = Try<int>.FromResult(result);
+
+            // Assert
+            Assert.True(sut.IsSuccess);
+            Assert.Equal(42, sut.Value);
+        }
+
+        [Fact]
+        public void FromResult_WithFailure_ShouldBeFailure()
+        {
+            // Arrange
+            var ex = new InvalidOperationException("result error");
+            var result = new Failure<int>(ex);
+
+            // Act
+            var sut = Try<int>.FromResult(result);
+
+            // Assert
+            Assert.True(sut.IsFailure);
+            Assert.Same(ex, sut.Exception);
+        }
+
+        [Fact]
+        public void ToResult_OnSuccess_ReturnsSuccess()
+        {
+            // Arrange
+            var sut = Try<int>.FromValue(7);
+
+            // Act
+            var result = sut.ToResult();
+
+            // Assert
+            Assert.IsType<Success<int>>(result);
+            Assert.Equal(7, ((Success<int>)result).Value);
+        }
+
+        [Fact]
+        public void ToResult_OnFailure_ReturnsFailure()
+        {
+            // Arrange
+            var ex = new Exception("fail");
+            var sut = Try<int>.FromException(ex);
+
+            // Act
+            var result = sut.ToResult();
+
+            // Assert
+            Assert.IsType<Failure<int>>(result);
+            Assert.Same(ex, ((Failure<int>)result).Error);
+        }
+
+        [Fact]
+        public void FromResult_ToResult_RoundTrip_PreservesValue()
+        {
+            // Arrange
+            var original = new Success<string>("hello");
+
+            // Act
+            var roundTripped = Try<string>.FromResult(original).ToResult();
+
+            // Assert
+            Assert.IsType<Success<string>>(roundTripped);
+            Assert.Equal("hello", ((Success<string>)roundTripped).Value);
+        }
+
+        [Fact]
+        public void FromResult_ToResult_RoundTrip_PreservesException()
+        {
+            // Arrange
+            var ex = new Exception("roundtrip error");
+            var original = new Failure<string>(ex);
+
+            // Act
+            var roundTripped = Try<string>.FromResult(original).ToResult();
+
+            // Assert
+            Assert.IsType<Failure<string>>(roundTripped);
+            Assert.Same(ex, ((Failure<string>)roundTripped).Error);
+        }
+
+        // Static Try.FromResult / Try.ToResult
+
+        [Fact]
+        public void StaticFromResult_ShouldDelegateToGenericClass()
+        {
+            // Arrange
+            var result = new Success<int>(99);
+
+            // Act
+            var sut = Try.FromResult<int>(result);
+
+            // Assert
+            Assert.True(sut.IsSuccess);
+            Assert.Equal(99, sut.Value);
+        }
+
+        [Fact]
+        public void StaticToResult_ShouldDelegateToInstanceMethod()
+        {
+            // Arrange
+            var sut = Try<int>.FromValue(3);
+
+            // Act
+            var result = Try.ToResult(sut);
+
+            // Assert
+            Assert.IsType<Success<int>>(result);
         }
 
         // Integration: realistic pipelines
@@ -485,6 +821,63 @@ namespace LeaveMeAloneCSharp.Test
             // Assert
             Assert.True(result.IsFailure);
             Assert.IsType<UriFormatException>(result.Exception);
+        }
+
+        [Fact]
+        public void Pipeline_MixedTryAndResult_ViaResultBind_HappyPath()
+        {
+            // Arrange & Act
+            var result = Try.Of(() => 10)
+                .Bind(x => (Result<string>)new Success<string>($"value={x}"))
+                .Map(s => s.ToUpper());
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal("VALUE=10", result.Value);
+        }
+
+        [Fact]
+        public void Pipeline_MixedTryAndResult_ViaResultBind_PropagatesFailure()
+        {
+            // Arrange
+            var ex = new InvalidOperationException("result step failed");
+
+            // Act
+            var result = Try.Of(() => 10)
+                .Bind(_ => (Result<string>)new Failure<string>(ex))
+                .Map(s => s.ToUpper());
+
+            // Assert
+            Assert.True(result.IsFailure);
+            Assert.Same(ex, result.Exception);
+        }
+
+        [Fact]
+        public async Task Pipeline_Async_MapAsync_ChainedWithMap()
+        {
+            // Arrange & Act
+            var result = await Try.Of(() => 5)
+                .MapAsync(x => Task.FromResult(x * 2));
+
+            var final = result.Map(x => x + 1);
+
+            // Assert
+            Assert.True(final.IsSuccess);
+            Assert.Equal(11, final.Value);
+        }
+
+        [Fact]
+        public void Pipeline_Match_Returning_UsedAsTerminalStep()
+        {
+            // Arrange & Act
+            var message = Try.Of(() => int.Parse("bad"))
+                .Map(x => x * 2)
+                .Match(
+                    onSuccess: v => $"Result: {v}",
+                    onFailure: e => $"Error: {e.GetType().Name}");
+
+            // Assert
+            Assert.Equal("Error: FormatException", message);
         }
     }
 }

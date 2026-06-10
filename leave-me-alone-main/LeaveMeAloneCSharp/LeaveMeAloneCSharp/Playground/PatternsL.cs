@@ -10,7 +10,7 @@ namespace LeaveMeAloneCSharp.Playground
     {
         public static async Task Run()
         {
-            TestLazySharedResource();
+            await TestBindableTaskAsync();
         }
 
         private static void SimpleStrategyPatternDemo()

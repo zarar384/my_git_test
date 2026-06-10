@@ -9,7 +9,7 @@ namespace LeaveMeAloneCSharp.Playground
     {
         public static async Task Run()
         {
-            await TestDataflowWithSchedulerAsync();
+            await TestRailwayDataflowAsync();
         }
 
         // Simple pipeline: input -> transform -> action
@@ -603,26 +603,26 @@ namespace LeaveMeAloneCSharp.Playground
             // pipeline: parse string -> divide 100 by value -> format result
             // second item will be "0" — causes divide by zero on the error track
             var parseBlock = Extensions.RailwayTransform<string, int>(raw => int.Parse(raw));
-            var divideBlock = Extensions.RailwayTransform<int, double>(val => 100.0 / val);
+            var divideBlock = Extensions.RailwayTransform<int, double>(val => val == 0 ? throw new DivideByZeroException() : 100.0 / val);
             var formatBlock = Extensions.RailwayTransform<double, string>(val => $"${val:F2}");
+            var printBlock = new ActionBlock<Try<string>>(result =>
+            {
+                if (result.IsSuccess)
+                    Console.WriteLine($"[RAILWAY] ok:    {result.Value}");
+                else
+                    Console.WriteLine($"[RAILWAY] error: {result.Exception.Message}");
+            });
 
             var opts = new DataflowLinkOptions { PropagateCompletion = true };
             parseBlock.LinkTo(divideBlock, opts);
             divideBlock.LinkTo(formatBlock, opts);
+            formatBlock.LinkTo(printBlock, opts);
 
             foreach (var raw in new[] { "5", "0", "abc", "4", "25" })
                 await parseBlock.SendAsync(Try.FromValue(raw));
 
             parseBlock.Complete();
-            await formatBlock.Completion;
-
-            while (formatBlock.TryReceive(out var item))
-            {
-                if (item.IsSuccess)
-                    Console.WriteLine($"[RAILWAY] ok:    {item.Value}");
-                else
-                    Console.WriteLine($"[RAILWAY] error: {item.Exception.Message}");
-            }
+            await printBlock.Completion;
 
             Console.WriteLine();
         }

@@ -9,7 +9,7 @@ namespace LeaveMeAloneCSharp.Playground
     {
         public static async Task Run()
         {
-            await TestAsyncDisposal();
+            await TestAsyncLocalStateAsync();
         }
 
         private static async Task TestApiClientFactoryAsync()
@@ -1024,20 +1024,20 @@ namespace LeaveMeAloneCSharp.Playground
             async Task ProcessOrderAsync(int orderId)
             {
                 correlationId.Value = Guid.NewGuid();
-                await ValidateOrderAsync(orderId, correlationId);
-                await ChargePaymentAsync(orderId, correlationId);
+                await ValidateOrderAsync(orderId);
+                await ChargePaymentAsync(orderId);
             }
 
-            async Task ValidateOrderAsync(int orderId, AsyncLocal<Guid> cid)
+            async Task ValidateOrderAsync(int orderId)
             {
                 await Task.Delay(20);
-                Console.WriteLine($"[ASYNC LOCAL] validate order {orderId} | correlation: {cid.Value}");
+                Console.WriteLine($"[ASYNC LOCAL] validate order {orderId} | correlation: {correlationId.Value}");
             }
 
-            async Task ChargePaymentAsync(int orderId, AsyncLocal<Guid> cid)
+            async Task ChargePaymentAsync(int orderId)
             {
                 await Task.Delay(20);
-                Console.WriteLine($"[ASYNC LOCAL] charge order {orderId}  | correlation: {cid.Value}");
+                Console.WriteLine($"[ASYNC LOCAL] charge order {orderId}  | correlation: {correlationId.Value}");
             }
 
             // each concurrent order gets its own correlation id - no cross-contamination

@@ -9,7 +9,7 @@ namespace LeaveMeAloneCSharp.Playground
     {
         public static async Task Run()
         {
-             TaskToObservableDemo();
+            await TestObservableDeferAsync();
             //RxHotVsColdDemo();
             //RxSubjectDemo();
             //RxErrorHandlingDemo();
@@ -382,30 +382,26 @@ namespace LeaveMeAloneCSharp.Playground
             int callCount = 0;
 
             // without Defer - factory runs once, all subscribers see same sequence
-            var shared = Observable.FromAsync(async () =>
-            {
-                callCount++;
-                await Task.Delay(20);
-                return $"exchange-rate-snapshot-{callCount}";
-            });
+            // value is created immediately
+            var shared = Observable.Return($"exchange-rate-snapshot-{++callCount}");
 
             // with Defer - factory runs per subscription, each gets a fresh call
-            var deferred = Observable.Defer(() => Observable.FromAsync(async () =>
+            // value is created on every subscription
+            var deferred = Observable.Defer(() =>
             {
-                callCount++;
-                await Task.Delay(20);
-                return $"exchange-rate-snapshot-{callCount}";
-            }));
+                var freshSnapshot = $"exchange-rate-snapshot-{++callCount}";
+                return Observable.Return(freshSnapshot);
+            });
 
-            callCount = 0;
+
             var r1 = await shared.FirstAsync();
             var r2 = await shared.FirstAsync();
-            Console.WriteLine($"[DEFER] shared:   sub1={r1}, sub2={r2}  (same snapshot)");
+            Console.WriteLine($"[DEFER] shared:   sub1={r1}, sub2={r2}  (same snapshot) calls={callCount}");
 
             callCount = 0;
             r1 = await deferred.FirstAsync();
             r2 = await deferred.FirstAsync();
-            Console.WriteLine($"[DEFER] deferred: sub1={r1}, sub2={r2}  (fresh each time)");
+            Console.WriteLine($"[DEFER] deferred: sub1={r1}, sub2={r2}  (fresh each time) calls={callCount}");
 
             Console.WriteLine();
         }
