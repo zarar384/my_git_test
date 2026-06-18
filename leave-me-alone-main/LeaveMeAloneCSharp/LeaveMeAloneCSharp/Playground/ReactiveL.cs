@@ -9,7 +9,7 @@ namespace LeaveMeAloneCSharp.Playground
     {
         public static async Task Run()
         {
-            await TestObservableDeferAsync();
+            await TestProgressThrottledAsync();
             //RxHotVsColdDemo();
             //RxSubjectDemo();
             //RxErrorHandlingDemo();
