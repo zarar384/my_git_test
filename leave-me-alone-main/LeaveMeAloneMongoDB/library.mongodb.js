@@ -472,3 +472,60 @@ db.loans.insertMany([
         status: "borrowed"
     }
 ]);
+
+// indexes for efficient querying
+db.books.createIndex({ isbn: 1}, {unique: true});
+db.books.createIndex({genre: 1, rating: -1}); // -1 for descending order
+db.books.createIndex({title: "text", tags: "text"}, {name: "text_search_index"}); // define a name for the text index
+db.members.createIndex({geoLocation: "2dsphere"}); // for geospatial queries, where 2dsphere is used for spherical geometry (Earth-like) queries
+
+// TTL index for automatic deletion of old notifications after 30 days
+db.createCollection("notifications");
+db.notifications.createIndex({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 }); // 30 days in seconds
+
+// show indexes for books collection
+print("Books collection indexes:");
+var bookIndexes = db.books.getIndexes();
+printjson(bookIndexes);
+bookIndexes;
+
+// FIND queries
+print("Book with genre 'Non-Fiction' and rating greater than 4.5:");
+var booksGenreNonFiction = db.books.find(
+    { genre: "Non-Fiction", rating: { $gt: 4.5 } },
+     {title: 1, authors: 1, rating: 1, _id: 0} // projection to show only title, authors and rating
+).sort({ rating: -1 }); // sort by rating in descending order
+printjson(booksGenreNonFiction.toArray());
+booksGenreNonFiction;
+
+print("Books with tag 'war':");
+var booksWithTagWar = db.books.find(
+    {tags: "war"},
+    {title: 1, tags: 1, _id: 0} // projection to show only title and tags
+).sort({publishedYear: -1});
+printjson(booksWithTagWar.toArray());
+booksWithTagWar;
+
+print("Books with tags 'war' and 'classic':");
+var booksWithTagsWarClassic = db.books.find(
+    {tags: {$all: ["war", "classic"]}},
+    {title: 1, _id: 0} // projection to show only title
+).sort({publishedYear: -1});
+printjson(booksWithTagsWarClassic.toArray());
+booksWithTagsWarClassic;
+
+// $expr: compare filds within the same document
+print("Expired loans (dueDate passed, returnedAt is empty):"); 
+var expiredLoans = db.loans.find(
+    {
+        $expr:
+        {
+            $and: [
+                { $lt: ["$dueDate", new Date()] }, // dueDate is less than current date
+                { $eq: ["$returnedAt", null] } // returnedAt is null
+            ]
+        }
+    }
+);
+printjson(expiredLoans.toArray());
+expiredLoans;
