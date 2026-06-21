@@ -259,7 +259,7 @@ db.books.insertMany([
         genre: "Fiction",
         pages: 296,
         publishedYear: 1929,
-        rating: 4.7,
+        // rating: 4.7,
         stock: 10,
         tags: ["war", "classic", "World War I"],
         location: { shelf: "C", row: 1 }
@@ -477,7 +477,7 @@ db.loans.insertMany([
 db.books.createIndex({ isbn: 1}, {unique: true});
 db.books.createIndex({genre: 1, rating: -1}); // -1 for descending order
 db.books.createIndex({title: "text", tags: "text"}, {name: "text_search_index"}); // define a name for the text index
-db.members.createIndex({geoLocation: "2dsphere"}); // for geospatial queries, where 2dsphere is used for spherical geometry (Earth-like) queries
+db.members.createIndex({location: "2dsphere"}); // for geospatial queries, where 2dsphere is used for spherical geometry (Earth-like) queries
 
 // TTL index for automatic deletion of old notifications after 30 days
 db.createCollection("notifications");
@@ -486,6 +486,7 @@ db.notifications.createIndex({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 2
 // show indexes for books collection
 print("Books collection indexes:");
 var bookIndexes = db.books.getIndexes();
+
 printjson(bookIndexes);
 bookIndexes;
 
@@ -495,6 +496,7 @@ var booksGenreNonFiction = db.books.find(
     { genre: "Non-Fiction", rating: { $gt: 4.5 } },
      {title: 1, authors: 1, rating: 1, _id: 0} // projection to show only title, authors and rating
 ).sort({ rating: -1 }); // sort by rating in descending order
+
 printjson(booksGenreNonFiction.toArray());
 booksGenreNonFiction;
 
@@ -503,6 +505,7 @@ var booksWithTagWar = db.books.find(
     {tags: "war"},
     {title: 1, tags: 1, _id: 0} // projection to show only title and tags
 ).sort({publishedYear: -1});
+
 printjson(booksWithTagWar.toArray());
 booksWithTagWar;
 
@@ -511,6 +514,7 @@ var booksWithTagsWarClassic = db.books.find(
     {tags: {$all: ["war", "classic"]}},
     {title: 1, _id: 0} // projection to show only title
 ).sort({publishedYear: -1});
+
 printjson(booksWithTagsWarClassic.toArray());
 booksWithTagsWarClassic;
 
@@ -527,5 +531,166 @@ var expiredLoans = db.loans.find(
         }
     }
 );
+
 printjson(expiredLoans.toArray());
 expiredLoans;
+
+// books on shelf A
+print("Books located on shelf A:");
+var booksOnShelfA = db.books.aggregate([
+    {
+        $match: {"location.shelf": "A"}
+    },
+    {
+        $project: {
+            shelf: "$location.shelf",
+            title: "$title",
+            row: "$location.row",
+            _id: 0
+        }
+    },
+    {
+        $sort: {shelf: 1, row: 1} // sort by shelf and row in ascending order
+    }
+]);
+
+printjson(booksOnShelfA.toArray());
+booksOnShelfA;
+
+// text search $text works only with text indexes
+var booksTextSearch = db.books.find(
+    { $text: { $search: "world" } },
+    { score: { $meta: "textScore" }, title: 1, tags: 1, _id: 0 } // projection to show only title and tags
+).sort({ score: { $meta: "textScore" } }); // sort by text score in descending order
+
+printjson(booksTextSearch.toArray());
+booksTextSearch;
+
+// $size and $exists operators
+// $size is used to match documents where the array field has a specific number of elements
+// $exists is used to match documents where the field exists or does not exist
+print("Books with exactly 3 tags:");
+var booksWithThreeTags = db.books.find(
+    { tags: { $size: 3 } },
+    { title: 1, tags: 1, _id: 0 } // projection to show only title and tags
+).sort({ title: 1 }); // sort by title in ascending order
+
+printjson(booksWithThreeTags.toArray());
+booksWithThreeTags;
+
+// books with rating field does not exist
+print("Books with rating field not existing:");
+var booksWithRatingField = db.books.find(
+    { rating: { $exists: false } },
+    { title: 1, rating: 1, _id: 0 } 
+).sort({ rating: -1 }); 
+
+printjson(booksWithRatingField.toArray());
+booksWithRatingField;
+
+// $in and $nin operators
+print("Books with author 'Louis-Ferdinand Céline' or 'Svetlana Alexievich' and rating less than 4:");
+var booksWithGenreIn = db.books.find(
+    {
+        $and: [
+            { authors: { $in: ["Louis-Ferdinand Céline", "Svetlana Alexievich"] } },
+            { rating: { $lt: 4 } }
+        ]
+    },
+    { title: 1, authors: 1, rating: 1, _id: 0 }
+).sort({ rating: -1 });
+
+printjson(booksWithGenreIn.toArray());
+booksWithGenreIn;
+
+// pagination
+const PAGE = 1;
+const PAGE_SIZE = 3;
+print(`Books on page ${PAGE} with page size ${PAGE_SIZE}:`);
+var booksPagination = db.books.find(
+    {},
+    { title: 1, authors: 1, _id: 0 },
+)
+.sort({ title: 1 })
+.skip((PAGE - 1) * PAGE_SIZE)
+.limit(PAGE_SIZE)
+.toArray()
+
+printjson(booksPagination);
+booksPagination;
+
+// next page
+const NEXT_PAGE = 2;
+print(`Books on page ${NEXT_PAGE} with page size ${PAGE_SIZE}:`);
+var booksNextPage = db.books.find(
+    {},
+    { title: 1, authors: 1, _id: 0 },
+)
+.sort({ title: 1 })
+.skip((NEXT_PAGE - 1) * PAGE_SIZE)
+.limit(PAGE_SIZE)
+.toArray()
+
+printjson(booksNextPage);
+booksNextPage;
+
+// $set, $inc, $push
+print("Increase stock of 'Journey to the End of the Night' by 5 and add a new tag 'classic literature':");
+var oldBook = db.books.findOne({ title: journeyToTheEndOfTheNightTitle });
+var updateResult = db.books.updateOne(
+    { title: journeyToTheEndOfTheNightTitle },
+    { 
+        $inc: {stock: 5}, // increment stock by 5
+      $push: {tags: "classic literature"}, // add a new tag to the tags array
+        $set: {lastUpdated: new Date()} // set lastUpdated field to current date
+    }
+);
+var updatedBook = db.books.findOne({ title: journeyToTheEndOfTheNightTitle });
+
+var comparisonResult = {
+    oldBookStock: oldBook.stock,
+    updatedBookStock: updatedBook.stock,
+    oldBookTags: oldBook.tags,
+    updatedBookTags: updatedBook.tags,
+    previousLastUpdated: oldBook.lastUpdated,
+    dateUpdated: updatedBook.lastUpdated.toISOString().split('T')[0]
+};
+printjson(comparisonResult);
+comparisonResult;
+
+// $addToSet 
+print("Add a new tag '20th century' to 'Journey to the End of the Night' only if it doesn't already exist:");
+var addToSetResult = db.books.updateOne(
+    { title: journeyToTheEndOfTheNightTitle },
+    { $addToSet: { tags: "20th century" } } // add a new tag to the tags array only if it doesn't already exist
+);
+var updatedBookAfterAddToSet = db.books.findOne({ title: journeyToTheEndOfTheNightTitle });
+
+print("Add a new tag 'witnesses' to 'The Last Witnesses' only if it doesn't already exist (it already exists, so it will do nothing):");
+var addToSetDoNothingResult = db.books.updateOne(
+    { title: theLastWitnessesTitle },
+    { $addToSet: { tags: "witnesses" } } // is already in the tags array, so it will do nothing
+);
+var updatedBookAfterAddToSetDoNothing = db.books.findOne({ title: theLastWitnessesTitle });
+
+var addToSetComparisonResult = {
+    updatedBookAfterAddToSetTags: updatedBookAfterAddToSet.tags,
+    updatedBookAfterAddToSetDoNothingTags: updatedBookAfterAddToSetDoNothing.tags
+};
+printjson(addToSetComparisonResult);
+addToSetComparisonResult;
+
+// $pull - remove existing tag from the tags array
+print("Remove the tag 'existentialism' from 'Journey to the End of the Night':");
+var pullResult = db.books.updateOne(
+    { title: journeyToTheEndOfTheNightTitle },
+    { $pull: { tags: "existentialism" } } // remove the tag from the tags array
+);
+var updatedBookAfterPull = db.books.findOne({ title: journeyToTheEndOfTheNightTitle });
+
+var pullComparisonResult = {
+    updatedBookAfterAddToSetTags: updatedBookAfterAddToSet.tags,
+    updatedBookAfterPullTags: updatedBookAfterPull.tags
+};
+printjson(pullComparisonResult);
+pullComparisonResult;
