@@ -1220,3 +1220,12 @@ ADD:
 RESTART: net stop MongoDB
          net start MongoDB
 mongosh: rs.initiate()
+
+
+-- exception handle, only in vs code
+try {
+
+}
+catch (e) {
+    console.log(JSON.stringify(e.errInfo, null, 2));
+}

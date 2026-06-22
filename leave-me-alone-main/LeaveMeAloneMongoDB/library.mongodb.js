@@ -694,3 +694,60 @@ var pullComparisonResult = {
 };
 printjson(pullComparisonResult);
 pullComparisonResult;
+
+// colMod - modify the validation rules for the books collection to add a new enum value for the genre field
+print("Modify the validation rules for the books collection to add a new enum value 'Prison Literature' for the genre field:");
+// get the current validation rules, modify and then apply the new validation rules using collMod command
+var info = db.getCollectionInfos({ name: "books" })[0];
+var currentValidator = info.options.validator;
+currentValidator.$jsonSchema.properties.genre.enum.push("Prison Literature");
+
+var collModResult = db.runCommand({
+    collMod: "books",
+    validator: currentValidator,
+    validationAction: "error"
+});
+
+// $upsert - if the book does not exist, it will be created; if it exists, it will be updated
+print("Upsert a book 'Cheshezhopitsa' (it does not exist, so it will be created):");
+const cheshezhopitsaTitle = "Cheshezhopitsa";
+var upsertResult = db.books.updateOne(
+    { isbn: "9781234567890" }, // filter by ISBN
+    {
+        $set: {
+            title: cheshezhopitsaTitle,
+            authors: ["Nekras Ryzhijr"],
+            isbn: "9781234567890",
+            genre: "Prison Literature",
+            pages: 200,
+            publishedYear: 2024,
+            stock: 5,
+            tags: ["prison literature"],
+            location: { shelf: "D", row: 1 }
+        }
+    },
+    { upsert: true } // if the book does not exist, it will be created
+);
+
+var cheshezhopitsaBook = db.books.findOne({ isbn: "9781234567890" });
+
+print("Upsert again the book 'Cheshezhopitsa' (it exists, so it will be updated):");
+var upsertUpdateResult = db.books.updateOne(
+    { isbn: "9781234567890" }, // filter by ISBN
+    {
+        $set: {
+            tags: ["prison literature", "russian literature"],
+        }
+    },
+    { upsert: true } // if the book does not exist, it will be created
+);
+
+var cheshezhopitsaBookUpdated = db.books.findOne({ isbn: "9781234567890" });
+
+var upsertComparisonResult = {
+    cheshezhopitsaBookTags: cheshezhopitsaBook.tags,
+    cheshezhopitsaBookUpdatedTags: cheshezhopitsaBookUpdated.tags
+};
+
+printjson(upsertComparisonResult);
+upsertComparisonResult;
