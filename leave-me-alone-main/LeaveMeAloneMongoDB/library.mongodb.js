@@ -708,7 +708,7 @@ var collModResult = db.runCommand({
     validationAction: "error"
 });
 
-// $upsert - if the book does not exist, it will be created; if it exists, it will be updated
+// upsert - if the book does not exist, it will be created; if it exists, it will be updated
 print("Upsert a book 'Cheshezhopitsa' (it does not exist, so it will be created):");
 const cheshezhopitsaTitle = "Cheshezhopitsa";
 var upsertResult = db.books.updateOne(
@@ -751,3 +751,213 @@ var upsertComparisonResult = {
 
 printjson(upsertComparisonResult);
 upsertComparisonResult;
+
+// updateMany + $mul - mutiply the stock of all books in the genre "Fiction" by 2
+print("Multiply the stock of all books in the genre 'Fiction' by 2:");
+var updateManyResult = db.books.updateMany(
+    { genre: "Fiction" },
+    { $mul: { stock: 2 } } // multiply the stock by 2
+);
+
+var updatedFictionBooks = db.books.find(
+    { genre: "Fiction" },
+    {
+        title: 1, stock: 1, _id: 0,
+        isMultipliedByTwo: // stock%2 == 0, then it is multiplied by 2
+        {
+            $eq: [
+                { $mod: ["$stock", 2] }, 0  // $mod (modulo) returns the remainder after division by 2
+            ] 
+        }
+    }
+).sort({ title: 1 });
+
+printjson(updatedFictionBooks.toArray());
+updatedFictionBooks;
+
+// findOneAndUpdate
+print("Find one book 'Guignol's Band' and update location to shelf 'E' and row 1:");
+var findOneAndUpdateResult = db.books.findOneAndUpdate(
+    { title: guignolsBandTitle },
+    { $set: { "location.shelf": "E", "location.row": 1 } },
+    {
+        returnDocument: "after", // return the updated document
+        projection: { title: 1, location: 1, _id: 0 }
+    },
+);
+
+printjson(findOneAndUpdateResult);
+findOneAndUpdateResult;
+
+// base pipeline for aggregation: match -> group -> project -> sort
+print("Aggregation pipeline: Count the number of books per genre and sort by count in descending order:");
+var aggregationPipeline = db.books.aggregate([
+    {
+        $match: { stock: { $gt: 0 } } // match books with stock greater than 0
+    },
+    {
+        $group: {
+            _id: "$genre", 
+            count: { $sum: 1 } 
+        }
+    },
+    {
+        $project: {
+            genre: "$_id",
+            count: 1,
+        }
+    },
+    {
+        $sort: { count: -1 } 
+    }
+]);
+
+printjson(aggregationPipeline.toArray());
+aggregationPipeline;
+
+// $lookup - join books and loans collections to get the book title and member name for each loan
+/*
+SQL equivalent:
+SELECT books.title, members.name, loans.borrowedAt, loans.dueDate, loans.returnedAt, loans.status
+FROM loans
+JOIN books ON loans.bookId = books._id
+JOIN members ON loans.memberId = members._id;
+*/
+print("Aggregation pipeline: Join books and loans collections to get the book title and member name for each loan:");
+var lookupPipeline = db.loans.aggregate([
+    {
+        $lookup: {
+            from: "books",
+            localField: "bookId",
+            foreignField: "_id",
+            as: "book"
+        }
+    },
+    {
+        $unwind: "$book" // unwind the book array to get a single book document
+    },
+    {
+        $lookup: {
+            from: "members",
+            localField: "memberId",
+            foreignField: "_id",
+            as: "member"
+        }
+    },
+    {
+        $unwind: "$member" // unwind the member array to get a single member document
+    },
+    {
+        $project: {
+            bookTitle: "$book.title",
+            memberName: "$member.name",
+            borrowedAt: 1,
+            dueDate: 1,
+            returnedAt: 1,
+            status: 1,
+            _id: 0
+        }
+    },
+    {
+        $sort: { borrowedAt: -1 } // sort by borrowedAt in descending order
+    }
+]);
+
+printjson(lookupPipeline.toArray());
+lookupPipeline;
+
+// $lookup with pipeline 
+/* SQL equivalent:
+SELECT books.title, members.name, loans.borrowedAt, loans.dueDate, loans.returnedAt
+FROM loans
+JOIN books ON loans.bookId = books._id
+JOIN members ON loans.memberId = members._id
+WHERE loans.status = 'borrowed' AND members.membershipType = 'Premium';
+*/
+print("Aggregation pipeline: All borrowed loans with book title and member name, only for Premium members:");
+var lookupWithPipeline = db.loans.aggregate([
+    {
+        $match: { status: "borrowed" } // filter only borrowed loans
+    },
+    {
+        $lookup: {
+            from: "books",
+            let: { bookId: "$bookId" },
+            pipeline: [
+                { $match: { 
+                    $expr: {
+                        $and: [
+                            { 
+                                $eq: ["$_id", "$$bookId"] ,
+                            },
+                        ]
+                    }
+                }
+                 }, 
+                { $project: { title: 1, _id: 0 } }
+            ],
+            as: "book"
+        },
+    },
+    {
+        $unwind: "$book"
+    },
+    {
+        $lookup: {
+            from: "members",
+            let: { memberId: "$memberId" },
+            pipeline: [
+                { $match: { $expr: { 
+                    $and: [
+                        { $eq: ["$_id", "$$memberId"] },
+                        { $eq: ["$membershipType", "Premium"] } 
+                    ]
+                 } } },
+                { $project: { name: 1, _id: 0 } }
+            ],
+            as: "member"
+        },
+    },
+    {
+        $unwind: "$member"
+    },
+    {
+        $project: {
+            bookTitle: "$book.title",
+            memberName: "$member.name",
+            borrowedAt: 1,
+            dueDate: 1,
+            returnedAt: 1
+        }
+    }
+]);
+
+printjson(lookupWithPipeline.toArray());
+lookupWithPipeline;
+
+// $unwind + $group - count the number of books per author
+print("Aggregation pipeline: Count the number of books per author:");
+var unwindGroupPipeline = db.books.aggregate([
+    {
+        $unwind: "$authors" // unwind the authors array to get a single author document
+    },
+    {
+        $group: {
+            _id: "$authors",
+            count: { $sum: 1 } // count the number of books per author
+        }
+    },
+    {
+        $project: {
+            author: "$_id",
+            count: 1,
+            _id: 0
+        }
+    },
+    {
+        $sort: { count: -1 } // sort by count in descending order
+    }
+]);
+
+printjson(unwindGroupPipeline.toArray());
+unwindGroupPipeline;
