@@ -961,3 +961,100 @@ var unwindGroupPipeline = db.books.aggregate([
 
 printjson(unwindGroupPipeline.toArray());
 unwindGroupPipeline;
+
+// $bucket - group books by ranges
+// push new book 'Anthology of Tolkien' with 1200 pages to the books collection
+const anthologyOfTolkienTitle = "Anthology of Tolkien";
+db.books.insertOne({
+    title: anthologyOfTolkienTitle,
+    authors: ["J.R.R. Tolkien"],
+    isbn: "9781234567891",
+    genre: "Fiction",
+    pages: 1200,
+    publishedYear: 2024,
+    stock: 5,
+    tags: ["fantasy", "classic"],
+    location: { shelf: "D", row: 2 }
+});
+
+print("Aggregation pipeline: Group books by number of pages into buckets:");
+var bucketPipeline = db.books.aggregate([
+    {
+        $bucket: {
+            groupBy: "$pages",
+            boundaries: [0, 200, 400, 600, 1000], // define the ranges
+            default: "1000+", // default bucket for values outside the boundaries
+            output: {
+                count: { $sum: 1 }, // count the number of books in each bucket
+                titles: { $push: "$title" } // push the titles of the books in each bucket
+            }
+        }
+    }
+]);
+
+printjson(bucketPipeline.toArray());
+bucketPipeline;
+
+// $facet - multiple aggregations in a single query
+print("Aggregation pipeline: Multiple aggregations in a single query:");
+// update the stock of 'Anthology of Tolkien' to 0 to test the outOfStock facet
+db.books.updateOne(
+    { title: anthologyOfTolkienTitle },
+    { $set: { stock: 0 } }
+);
+
+var facetPipeline = db.books.aggregate([
+    {
+        $facet: {
+            // Count the number of books per genre
+            byGenre: [
+                { $group: { _id: "$genre", count: { $sum: 1 } } },
+                { $sort: { count: -1 } }
+            ],
+            // average rating of books
+            avgRating: [
+                { $group: { _id: null, avg: { $avg: "$rating" } } },
+                { $project: { _id: 0, avg: { $round: ["$avg", 2] } } }
+            ],
+            // books withou stock
+            outOfStock: [
+                { $match: { stock: 0 } },
+                { $project: { title: 1, _id: 0 } }
+            ]
+        }
+    }
+]);
+
+printjson(facetPipeline.toArray());
+facetPipeline;
+
+// $addFields + $cond - add a new field 'availability' and 'isClassic' based on the stock and publishedYear of the book
+print("Aggregation pipeline: Add a new field 'availability' and 'isClassic' based on the stock and publishedYear of the book:");
+var addFieldsPipeline = db.books.aggregate([
+    {
+        $addFields: {
+            availability: {
+                $cond: {
+                    if: { $gt: ["$stock", 0] }, // if stock is greater than 0
+                    then: "available", // then availability is "available"
+                    else: "out of stock" // else availability is "out of stock"
+                }
+            },
+            isClassic: {
+                $cond: {
+                    if: { $lt: ["$publishedYear", 1970] }, // if publishedYear is less than 1970
+                    then: true, // then isClassic is true
+                    else: false // else isClassic is false
+                }
+            }
+        }
+    },
+    {
+        $project: {
+            _id: 0, title: 1, stock: 1, availability: 1, publishedYear: 1, isClassic: 1
+        }
+    }
+]);
+
+printjson(addFieldsPipeline.toArray());
+addFieldsPipeline;
