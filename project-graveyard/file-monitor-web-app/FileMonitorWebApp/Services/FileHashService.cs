@@ -5,14 +5,9 @@ namespace FileMonitorWebApp.Services
     /// <summary>
     /// Service responsible for computing the hash of a file using SHA256.
     /// </summary>
-    public class FileHashService
+    public class FileHashService(ILogger<FileHashService> logger)
     {
-        private readonly ILogger<FileHashService> _logger;
-
-        public FileHashService(ILogger<FileHashService> logger)
-        {
-            _logger = logger;
-        }
+        private readonly ILogger<FileHashService> _logger = logger;
 
         /// <summary>
         /// Computes the SHA256 hash of the specified file and returns it as a Base64 string.

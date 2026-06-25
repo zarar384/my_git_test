@@ -2,8 +2,8 @@
 {
     public class FileMetadata
     {
-        public string Path { get; set; }
-        public string Hash { get; set; }
+        public string Path { get; init; }
+        public string Hash { get; init; }
         public int Version { get; set; }
     }
 }

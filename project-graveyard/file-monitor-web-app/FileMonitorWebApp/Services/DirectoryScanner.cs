@@ -2,18 +2,12 @@
 
 namespace FileMonitorWebApp.Services
 {
-    public class DirectoryScanner
+    public class DirectoryScanner(
+        ILogger<DirectoryScanner> logger,
+        FileHashService hashService)
     {
-        private readonly ILogger<DirectoryScanner> _logger;
-        private readonly FileHashService _hashService;
-
-        public DirectoryScanner(
-            ILogger<DirectoryScanner> logger, 
-            FileHashService hashService)
-        {
-            _logger = logger;
-            _hashService = hashService;
-        }
+        private readonly ILogger<DirectoryScanner> _logger = logger;
+        private readonly FileHashService _hashService = hashService;
 
         public List<FileMetadata> ScanDirectory(string directoryPath)
         {

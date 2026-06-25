@@ -21,14 +21,14 @@ namespace FileMonitorWebApp.Services
         /// Loads the snapshot from the JSON file. 
         /// If the file does not exist or is empty, returns a new Snapshot instance.
         /// </summary>
-        /// <returns>The loaded <see cref="Snapshot"/>.</returns>
-        /// <exception cref="InvalidOperationException">Thrown when the snapshot file cannot be loaded.</exception>
-        public Snapshot Load()
+        /// <param name="snapshot">The loaded <see cref="Snapshot"/>.</param>
+        /// <returns>True if the snapshot was loaded successfully; otherwise, false.</returns>
+        public bool TryLoad(out Snapshot snapshot)
         {
+            snapshot = new Snapshot();
+
             if (!File.Exists(_snapshotFilePath))
-            {
-                return new Snapshot();
-            }
+                return true;
 
             try
             {
@@ -38,15 +38,16 @@ namespace FileMonitorWebApp.Services
                 if(string.IsNullOrWhiteSpace(json))
                 {
                     _logger.LogInformation("Snapshot file is empty: {SnapshotFilePath}", _snapshotFilePath);
-                    return new Snapshot();
+                    return true;
                 }
 
-                return JsonSerializer.Deserialize<Snapshot>(json) ?? new Snapshot();
+                snapshot = JsonSerializer.Deserialize<Snapshot>(json) ?? new Snapshot();
+                return true;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to load snapshot from file: {SnapshotFilePath}", _snapshotFilePath);
-                throw new InvalidOperationException("Failed to load the snapshot file.", ex);
+                return false;
             }
         }
 

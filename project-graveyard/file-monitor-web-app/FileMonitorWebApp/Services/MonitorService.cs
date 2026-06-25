@@ -5,21 +5,14 @@ namespace FileMonitorWebApp.Services
     /// <summary>
     /// Service responsible for analyzing the directory state by comparing the current scan results with the previously saved snapshot.
     /// </summary>
-    public class MonitorService
+    public class MonitorService(
+        ILogger<MonitorService> logger,
+        DirectoryScanner scanner,
+        SnapshotService snapshotService)
     {
-        private readonly ILogger<MonitorService> _logger;
-        private readonly DirectoryScanner _scanner;
-        private readonly SnapshotService _snapshotService;
-
-        public MonitorService(
-            ILogger<MonitorService> logger,
-            DirectoryScanner scanner,
-            SnapshotService snapshotService)
-        {
-            _logger = logger;
-            _scanner = scanner;
-            _snapshotService = snapshotService;
-        }
+        private readonly ILogger<MonitorService> _logger = logger;
+        private readonly DirectoryScanner _scanner = scanner;
+        private readonly SnapshotService _snapshotService = snapshotService;
 
         /// <summary>
         /// Analyzes the specified directory by comparing the current state with the previously saved snapshot. 
@@ -40,7 +33,12 @@ namespace FileMonitorWebApp.Services
             try
             {
                 // Load the previous snapshot
-                var oldSnapshot = _snapshotService.Load();
+                if (!_snapshotService.TryLoad(out var oldSnapshot))
+                {
+                    _logger.LogWarning("Directory analysis was aborted because the snapshot could not be loaded.");
+                    result.ErrorMessage = "Failed to load the previous snapshot.";
+                    return result;
+                }
 
                 // Scan the current state of the directory
                 var currentFiles = _scanner.ScanDirectory(directoryPath);
@@ -49,11 +47,7 @@ namespace FileMonitorWebApp.Services
                 // This will initialize the snapshot for future comparisons
                 if (!oldSnapshot.Files.Any())
                 {
-                    _snapshotService.Save(new Snapshot 
-                    { 
-                        Files = currentFiles 
-                    });
-
+                    TrySaveSnapshot(currentFiles, result);
                     return result;
                 }
 
@@ -94,10 +88,7 @@ namespace FileMonitorWebApp.Services
                     }
                 }
 
-                _snapshotService.Save(new Snapshot 
-                { 
-                    Files = currentFiles 
-                });
+                TrySaveSnapshot(currentFiles, result);
             }
             catch (DirectoryNotFoundException ex)
             {
@@ -109,11 +100,6 @@ namespace FileMonitorWebApp.Services
                 _logger.LogWarning(ex, "Access denied while scanning directory: {DirectoryPath}", directoryPath);
                 result.ErrorMessage = "Access denied while scanning the directory.";
             }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogError(ex, "Snapshot processing failed for directory: {DirectoryPath}", directoryPath);
-                result.ErrorMessage = ex.Message;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error analyzing directory: {DirectoryPath}", directoryPath);
@@ -121,6 +107,24 @@ namespace FileMonitorWebApp.Services
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Attempts to save the snapshot and records any save failure in the result.
+        /// </summary>
+        /// <param name="files">The list of files to persist in the snapshot.</param>
+        /// <param name="result">The scan result to populate with an error message on failure.</param>
+        private void TrySaveSnapshot(List<FileMetadata> files, ScanResult result)
+        {
+            try
+            {
+                _snapshotService.Save(new Snapshot { Files = files });
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "Failed to save snapshot.");
+                result.ErrorMessage = ex.Message;
+            }
         }
     }
 }
