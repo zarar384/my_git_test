@@ -1058,3 +1058,281 @@ var addFieldsPipeline = db.books.aggregate([
 
 printjson(addFieldsPipeline.toArray());
 addFieldsPipeline;
+
+// $merge - save the result of an aggregation pipeline to a new collection
+print("Aggregation pipeline: Save the result of an aggregation pipeline to a new collection 'genre_stats'");
+db.books.aggregate([
+    {
+        $group: {
+            _id: "$genre",
+            count: { $sum: 1 },
+            avgRating: { $avg: "$rating" },
+            totalStock: { $sum: "$stock" }
+        }
+    },
+    {
+        $project: {
+            genre: "$_id",
+            count: 1,
+            avgRating: { $round: ["$avgRating", 2] },
+            totalStock: 1,
+            updatedAt: { $literal: new Date().toISOString().split("T")[0] } // $literal - constant value, do not evaluate the expression, just return the value
+        }
+    },
+    {
+        $merge: {
+            into: "genre_stats", // name of the new collection
+            on: "_id", // merge on the _id field
+            whenMatched: "replace", // replace the document if it matches+
+            whenNotMatched: "insert" // insert the document if it does not match
+        }
+    }
+]);
+
+var genreStats = db.genre_stats.find().sort({ count: -1 });
+printjson(genreStats);
+genreStats;
+
+// transaction example:
+// give a book to a member
+// decrease the stock of the book by 1
+// add a new loan document to the loans collection
+// if a book is out of stock, the transaction will be aborted
+print("Transaction example: Give a book to a member, decrease the stock of the book by 1, add a new loan document to the loans collection:");
+var stockBeforeTransaction = db.books.findOne({ title: castleToCastleTitle }).stock;
+
+const session = db.getMongo().startSession();
+session.startTransaction({
+    readConcern: { level: "snapshot" }, // readConcern: "snapshot" - read the data as it was at the start of the transaction
+    writeConcern: { w: "majority" } // writeConcern: "majority" - wait for the majority of the replica set members to acknowledge the write
+});
+
+try {
+    var sDb = session.getDatabase("LibraryDB");
+
+    const targetBook = sDb.books.findOne({ title: castleToCastleTitle });
+    const targetMember = sDb.members.findOne({ name: danName });
+
+    if (!targetBook || targetBook.stock <= 0) {
+        throw new Error(!targetBook ? `Book '${castleToCastleTitle}' not found.` : `Book '${castleToCastleTitle}' is out of stock.`);
+    }
+
+    // decrease the stock of the book by 1
+    sDb.books.updateOne(
+        { _id: targetBook._id },
+        { $inc: { stock: -1 } }
+    );
+
+    // add a new loan document to the loans collection
+    sDb.loans.insertOne({
+        memberId: targetMember._id,
+        bookId: targetBook._id,
+        borrowedAt: new Date(),
+        dueDate: new Date(new Date().setDate(new Date().getDate() + 30)), // due date is 30 days from now
+        returnedAt: null,
+        status: "borrowed"
+    });
+
+    session.commitTransaction();
+    print(`Transaction committed: Book '${castleToCastleTitle}' given to member '${danName}'.`);
+}
+catch (error) {
+    print("Transaction aborted due to an error: " + error);
+    session.abortTransaction();
+}
+finally {
+    session.endSession();
+}
+
+var checkLoan = db.loans.aggregate([
+    {
+        $lookup: {
+            from: "books",
+            localField: "bookId",
+            foreignField: "_id",
+            as: "book"
+        }
+    },
+    {
+        $unwind: "$book"
+    },
+    {
+        $lookup: {
+            from: "members",
+            localField: "memberId",
+            foreignField: "_id",
+            as: "member"
+        }
+    },
+    {
+        $unwind: "$member"
+    },
+    {
+        $match: {
+            $expr: {
+                $and: [
+                { $eq: ["$book.title", castleToCastleTitle] },
+                { $eq: ["$member.name", danName] }
+                ]
+            }
+        }
+    },
+    {
+        $project: {
+            bookTitle: "$book.title",
+            memberName: "$member.name",
+            borrowedAt: 1,
+            dueDate: 1,
+            returnedAt: 1,
+            status: 1,
+            _id: 0,
+            stockBeforeTransaction: {$literal: stockBeforeTransaction}, // $literal - constant value, do not evaluate the expression, just return the value
+            stockAfterTransaction: "$book.stock"
+        }
+    }
+]);
+
+printjson(checkLoan.toArray());
+checkLoan;
+
+// Geospatial query example: 
+print("Geospatial query example: Find all members within a 10 km radius of Prague coordinates (14.4208, 50.0880):");
+var pragueCoordinates = [14.4208, 50.0880]; // [longitude, latitude]
+var membersWithin50km = db.members.find(
+    {
+        location: {
+            $near: {
+                $geometry: {
+                    type: "Point",
+                    coordinates: pragueCoordinates
+                },
+                $maxDistance: 10000 // 10 km in meters
+            }
+        }
+    },
+    { name: 1, "address.city": 1, _id: 0 } // projection to show only name and address
+);
+
+printjson(membersWithin50km.toArray());
+membersWithin50km;
+
+// polygon geospatial query example: 
+print("Polygon geospatial query example: Find all members within a polygon area defined by coordinates:");
+var polygonCoordinates = [
+    [14.40, 50.08],
+    [14.45, 50.08],
+    [14.45, 50.10],
+    [14.40, 50.10],
+    [14.40, 50.08] // close the polygon by repeating the first coordinate
+];
+
+var membersWithinPolygon = db.members.find(
+    {
+        location: {
+            $geoWithin: {
+                $geometry: {
+                    type: "Polygon",
+                    coordinates: [polygonCoordinates]
+                }
+            }
+        }
+    },
+    { name: 1, "address.city": 1, _id: 0 } // projection to show only name and address
+);
+
+printjson(membersWithinPolygon.toArray());
+membersWithinPolygon;
+
+// Capped collection example:
+print("Capped collection example: Create a capped collection 'logs' with a maximum of 5 documents and a size of 1MB:");
+db.createCollection("logs", 
+    { 
+        capped: true, // capped collection - fixed size, automatically overwrites oldest documents when the size limit is reached
+        size: 1024 * 1024, // 1MB
+        max: 5 
+    });
+
+db.activity_logs.insertMany([
+    { event: "book_borrowed", member: aliceName, book: zinkyBoysTitle, timestamp: new Date() },
+    { event: "book_returned", member: bobName, book: rigadoonTitle, timestamp: new Date() },
+    { event: "book_borrowed", member: carolName, book: voicesFromChernobylTitle, timestamp: new Date() },
+    { event: "book_returned", member: danName, book: allQuietOnTheWesternFrontTitle, timestamp: new Date() },
+    {event: "member_joined", member: aliceName, timestamp: new Date() },
+    {event: "member_joined", member: bobName, timestamp: new Date() },
+    {event: "member_joined", member: carolName, timestamp: new Date() },
+    {event: "member_joined", member: danName, timestamp: new Date() },
+    {event: "book_added", book: journeyToTheEndOfTheNightTitle, timestamp: new Date() },
+    {event: "book_added", book: secondHandTimeTitle, timestamp: new Date() },
+    {event: "book_added", book: castleToCastleTitle, timestamp: new Date() },
+    {event: "book_added", book: cheshezhopitsaTitle, timestamp: new Date() },
+    {event: "book_added", book: anthologyOfTolkienTitle, timestamp: new Date() }
+]);
+
+// in capped collection deleting/updating documents is not allowed!!
+// to workaround, insert a new document to the capped collection, which will automatically remove the oldest document when the max limit is reached
+print("Last 5 activity logs in the capped collection 'logs':");
+var lastFiveLogs = db.activity_logs.find().sort({ $natural: -1 }).limit(5); // $natural - sort by the order of insertion
+printjson(lastFiveLogs.toArray());
+
+// Write and read concern example:
+print("Write and read concern example: Insert a new book with write concern 'majority' and read it back with read concern 'majority':");
+const testIsbn = "9999999999999";
+var writeConcernResult = db.books.insertOne(
+    {
+        title: "The Trial",
+        authors: ["Franz Kafka"],
+        isbn: testIsbn,
+        genre: "Fiction",
+        pages: 300,
+        publishedYear: 1925,
+        stock: 5,
+        tags: ["classic", "existentialism"],
+        location: { shelf: "F", row: 1 }
+    },
+    { writeConcern: { 
+        w: "majority", // wait for the majority of the replica set members to acknowledge the write
+        j: true, // wait for the write to be written to the journal
+        wtimeout: 5000 // wait for 5 seconds for the majority of the replica set members to acknowledge the write 
+    }
+ } 
+);
+
+// read the book back with read concern "majority"
+var readConcernResult = db
+    .getMongo()
+    .getDB("LibraryDB")
+    .getCollection("books")
+    .findOne(
+    { isbn: testIsbn },
+    { readConcern: { level: "majority" } } // read concern "majority" - read the data that has been acknowledged by the majority of the replica set members
+);
+
+// or
+// db.books.withReadConcern("majority").findOne({ isbn: testIsbn });
+// or
+// db.books.find({ isbn: testIsbn }).readConcern("majority").toArray();
+
+printjson(readConcernResult);
+
+// safety delete test book
+db.books.deleteOne({ isbn: "1111111111111" }); // not existing book, will do nothing
+db.books.deleteOne({ isbn: testIsbn });
+
+// Explain and analyze a query example:
+// 'queryPlanner' = plan without executing 
+// 'executionStats' = plan + real metrics (execution time, number of documents examined, etc.)
+// 'allPlansExecution' = all execution plans considered 
+print("Explain and analyze a query example: Find all books with genre 'Fiction' and rating greater than 4.5:");
+var explainResult = db.books.find(
+    { genre: "Fiction", rating: { $gt: 4.5 } },
+    { title: 1, authors: 1, rating: 1, _id: 0 }
+).sort({ rating: -1 }).explain("executionStats"); // explain the query with execution stats
+
+printjson(explainResult);
+print(`Winning plan: ${JSON.stringify(explainResult.queryPlanner.winningPlan)}`);
+print(`Keys examined: ${explainResult.executionStats.totalKeysExamined}`);
+print(`Docs examined: ${explainResult.executionStats.totalDocsExamined}`);
+print(`Execution time (ms): ${explainResult.executionStats.executionTimeMillis}`);
+print(`Docs returned: ${explainResult.executionStats.nReturned}`);
+// if keysExamined << docsExamined - the index not cover the query well, consider adding a compound index on genre and rating fields
+// if stage = 'COLLSCAN' - no index, complete overkill!
