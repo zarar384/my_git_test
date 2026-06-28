@@ -1336,3 +1336,150 @@ print(`Execution time (ms): ${explainResult.executionStats.executionTimeMillis}`
 print(`Docs returned: ${explainResult.executionStats.nReturned}`);
 // if keysExamined << docsExamined - the index not cover the query well, consider adding a compound index on genre and rating fields
 // if stage = 'COLLSCAN' - no index, complete overkill!
+
+// find all expired loans with the member name and book title
+print("Find all expired loans with the member name and book title:");
+var expiredLoansWithDetails = db.loans.aggregate([
+    {
+        $match: {
+            $expr: {
+                $and: [
+                    { $lt: ["$dueDate", new Date()] }, // dueDate is less than current date
+                    { $eq: ["$returnedAt", null] } // returnedAt is null
+                ]
+            }
+        }
+    },
+    {
+        $lookup: {
+            from: "books",
+            localField: "bookId",
+            foreignField: "_id",
+            as: "book"
+        }
+    },
+    {
+        $unwind: "$book"
+    },
+    {
+        $lookup: {
+            from: "members",
+            localField: "memberId",
+            foreignField: "_id",
+            as: "member"
+        }
+    },
+    {
+        $unwind: "$member"
+    },
+    {
+        $project: {
+            bookTitle: "$book.title",
+            memberName: "$member.name",
+            borrowedAt: 1,
+            dueDate: 1,
+            returnedAt: 1,
+            daysLate: {
+                $ceil: { // $ceil - round up to the nearest integer
+                    $divide: [ // current/dueDate 
+                        { $subtract: [new Date(), "$dueDate"] }, // current date - dueDate
+                        1000 * 60 * 60 * 24 // convert milliseconds to days
+                    ]
+                }
+            }
+        }
+    }
+]);
+
+printjson(expiredLoansWithDetails.toArray());
+expiredLoansWithDetails;
+
+// top members with the most borrowed books
+print("Top members with the most borrowed books:");
+var topMembers = db.loans.aggregate([
+    {
+        $group: {
+            _id: "$memberId",
+            totalBorrowed: { $sum: 1 }
+        }
+    },
+    {
+        $sort: { totalBorrowed: -1 }
+    },
+    {
+        $lookup: {
+            from: "members",
+            localField: "_id",
+            foreignField: "_id",
+            as: "member"
+        }
+    },
+    {
+        $unwind: "$member"
+    },
+    {
+        $project: {
+            memberName: "$member.name",
+            totalBorrowed: 1
+        }
+    },
+    {
+        $limit: 10 // top 10 members
+    }
+]);
+
+printjson(topMembers.toArray());
+topMembers;
+
+// books that are out of stock with the date of last loan
+print("Books that are out of stock with the date of last loan:");
+var outOfStockBooksWithLastLoan = db.books.aggregate([
+    {
+        $match: { stock: 0 }
+    },
+    {
+        $lookup: {
+            from: "loans",
+            let: { bookId: "$_id" },
+            pipeline: [
+                {
+                    $match: {
+                        $expr: { $eq: ["$bookId", "$$bookId"] }
+                    }
+                },
+                {
+                    $sort: { borrowedAt: -1 } // sort by borrowedAt in descending order
+                },
+                {
+                    $limit: 1 // get the last loan
+                }
+            ],
+            as: "lastLoan"
+        }
+    },
+    {
+        $unwind: { path: "$lastLoan", preserveNullAndEmptyArrays: true } // unwind the lastLoan array, preserve null if no loan exists
+    },
+    {
+        $project: {
+            title: 1,
+            stock: 1,
+            lastLoanDate: "$lastLoan.borrowedAt",
+            dueDate: "$lastLoan.dueDate",
+            _id: 0
+        }
+    }
+]);
+
+printjson(outOfStockBooksWithLastLoan.toArray());
+outOfStockBooksWithLastLoan;
+
+// finish
+print("Script finished.");
+db.getCollectionNames().forEach(function(collectionName) {
+    print("Collection: " + collectionName + ", Count: " + db.getCollection(collectionName).estimatedDocumentCount());
+});
+
+// countDocuments - recommended way to count documents accurately
+// estimatedDocumentCount - fast estimate based on collection metadata; may be inaccurate if the collection is being updated
+// count - legacy method; deprecated and not recommended for new code
