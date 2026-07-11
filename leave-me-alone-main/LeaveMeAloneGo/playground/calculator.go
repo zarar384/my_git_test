@@ -6,10 +6,14 @@ import (
 )
 
 func CalculatorDemo() {
-	token := calculator.Token{
-		Type:    calculator.Number,
-		Literal: "123",
-	}
+	lexer := calculator.NewLexer("+-*/()")
 
-	fmt.Println(token)
+	for {
+		token := lexer.NextToken()
+		fmt.Println(token)
+
+		if token.Type == calculator.EOF {
+			break
+		}
+	}
 }
