@@ -69,34 +69,7 @@ func newToken(tokenType TokenType, ch byte) Token {
 	}
 }
 
-// NextToken returns the next token from the input.
-func (l *Lexer) NextToken() Token {
-	var token Token
-
-	switch l.ch {
-	case '+':
-		token = newToken(Plus, l.ch)
-	case '-':
-		token = newToken(Minus, l.ch)
-	case '*':
-		token = newToken(Multiply, l.ch)
-	case '/':
-		token = newToken(Divide, l.ch)
-	case '(':
-		token = newToken(LeftParen, l.ch)
-	case ')':
-		token = newToken(RightParen, l.ch)
-	case 0:
-		token = newToken(EOF, l.ch)
-	default:
-		token = Token{
-			Type:    Illegal,
-			Literal: string(l.ch),
-		}
-		return token
-	}
-
-	l.readChar()
-
-	return token
+// check if the character is a digit (0-9)
+func isDigit(ch byte) bool {
+	return ch >= '0' && ch <= '9'
 }
