@@ -28,6 +28,8 @@ type Parser struct {
 
 	currentToken Token
 	peekToken    Token // one token lookahead
+
+	errors []error
 }
 
 func NewParser(lexer *Lexer) *Parser {
@@ -39,6 +41,10 @@ func NewParser(lexer *Lexer) *Parser {
 	p.nextToken() // Move to the first token
 
 	return p
+}
+
+func (p *Parser) Errors() []error {
+	return p.errors
 }
 
 func (p *Parser) nextToken() {

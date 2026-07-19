@@ -1,5 +1,18 @@
 package calculator
 
+// AST (Abstract Syntax Tree) representation of the calculator expressions.
+/*
+Exemple: 1 + 2 * (3 - 4)
+Looks like this:
+		  +
+		 / \
+		1   *
+		   / \
+		  2   -
+		     / \
+		    3   4
+*/
+
 import (
 	"fmt"
 	"strconv"
