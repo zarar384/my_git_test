@@ -1,4 +1,5 @@
-﻿using MilitaryDraftSystem.Domain.Interfaces;
+﻿using MilitaryDraftSystem.Domain.Events;
+using MilitaryDraftSystem.Domain.Interfaces;
 
 namespace MilitaryDraftSystem.Domain.Entities
 {

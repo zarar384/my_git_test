@@ -1,8 +1,5 @@
 ﻿using MediatR;
 using MilitaryDraftSystem.Application.Common.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MilitaryDraftSystem.Application.Draft.Commands.SendSummons
 {

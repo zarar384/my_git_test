@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="MilitaryDraftSystem.API/MilitaryDraftSystem.API.csproj" />
+  <Project Path="MilitaryDraftSystem.Application/MilitaryDraftSystem.Application.csproj" />
+  <Project Path="MilitaryDraftSystem.Domain/MilitaryDraftSystem.Domain.csproj" />
+  <Project Path="MilitaryDraftSystem.Infrastructure/MilitaryDraftSystem.Infrastructure.csproj" />
+</Solution>
