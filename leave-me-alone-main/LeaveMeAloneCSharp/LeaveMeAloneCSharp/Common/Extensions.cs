@@ -93,8 +93,10 @@ namespace LeaveMeAloneCSharp.Common
         public static Func<decimal, Func<decimal, decimal>> Add = a => b => a + b;
 
         #region Currying
-        // Converts a function with 4 parameters into a chain of functions
-        // Each call fixes one parameter and returns the next function
+        /// <summary>
+        /// Converts a function with 4 parameters into a chain of functions 
+        /// Each call fixes one parameter and returns the next function
+        /// </summary>
         public static Func<T1,
                           Func<T2,
                               Func<T3,
@@ -103,6 +105,10 @@ namespace LeaveMeAloneCSharp.Common
             this Func<T1, T2, T3, T4, TResult> func)
         => t1 => t2 => t3 => t4 => func(t1, t2, t3, t4);
 
+        /// <summary>
+        /// Converts a function with 4 parameters returning Maybe<TResult> into a chain of functions
+        /// Each call fixes one parameter and returns the next function
+        /// </summary>
         public static Func<T1,
                           Func<T2,
                               Func<T3,
@@ -460,14 +466,23 @@ namespace LeaveMeAloneCSharp.Common
 
         #endregion
 
+        /// <summary>
+        /// Creates a State monad from an initial state and a value.
+        /// </summary>
         public static State<TS, TV> ToState<TS, TV>(this TS @this, TV value) =>
             new(@this, value);
 
+        /// <summary>
+        /// Updates the state while preserving the current value.
+        /// </summary>
         public static State<TS, TV> Update<TS, TV>(
             this State<TS, TV> @this,
             Func<TS, TS> f
             ) => new (f(@this.CurrentState), @this.CurrentValue);
 
+        /// <summary>
+        // Transforms the value using the current state.
+        /// </summary>
         public static State<TS, TVOut> Bind<TS, TVIn, TVOut>(
             this State<TS, TVIn> state,
             Func<TS, TVIn, TVOut> f

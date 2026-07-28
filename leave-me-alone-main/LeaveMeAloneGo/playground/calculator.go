@@ -6,7 +6,26 @@ import (
 )
 
 func CalculatorDemo() {
-	demoEvaluatePrefixExpression()
+	expressions := []string{
+		"3 + 5 * (10 - 2) / 4",
+		"42",
+		"1 + 2 * 3",
+		"-5 + 3*2",
+	}
+
+	for _, expr := range expressions {
+		fmt.Printf("Evaluating: %s\n", expr)
+		evaluateExpression(expr)
+		fmt.Println()
+	}
+}
+
+func evaluateExpression(input string) {
+	lexer := calculator.NewLexer(input)
+	parser := calculator.NewParser(lexer)
+	expression := parser.ParseExpression(calculator.Lowest)
+
+	fmt.Printf("%#s=%d\n", expression, calculator.Evaluate(expression))
 }
 
 func printTokens(input string) {
