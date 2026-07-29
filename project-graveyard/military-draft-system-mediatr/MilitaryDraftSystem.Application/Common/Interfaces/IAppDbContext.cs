@@ -4,13 +4,20 @@ namespace MilitaryDraftSystem.Application.Common.Interfaces
 {
     public interface IAppDbContext
     {
-        // Encapsulate query
+        // Queries
         Task<Citizen?> GetCitizenWithSummons(Guid id, CancellationToken ct);
 
-        // Save changes
+        Task<List<Citizen>> GetCitizensEligibleForAutomaticDraft(CancellationToken ct);
+
+        Task<AutomaticRecruitmentAgent?> GetAutomaticRecruitmentAgent(CancellationToken ct);
+
+        // Commands
+        void AddSummons(Summons summons);
+
+        // Persistence
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 
-        // Begin transaction
+        // Transactions
         Task<IAppTransaction> BeginTransactionAsync(CancellationToken ct);
     }
 }

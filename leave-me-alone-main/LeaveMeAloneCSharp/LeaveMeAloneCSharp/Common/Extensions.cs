@@ -135,6 +135,10 @@ namespace LeaveMeAloneCSharp.Common
             (T2 two) => func(one, two);
         #endregion
 
+        /// <summary>
+        /// Returns the result of the first matching predicate/selector pair.
+        /// If no predicate matches, the returned object represents an unmatched result.
+        /// </summary>
         public static MatchValueOrDefault<TInput, TOutput> Match<TInput, TOutput>(
             this TInput @this,
             params (Func<TInput, bool>, // or using KeyValuePair

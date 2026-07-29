@@ -15,7 +15,7 @@ namespace MilitaryDraftSystem.Application.Common.Mappings
             return domainEvent switch
             {
                 // map each domain event type to a corresponding MediatR notification type
-              SummonsSentDomainEvent e => new SummonsSentEvent(e.CitizenId, e.SummonsId),
+              SummonsCreatedDomainEvent e => new SummonsSentEvent(e.CitizenId, e.SummonsId),
 
                 _ => throw new ArgumentException($"No mapping defined for domain event type {domainEvent.GetType().Name}")
             };

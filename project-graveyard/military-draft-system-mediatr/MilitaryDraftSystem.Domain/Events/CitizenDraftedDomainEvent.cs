@@ -2,5 +2,5 @@
 
 namespace MilitaryDraftSystem.Domain.Events
 {
-    public record SummonsSentDomainEvent(Guid CitizenId, Guid SummonsId) : IDomainEvent;
+    public sealed record CitizenDraftedDomainEvent(Guid CitizenId) : IDomainEvent;
 }
