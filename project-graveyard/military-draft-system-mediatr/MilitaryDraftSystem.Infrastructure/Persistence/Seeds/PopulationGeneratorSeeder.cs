@@ -11,6 +11,11 @@ namespace MilitaryDraftSystem.Infrastructure.Persistence.Seeds
         {
             ArgumentNullException.ThrowIfNull(context);
 
+            if (context.PopulationGenerators.Any())
+            {
+                return; // Already seeded.
+            }
+
             // Prevent duplicate seed data.
             if (context.PopulationGenerators.Any())
             {

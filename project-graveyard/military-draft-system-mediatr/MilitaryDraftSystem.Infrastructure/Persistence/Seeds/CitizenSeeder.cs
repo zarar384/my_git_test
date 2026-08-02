@@ -9,6 +9,11 @@ namespace MilitaryDraftSystem.Infrastructure.Persistence.Seeds
         {
             ArgumentNullException.ThrowIfNull(context);
 
+            if(context.Citizens.Any())
+            {
+                return; // Data already seeded
+            }
+
             var citizens = new List<Citizen>
             {
                 new(
