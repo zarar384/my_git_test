@@ -36,7 +36,11 @@ namespace LeaveMeAloneCSharp.Common
         }
 
         #region Memorization 
-        public static Func<T1, TOut> Memorize<T1, TOut>(this Func<T1, TOut> @this)
+        /// <summary>
+        /// Memoizes a function with one argument.
+        /// </summary>
+        public static Func<T1, TOut> Memorize<T1, TOut>(
+            this Func<T1, TOut> @this)
         {
             var dict = new Dictionary<T1, TOut>();
             return x =>
@@ -47,6 +51,9 @@ namespace LeaveMeAloneCSharp.Common
             };
         }
 
+        /// <summary>
+        /// Memoizes a function with two arguments.
+        /// </summary>
         public static Func<T1, T2, TOut> Memorize<T1, T2, TOut>(
             this Func<T1, T2, TOut> @this)
         {
@@ -60,6 +67,9 @@ namespace LeaveMeAloneCSharp.Common
             };
         }
 
+        /// <summary>
+        /// Memoizes a function using a custom cache key.
+        /// </summary>
         public static Func<T1, TOut> Memorize<T1, TOut>(
             this Func<T1, TOut> @this,
             Func<T1, string> keyGenerator)
@@ -74,6 +84,9 @@ namespace LeaveMeAloneCSharp.Common
             };
         }
 
+        /// <summary>
+        /// Memoizes a function with two arguments using a custom cache key.
+        /// </summary>
         public static Func<T1, T2, TOut> Memorize<T1, T2, TOut>(
             this Func<T1, T2, TOut> @this,
             Func<T1, T2, string> keyGenerator)

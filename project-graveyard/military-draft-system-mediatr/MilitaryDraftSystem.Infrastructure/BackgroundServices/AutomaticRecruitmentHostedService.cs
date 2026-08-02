@@ -6,6 +6,9 @@ using MilitaryDraftSystem.Application.Draft.Commands.RunAutomaticRecruitment;
 
 namespace MilitaryDraftSystem.Infrastructure.BackgroundServices
 {
+    /// <summary>
+    /// Periodically executes the automatic recruitment process in the background.
+    /// </summary>
     public sealed class AutomaticRecruitmentHostedService(
         IServiceScopeFactory scopeFactory,
         ILogger<AutomaticRecruitmentHostedService> logger)
@@ -20,25 +23,24 @@ namespace MilitaryDraftSystem.Infrastructure.BackgroundServices
             {
                 try
                 {
+                    // Create a new scope for this execution.
                     using var scope = scopeFactory.CreateScope();
 
-                    var mediator =
-                        scope.ServiceProvider.GetRequiredService<ISender>();
+                    var mediator = scope.ServiceProvider.GetRequiredService<ISender>();
 
+                    // Execute the automatic recruitment workflow.
                     await mediator.Send(
                         new RunAutomaticRecruitmentCommand(),
                         stoppingToken);
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(
-                        ex,
-                        "Automatic recruitment execution failed.");
+                    // Log the error and continue with the next scheduled execution.
+                    logger.LogError(ex, "Automatic recruitment execution failed.");
                 }
 
-                await Task.Delay(
-                    TimeSpan.FromMinutes(1),
-                    stoppingToken);
+                // Wait before starting the next execution cycle.
+                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
 
             logger.LogInformation("Automatic recruitment service stopped.");

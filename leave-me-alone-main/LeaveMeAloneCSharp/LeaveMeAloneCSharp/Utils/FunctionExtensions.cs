@@ -38,11 +38,15 @@ namespace LeaveMeAloneCSharp.Utils
             Func<T1, T2, TOut> join) =>
             join(f1(@this), f2(@this));
 
+        /// <summary>
+        /// Evaluates the provided functions in order 
+        /// and returns the first non-null result.
+        /// </summary>
         public static TOut Alt<TIn, TOut>(
             this TIn @this,
             params Func<TIn, TOut>[] funcs) =>
             funcs.Select(f => f(@this))
-                 .FirstOrDefault(x => x != null);
+                 .FirstOrDefault(x => x != null)!;
 
         /// <summary>
         /// Executes the action only if the condition is false; useful for null checks or guarding side effects.

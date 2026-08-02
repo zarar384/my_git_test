@@ -25,14 +25,14 @@ namespace MilitaryDraftSystem.Infrastructure.Persistence.Interceptors
                 return result;
 
             // get all entities with domain events
-            var entities = context.ChangeTracker
+            var citizens = context.ChangeTracker
                 .Entries<Citizen>()
                 .Where(x => x.Entity.DomainEvents.Any())
                 .Select(x => x.Entity);
 
-            foreach (var entity in entities)
+            foreach (var citizen in citizens)
             {
-                foreach(var domainEvent in entity.DomainEvents)
+                foreach(var domainEvent in citizen.DomainEvents)
                 {
                     // map to MediatR event 
                     var notification = DomainEventMapper.Map(domainEvent);
@@ -42,7 +42,8 @@ namespace MilitaryDraftSystem.Infrastructure.Persistence.Interceptors
                 }
 
                 // clear domain events
-                entity.DomainEvents.Clear();
+                // Prevent publishing the same events multiple times.
+                citizen.ClearDomainEvents();
             }
 
             return result;

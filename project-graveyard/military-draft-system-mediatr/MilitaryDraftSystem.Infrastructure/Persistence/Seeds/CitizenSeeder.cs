@@ -1,4 +1,5 @@
 ﻿using MilitaryDraftSystem.Domain.Entities;
+using MilitaryDraftSystem.Domain.Enums;
 
 namespace MilitaryDraftSystem.Infrastructure.Persistence.Seeds
 {
@@ -6,29 +7,42 @@ namespace MilitaryDraftSystem.Infrastructure.Persistence.Seeds
     {
         public static async Task SeedAsync(AppDbContext context)
         {
-            if(context == null)
-                throw new ArgumentNullException(nameof(context));
+            ArgumentNullException.ThrowIfNull(context);
 
             var citizens = new List<Citizen>
             {
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "John Doe",
-                    Age = 21,
-                },
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "Mary Smith",
-                    Age = 18,
-                },
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "Michael Johnson",
-                    Age = 25,
-                }
+                new(
+                    Guid.NewGuid(),
+                    "John",
+                    "Doe",
+                    21,
+                    new DateOnly(2005, 1, 15),
+                    MedicalCategory.Fit,
+                    CitizenStatus.WaitingForDraft,
+                    hasCriminalRecord: false,
+                    isStudent: false),
+
+                new(
+                    Guid.NewGuid(),
+                    "Mary",
+                    "Smith",
+                    18,
+                    new DateOnly(2008, 3, 20),
+                    MedicalCategory.Fit,
+                    CitizenStatus.WaitingForDraft,
+                    hasCriminalRecord: false,
+                    isStudent: true),
+
+                new(
+                    Guid.NewGuid(),
+                    "Michael",
+                    "Johnson",
+                    25,
+                    new DateOnly(2001, 7, 8),
+                    MedicalCategory.LimitedFit,
+                    CitizenStatus.WaitingForDraft,
+                    hasCriminalRecord: false,
+                    isStudent: false)
             };
 
             await context.Citizens.AddRangeAsync(citizens);

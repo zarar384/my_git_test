@@ -9,7 +9,7 @@ namespace LeaveMeAloneCSharp.Functional
                 t => !string.IsNullOrWhiteSpace(t.AssignedDeveloper) ? t.AssignedDeveloper : null,
                 t => !string.IsNullOrWhiteSpace(t.BackupDeveloper) ? t.BackupDeveloper : null,
                 _ => "Unassigned"
-            );
+            )!;
 
         public static Func<TaskData, int> CalcEffort = task =>
             task.EstimatedHours * task.ComplexityLevel;

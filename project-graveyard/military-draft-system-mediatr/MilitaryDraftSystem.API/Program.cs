@@ -4,58 +4,107 @@ using Microsoft.EntityFrameworkCore;
 using MilitaryDraftSystem.Application.Common;
 using MilitaryDraftSystem.Application.Common.Interfaces;
 using MilitaryDraftSystem.Application.Draft.Behaviors;
+using MilitaryDraftSystem.Application.Population.Services;
+using MilitaryDraftSystem.Application.Population.Services.Interfaces;
+using MilitaryDraftSystem.Infrastructure.BackgroundServices;
 using MilitaryDraftSystem.Infrastructure.Persistence;
 using MilitaryDraftSystem.Infrastructure.Persistence.Interceptors;
 using MilitaryDraftSystem.Infrastructure.Services;
 
-// Builder block
+// Create application builder.
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllers();
-//builder.Services.AddOpenApi(); // OpenAPI (Swagger alternative)
+#region MVC
 
-// MediatR
+// Add MVC controllers.
+builder.Services.AddControllers();
+
+// OpenAPI (Swagger alternative).
+// builder.Services.AddOpenApi();
+
+#endregion
+
+#region Application
+
+// Register MediatR handlers.
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AssemblyReference).Assembly));
 
-// Domain events interceptor
-builder.Services.AddScoped<DomainEventsInterceptor>();
-
-// DbContext
-builder.Services.AddDbContext<AppDbContext>((sp, options) =>
-{
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
-
-    // Add interceptor
-    options.AddInterceptors(sp.GetRequiredService<DomainEventsInterceptor>());
-});
-
-// Database initialization service
-builder.Services.AddHostedService<DatabaseInitializationService>();
-
-// Abstraction
-builder.Services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
-
-// FluentValidation
+// Register FluentValidation validators.
 builder.Services.AddValidatorsFromAssembly(typeof(AssemblyReference).Assembly);
 
-// Pipeline behaviors
-builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
-builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
+// Register application services.
+builder.Services.AddScoped<IPopulationGenerationService, PopulationGenerationService>();
 
-// Application block
+#endregion
+
+#region Infrastructure
+
+// Register domain events interceptor.
+builder.Services.AddScoped<DomainEventsInterceptor>();
+
+// Register Entity Framework Core.
+builder.Services.AddDbContext<AppDbContext>((sp, options) =>
+{
+    options.UseSqlite(
+        builder.Configuration.GetConnectionString("DefaultConnection"));
+
+    // Register EF Core interceptors.
+    options.AddInterceptors(
+        sp.GetRequiredService<DomainEventsInterceptor>());
+});
+
+// Register database abstraction.
+builder.Services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+
+#endregion
+
+#region Hosted Services
+
+// Initialize the database during application startup.
+builder.Services.AddHostedService<DatabaseInitializationService>();
+
+// Execute automatic population generation.
+builder.Services.AddHostedService<PopulationGenerationHostedService>();
+
+// Execute automatic military recruitment.
+builder.Services.AddHostedService<AutomaticRecruitmentHostedService>();
+
+#endregion
+
+#region Pipeline Behaviors
+
+// Register MediatR pipeline behaviors executed before and after each request.
+builder.Services.AddTransient(
+    typeof(IPipelineBehavior<,>),
+    typeof(ValidationBehavior<,>));
+
+builder.Services.AddTransient(
+    typeof(IPipelineBehavior<,>),
+    typeof(LoggingBehavior<,>));
+
+builder.Services.AddTransient(
+    typeof(IPipelineBehavior<,>),
+    typeof(TransactionBehavior<,>));
+
+#endregion
+
+// Build the application.
 var app = builder.Build();
 
-// Configure pipeline
+#region HTTP Pipeline
+
 if (app.Environment.IsDevelopment())
 {
-    //app.MapOpenApi();
+    // app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();
+
 app.UseAuthorization();
 
 app.MapControllers();
 
+#endregion
+
+// Start the application.
 app.Run();

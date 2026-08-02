@@ -25,6 +25,33 @@ namespace MilitaryDraftSystem.Domain.Entities
 
         public bool IsStudent { get; private set; }
 
+        public Citizen(
+            Guid id,
+            string firstName,
+            string lastName,
+            int age,
+            DateOnly birthDate,
+            MedicalCategory medicalCategory,
+            CitizenStatus status,
+            bool hasCriminalRecord,
+            bool isStudent)
+        {
+            Id = id;
+            FirstName = firstName;
+            LastName = lastName;
+            Age = age;
+            BirthDate = birthDate;
+            MedicalCategory = medicalCategory;
+            Status = status;
+            HasCriminalRecord = hasCriminalRecord;
+            IsStudent = isStudent;
+        }
+
+        public Citizen()
+        {
+            // Required by EF Core.
+        }
+
         public bool IsEligibleForDraft(DateOnly today)
         {
             // Check whether the citizen satisfies all draft eligibility requirements.
