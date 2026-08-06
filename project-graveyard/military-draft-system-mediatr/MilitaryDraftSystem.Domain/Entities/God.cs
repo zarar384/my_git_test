@@ -1,20 +1,20 @@
-﻿using MilitaryDraftSystem.Domain.Common;
+using MilitaryDraftSystem.Domain.Common;
 
 namespace MilitaryDraftSystem.Domain.Entities
 {
     /// <summary>
-    /// Represents the automatic population generation process.
-    /// Every generation begins here.
+    /// Represents God, the single autonomous entity responsible for creating new citizens.
+    /// God never drafts anyone and only creates life.
     /// </summary>
-    public sealed class PopulationGenerator : Entity<Guid>
+    public sealed class God : Entity<Guid>
     {
         /// <summary>
-        /// Indicates whether the population generator is enabled.
+        /// Indicates whether God is currently creating new citizens.
         /// </summary>
         public bool Enabled { get; private set; }
 
         /// <summary>
-        /// Specifies how often a new generation should occur.
+        /// Specifies how often a new generation of citizens should occur.
         /// </summary>
         public TimeSpan GenerationInterval { get; private set; }
 
@@ -63,7 +63,7 @@ namespace MilitaryDraftSystem.Domain.Entities
             LastGenerationAt = executedAt;
         }
 
-        public PopulationGenerator(
+        public God(
             Guid id,
             bool enabled,
             TimeSpan generationInterval,
@@ -85,7 +85,7 @@ namespace MilitaryDraftSystem.Domain.Entities
             CriminalRecordChance = criminalRecordChance;
         }
 
-        private PopulationGenerator()
+        private God()
         {
             // Required by EF Core.
         }

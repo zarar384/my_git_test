@@ -33,6 +33,11 @@
         /// <summary>
         /// Citizen is no longer eligible because of age.
         /// </summary>
-        Retired = 5
+        Retired = 5,
+
+        /// <summary>
+        /// Citizen has died and no longer takes part in the simulation.
+        /// </summary>
+        Deceased = 6
     }
 }

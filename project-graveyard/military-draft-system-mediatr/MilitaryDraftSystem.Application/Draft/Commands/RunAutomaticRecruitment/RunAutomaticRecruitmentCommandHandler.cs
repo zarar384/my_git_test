@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.Extensions.Logging;
 using MilitaryDraftSystem.Application.Common.Interfaces;
 using MilitaryDraftSystem.Domain.Enums;
 
@@ -11,31 +12,45 @@ namespace MilitaryDraftSystem.Application.Draft.Commands.RunAutomaticRecruitment
     {
         private readonly IAppDbContext _db;
         private readonly IMediator _mediator;
+        private readonly IWorldNarrator _narrator;
+        private readonly ILogger<RunAutomaticRecruitmentCommandHandler> _logger;
 
         public RunAutomaticRecruitmentCommandHandler(
             IAppDbContext db,
-            IMediator mediator)
+            IMediator mediator,
+            IWorldNarrator narrator,
+            ILogger<RunAutomaticRecruitmentCommandHandler> logger)
         {
             _db = db;
             _mediator = mediator;
+            _narrator = narrator;
+            _logger = logger;
         }
 
         public async Task Handle(RunAutomaticRecruitmentCommand request, CancellationToken cancellationToken)
         {
-            // Load the automatic recruitment agent.
-            var agent = await _db.GetAutomaticRecruitmentAgent(cancellationToken);
+            // Load every agent currently allowed to act. Agents work independently.
+            var agents = await _db.GetEnabledAutomaticRecruitmentAgents(cancellationToken);
 
-            // Stop processing if the agent is missing or disabled.
-            if (agent is null || !agent.Enabled)
+            if (agents.Count == 0)
             {
                 return;
             }
 
+            _logger.LogInformation("Automatic recruitment started with {AgentCount} active agent(s).", agents.Count);
+
             // Load citizens eligible for automatic recruitment.
             var citizens = await _db.GetCitizensEligibleForAutomaticDraft(cancellationToken);
 
-            foreach (var citizen in citizens)
+            var draftedCitizens = new List<Domain.Entities.Citizen>();
+
+            for (var i = 0; i < citizens.Count; i++)
             {
+                var citizen = citizens[i];
+
+                // Distribute eligible citizens across the active agents.
+                var agent = agents[i % agents.Count];
+
                 // Execute domain logic and create a summons.
                 var summons = citizen.Draft(
                     DraftSource.AutomaticAgent,
@@ -43,18 +58,32 @@ namespace MilitaryDraftSystem.Application.Draft.Commands.RunAutomaticRecruitment
                     agent.Id,
                     DateTime.UtcNow);
 
+                _logger.LogInformation(
+                    "Citizen {CitizenId} was drafted by agent {AgentId}.",
+                    citizen.Id,
+                    agent.Id);
+
+                _narrator.CitizenDrafted(citizen, null, agent.Id);
+
                 // Schedule the summons for persistence.
                 _db.AddSummons(summons);
+
+                _narrator.SummonsCreated(summons);
+
+                draftedCitizens.Add(citizen);
             }
 
-            // Update the last execution timestamp.
-            agent.MarkExecuted(DateTime.UtcNow);
+            foreach (var agent in agents)
+            {
+                // Update the last execution timestamp.
+                agent.MarkExecuted(DateTime.UtcNow);
+            }
 
             // Persist all changes.
             await _db.SaveChangesAsync(cancellationToken);
 
             // Publish domain events raised during the draft process.
-            foreach (var citizen in citizens)
+            foreach (var citizen in draftedCitizens)
             {
                 foreach (var domainEvent in citizen.DomainEvents)
                 {
@@ -64,6 +93,10 @@ namespace MilitaryDraftSystem.Application.Draft.Commands.RunAutomaticRecruitment
                 // Prevent publishing the same events multiple times.
                 citizen.ClearDomainEvents();
             }
+
+            _logger.LogInformation(
+                "Automatic recruitment finished. {DraftedCount} citizen(s) drafted.",
+                draftedCitizens.Count);
         }
     }
 }

@@ -70,24 +70,24 @@ namespace MilitaryDraftSystem.Application.Population.Services
             "Walker"
         ];
 
-        public IReadOnlyCollection<Citizen> Generate(PopulationGenerator generator)
+        public IReadOnlyCollection<Citizen> Generate(God god)
         {
             // Determine how many citizens will be created in this generation.
             var citizensToGenerate = Random.Next(
-                generator.MinCitizensPerGeneration,
-                generator.MaxCitizensPerGeneration + 1);
+                god.MinCitizensPerGeneration,
+                god.MaxCitizensPerGeneration + 1);
 
             var citizens = new List<Citizen>(citizensToGenerate);
 
             for (var i = 0; i < citizensToGenerate; i++)
             {
-                citizens.Add(CreateCitizen(generator));
+                citizens.Add(CreateCitizen(god));
             }
 
             return citizens;
         }
 
-        private Citizen CreateCitizen(PopulationGenerator generator)
+        private Citizen CreateCitizen(God god)
         {
             // Randomly determine the citizen's gender.
             var isMale = Chance(50);
@@ -99,7 +99,7 @@ namespace MilitaryDraftSystem.Application.Population.Services
             var lastName = Pick(LastNames);
 
             // Generate age using a weighted distribution.
-            var age = GenerateAge(generator);
+            var age = GenerateAge(god);
 
             // Calculate birth date based on age and a random offset of up to 365 days.
             var birthDate = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-age).AddDays(-Random.Next(365)));
@@ -108,10 +108,10 @@ namespace MilitaryDraftSystem.Application.Population.Services
 
             var isStudent =
                 age is >= 18 and <= 25 &&
-                Chance(generator.StudentChance);
+                Chance(god.StudentChance);
 
             var hasCriminalRecord =
-                Chance(generator.CriminalRecordChance);
+                Chance(god.CriminalRecordChance);
 
             var status = GenerateStatus(age);
 
@@ -131,7 +131,7 @@ namespace MilitaryDraftSystem.Application.Population.Services
         /// Generates age using a non-uniform distribution.
         /// Younger citizens appear more frequently than older ones.
         /// </summary>
-        private static int GenerateAge(PopulationGenerator generator)
+        private static int GenerateAge(God god)
         {
             var roll = Random.Next(100);
 

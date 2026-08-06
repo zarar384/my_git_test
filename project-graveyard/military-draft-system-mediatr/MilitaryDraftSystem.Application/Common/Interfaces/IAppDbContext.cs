@@ -13,9 +13,11 @@ namespace MilitaryDraftSystem.Application.Common.Interfaces
 
         Task<List<Citizen>> GetCitizensEligibleForAutomaticDraft(CancellationToken ct);
 
-        Task<AutomaticRecruitmentAgent?> GetAutomaticRecruitmentAgent(CancellationToken ct);
+        Task<List<AutomaticRecruitmentAgent>> GetEnabledAutomaticRecruitmentAgents(CancellationToken ct);
 
-        Task<PopulationGenerator?> GetPopulationGenerator(CancellationToken ct);
+        Task<God?> GetGod(CancellationToken ct);
+
+        Task<List<Citizen>> GetLivingCitizens(CancellationToken ct);
 
         // Commands
 

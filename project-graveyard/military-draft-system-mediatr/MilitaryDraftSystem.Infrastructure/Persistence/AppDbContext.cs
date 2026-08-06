@@ -19,7 +19,7 @@ namespace MilitaryDraftSystem.Infrastructure.Persistence
 
         public DbSet<AutomaticRecruitmentAgent> AutomaticRecruitmentAgents => Set<AutomaticRecruitmentAgent>();
 
-        public DbSet<PopulationGenerator> PopulationGenerators => Set<PopulationGenerator>();
+        public DbSet<God> Gods => Set<God>();
 
         /// <summary>
         /// Required by EF Core design-time tools such as migrations.
@@ -56,22 +56,32 @@ namespace MilitaryDraftSystem.Infrastructure.Persistence
                 .ToListAsync(ct);
         }
 
-        public async Task<AutomaticRecruitmentAgent?> GetAutomaticRecruitmentAgent(
+        public async Task<List<AutomaticRecruitmentAgent>> GetEnabledAutomaticRecruitmentAgents(
             CancellationToken ct)
         {
-            // Load the automatic recruitment configuration.
+            // Load every automatic recruitment agent currently allowed to act.
+            // Multiple agents may operate independently at the same time.
             return await AutomaticRecruitmentAgents
+                .Where(x => x.Enabled)
+                .ToListAsync(ct);
+        }
+
+        public async Task<God?> GetGod(
+            CancellationToken ct)
+        {
+            // Load the population generation configuration. There can only be one God.
+            return await Gods
                 .OrderBy(x => x.Id)
                 .FirstOrDefaultAsync(ct);
         }
 
-        public async Task<PopulationGenerator?> GetPopulationGenerator(
+        public async Task<List<Citizen>> GetLivingCitizens(
             CancellationToken ct)
         {
-            // Load the population generation configuration.
-            return await PopulationGenerators
-                .OrderBy(x => x.Id)
-                .FirstOrDefaultAsync(ct);
+            // Load citizens that are still alive and part of the simulation.
+            return await Citizens
+                .Where(x => x.Status != CitizenStatus.Deceased)
+                .ToListAsync(ct);
         }
 
         public void AddCitizen(Citizen citizen)
@@ -84,6 +94,15 @@ namespace MilitaryDraftSystem.Infrastructure.Persistence
         {
             // Register a newly created summons.
             Summonses.Add(summons);
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // Map the Death value object as an owned type on Citizen.
+            modelBuilder.Entity<Citizen>()
+                .OwnsOne(x => x.Death);
         }
     }
 }

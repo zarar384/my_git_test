@@ -1,28 +1,23 @@
-﻿using MilitaryDraftSystem.Domain.Entities;
+using MilitaryDraftSystem.Domain.Entities;
 
 namespace MilitaryDraftSystem.Infrastructure.Persistence.Seeds
 {
     /// <summary>
-    /// Seeds the default population generator configuration.
+    /// Seeds God, the single autonomous entity responsible for creating new citizens.
     /// </summary>
-    public static class PopulationGeneratorSeeder
+    public static class GodSeeder
     {
         public static async Task SeedAsync(AppDbContext context)
         {
             ArgumentNullException.ThrowIfNull(context);
 
-            if (context.PopulationGenerators.Any())
-            {
-                return; // Already seeded.
-            }
-
-            // Prevent duplicate seed data.
-            if (context.PopulationGenerators.Any())
+            // Prevent duplicate seed data. There can only be one God.
+            if (context.Gods.Any())
             {
                 return;
             }
 
-            var generator = new PopulationGenerator(
+            var god = new God(
                 id: Guid.NewGuid(),
                 enabled: true,
 
@@ -43,7 +38,7 @@ namespace MilitaryDraftSystem.Infrastructure.Persistence.Seeds
                 // Criminal records should remain relatively rare.
                 criminalRecordChance: 7);
 
-            await context.PopulationGenerators.AddAsync(generator);
+            await context.Gods.AddAsync(god);
 
             await context.SaveChangesAsync();
         }

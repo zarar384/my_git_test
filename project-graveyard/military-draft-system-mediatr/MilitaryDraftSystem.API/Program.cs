@@ -35,6 +35,9 @@ builder.Services.AddValidatorsFromAssembly(typeof(AssemblyReference).Assembly);
 // Register application services.
 builder.Services.AddScoped<IPopulationGenerationService, PopulationGenerationService>();
 
+// Register world narration for lively console output.
+builder.Services.AddSingleton<IWorldNarrator, ConsoleWorldNarrator>();
+
 #endregion
 
 #region Infrastructure
@@ -68,6 +71,9 @@ builder.Services.AddHostedService<PopulationGenerationHostedService>();
 
 // Execute automatic military recruitment.
 builder.Services.AddHostedService<AutomaticRecruitmentHostedService>();
+
+// Simulate the passage of time for the living population.
+builder.Services.AddHostedService<PopulationSimulationHostedService>();
 
 #endregion
 

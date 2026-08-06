@@ -10,8 +10,8 @@
             // Seed citizens
             await CitizenSeeder.SeedAsync(context);
 
-            // Seed population generator
-            await PopulationGeneratorSeeder.SeedAsync(context);
+            // Seed God
+            await GodSeeder.SeedAsync(context);
         }
     }
 }

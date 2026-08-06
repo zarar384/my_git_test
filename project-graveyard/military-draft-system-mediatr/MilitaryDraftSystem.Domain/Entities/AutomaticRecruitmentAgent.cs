@@ -3,7 +3,10 @@
 namespace MilitaryDraftSystem.Domain.Entities
 {
     /// <summary>
-    /// Represents the automatic recruitment process configuration.
+    /// Represents an autonomous automatic recruitment agent.
+    /// Many agents may operate independently, each periodically searching for
+    /// citizens that satisfy military requirements and drafting them automatically.
+    /// Agents never create citizens.
     /// </summary>
     public sealed class AutomaticRecruitmentAgent : Entity<Guid>
     {

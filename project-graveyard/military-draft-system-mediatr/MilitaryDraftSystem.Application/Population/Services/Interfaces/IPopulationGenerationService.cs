@@ -7,6 +7,6 @@ namespace MilitaryDraftSystem.Application.Population.Services.Interfaces
     /// </summary>
     public interface IPopulationGenerationService
     {
-        IReadOnlyCollection<Citizen> Generate(PopulationGenerator generator);
+        IReadOnlyCollection<Citizen> Generate(God god);
     }
 }

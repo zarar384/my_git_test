@@ -1,6 +1,7 @@
 ﻿using MilitaryDraftSystem.Domain.Common;
 using MilitaryDraftSystem.Domain.Enums;
 using MilitaryDraftSystem.Domain.Events;
+using MilitaryDraftSystem.Domain.ValueObjects;
 
 namespace MilitaryDraftSystem.Domain.Entities
 {
@@ -9,11 +10,16 @@ namespace MilitaryDraftSystem.Domain.Entities
     /// </summary>
     public sealed class Citizen : Entity<Guid>
     {
+        /// <summary>
+        /// Age at which a citizen is considered an adult.
+        /// </summary>
+        public const int AdultAge = 18;
+
         public string FirstName { get; private set; } = null!;
 
         public string LastName { get; private set; } = null!;
 
-        public int Age { get; set; }
+        public int Age { get; private set; }
 
         public DateOnly BirthDate { get; private set; }
 
@@ -24,6 +30,12 @@ namespace MilitaryDraftSystem.Domain.Entities
         public bool HasCriminalRecord { get; private set; }
 
         public bool IsStudent { get; private set; }
+
+        public Death? Death { get; private set; }
+
+        public bool IsAlive => Status != CitizenStatus.Deceased;
+
+        public string FullName => $"{FirstName} {LastName}";
 
         public Citizen(
             Guid id,
@@ -55,7 +67,8 @@ namespace MilitaryDraftSystem.Domain.Entities
         public bool IsEligibleForDraft(DateOnly today)
         {
             // Check whether the citizen satisfies all draft eligibility requirements.
-            return Age >= 18
+            return IsAlive
+                && Age >= 18
                 && Age <= 27
                 && MedicalCategory == MedicalCategory.Fit
                 && !HasCriminalRecord
@@ -88,6 +101,44 @@ namespace MilitaryDraftSystem.Domain.Entities
             RaiseDomainEvent(new CitizenDraftedDomainEvent(Id));
 
             return summons;
+        }
+
+        /// <summary>
+        /// Advances the citizen's age by one year and raises a coming-of-age event
+        /// the moment they cross into adulthood.
+        /// </summary>
+        public void HaveBirthday()
+        {
+            if (!IsAlive)
+                return;
+
+            var wasMinor = Age < AdultAge;
+
+            Age++;
+
+            if (wasMinor && Age >= AdultAge)
+            {
+                Status = CitizenStatus.WaitingForDraft;
+                RaiseDomainEvent(new CitizenBecameAdultDomainEvent(Id));
+            }
+
+            if (Age > 27 && Status == CitizenStatus.WaitingForDraft)
+                Status = CitizenStatus.Retired;
+        }
+
+        /// <summary>
+        /// Marks the citizen as dead. Every death must carry a reason so the
+        /// simulation never ends a life without explanation.
+        /// </summary>
+        public void Die(DeathReason reason, DateTimeOffset occurredAt)
+        {
+            if (!IsAlive)
+                return;
+
+            Death = ValueObjects.Death.Create(reason, occurredAt);
+            Status = CitizenStatus.Deceased;
+
+            RaiseDomainEvent(new CitizenDiedDomainEvent(Id, Death));
         }
     }
 }
