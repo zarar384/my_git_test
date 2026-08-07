@@ -3,4 +3,5 @@
   <Project Path="MilitaryDraftSystem.Application/MilitaryDraftSystem.Application.csproj" />
   <Project Path="MilitaryDraftSystem.Domain/MilitaryDraftSystem.Domain.csproj" />
   <Project Path="MilitaryDraftSystem.Infrastructure/MilitaryDraftSystem.Infrastructure.csproj" />
+  <Project Path="MilitaryDraftSystem.Tests/MilitaryDraftSystem.Tests.csproj" Id="53a10c12-80bc-4068-9e8c-cecc0a3afbca" />
 </Solution>
