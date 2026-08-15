@@ -23,6 +23,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\MilitaryDraftSystem.API\MilitaryDraftSystem.API.csproj" />
+    <ProjectReference Include="..\MilitaryDraftSystem.Application\MilitaryDraftSystem.Application.csproj" />
+    <ProjectReference Include="..\MilitaryDraftSystem.Domain\MilitaryDraftSystem.Domain.csproj" />
+    <ProjectReference Include="..\MilitaryDraftSystem.Infrastructure\MilitaryDraftSystem.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 

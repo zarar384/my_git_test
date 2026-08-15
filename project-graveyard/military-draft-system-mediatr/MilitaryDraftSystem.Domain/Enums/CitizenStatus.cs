@@ -6,38 +6,43 @@
     public enum CitizenStatus
     {
         /// <summary>
+        /// Newborn citizens are not yet eligible for military service.
+        /// </summary>
+        Newborn = 0,
+
+        /// <summary>
         /// Citizen is registered in the system.
         /// </summary>
-        Registered = 0,
+        Registered = 1,
 
         /// <summary>
         /// Citizen is waiting to be drafted.
         /// </summary>
-        WaitingForDraft = 1,
+        WaitingForDraft = 2,
 
         /// <summary>
         /// Citizen has already been drafted.
         /// </summary>
-        Drafted = 2,
+        Drafted = 3,
 
         /// <summary>
         /// Citizen is permanently exempt from military service.
         /// </summary>
-        Exempted = 3,
+        Exempted = 4,
 
         /// <summary>
         /// Citizen has received a temporary deferment.
         /// </summary>
-        Deferred = 4,
+        Deferred = 5,
 
         /// <summary>
         /// Citizen is no longer eligible because of age.
         /// </summary>
-        Retired = 5,
+        Retired = 6,
 
         /// <summary>
         /// Citizen has died and no longer takes part in the simulation.
         /// </summary>
-        Deceased = 6
+        Deceased = 7
     }
 }

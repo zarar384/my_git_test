@@ -37,6 +37,53 @@ namespace MilitaryDraftSystem.Domain.Entities
 
         public string FullName => $"{FirstName} {LastName}";
 
+        /// <summary>
+        /// Main constructor for creating a newborn citizen.
+        /// </summary>
+        public Citizen(
+            string firstName,
+            string lastName)
+        {
+            Id = Guid.NewGuid();
+
+            FirstName = firstName;
+            LastName = lastName;
+
+            Age = 0;
+            BirthDate = DateOnly.FromDateTime(DateTime.Now);
+
+            MedicalCategory = GetRandomMedicalCategory();
+            Status = CitizenStatus.Newborn;
+            HasCriminalRecord = false;
+            IsStudent = false;
+        }
+
+        /// <summary>
+        /// Constructor for creating a specific citizen.
+        /// </summary>
+        public Citizen(
+            string firstName,
+            string lastName,
+            int age,
+            MedicalCategory medicalCategory,
+            CitizenStatus status,
+            bool hasCriminalRecord,
+            bool isStudent)
+        {
+            Id = Guid.NewGuid();
+            FirstName = firstName;
+            LastName = lastName;
+            Age = age;
+            BirthDate = GetBirthDate(age);
+            MedicalCategory = medicalCategory;
+            Status = status;
+            HasCriminalRecord = hasCriminalRecord;
+            IsStudent = isStudent;
+        }
+
+        /// <summary>
+        /// For testing and seeding purposes, this constructor allows for the creation of a citizen with a specific ID.
+        /// </summary>
         public Citizen(
             Guid id,
             string firstName,
@@ -140,5 +187,28 @@ namespace MilitaryDraftSystem.Domain.Entities
 
             RaiseDomainEvent(new CitizenDiedDomainEvent(Id, Death));
         }
+
+        #region Helpers
+        private MedicalCategory GetRandomMedicalCategory()
+        {
+            // Fit 95%
+            // Limited Fit 4.7%
+            // Permanently Unfit 0.3%
+            var randomValue = Random.Shared.NextDouble();
+
+            if (randomValue < 0.95)
+                return MedicalCategory.Fit;
+            else if (randomValue < 0.997)
+                return MedicalCategory.LimitedFit;
+
+            return MedicalCategory.PermanentlyUnfit;
+        }
+
+        private DateOnly GetBirthDate(int age)
+        {
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            return today.AddYears(-age);
+        }
+        #endregion
     }
 }
