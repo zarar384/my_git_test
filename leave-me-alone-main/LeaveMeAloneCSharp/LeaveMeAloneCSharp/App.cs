@@ -1,4 +1,5 @@
 ﻿
+using LeaveMeAloneCSharp.AlgLeetcode.Tasks;
 using LeaveMeAloneCSharp.Playground;
 
 namespace LeaveMeAloneCSharp
@@ -7,7 +8,7 @@ namespace LeaveMeAloneCSharp
     {
         public static async Task RunApp()
         {
-          await ReactiveL.Run();
+            BinarySearch.RunDemo();
         }
     }
 }

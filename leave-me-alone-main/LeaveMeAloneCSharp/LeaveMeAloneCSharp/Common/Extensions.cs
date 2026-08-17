@@ -6,6 +6,12 @@ namespace LeaveMeAloneCSharp.Common
 {
     public static class Extensions
     {
+        #region Array Extensions
+        public static string JoinToString(this int[] array, string separator = ", ") =>
+            array == null ? string.Empty : string.Join(separator, array);
+
+        #endregion
+
         //public static TOutput Match<TInput, TOutput>(
         //   this TInput @this,
         //    params (Func<TInput, bool> IsMatch,
