@@ -6,7 +6,7 @@ namespace MilitaryDraftSystem.Domain.Common
     /// Base class for all domain entities.
     /// Provides an identifier and domain event support.
     /// </summary>
-    public abstract class Entity<TId>
+    public abstract class Entity<TId> : IHasDomainEvents
     {
         public TId Id { get; protected set; } = default!;
 

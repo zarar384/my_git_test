@@ -33,16 +33,33 @@ namespace MilitaryDraftSystem.Domain.Entities
 
         public Death? Death { get; private set; }
 
+        public Gender Gender { get; private set; }
+
+        /// <summary>
+        /// The age, in years, at which this citizen is destined to die of old
+        /// age if nothing else kills them first. Assigned once, at creation
+        /// time, from a random statistical distribution that accounts for the
+        /// difference in life expectancy between men and women. A value of
+        /// zero means the lifespan has not been assigned yet (e.g. legacy
+        /// data), in which case old-age death never triggers for this citizen.
+        /// </summary>
+        public int NaturalLifespanYears { get; private set; }
+
         public bool IsAlive => Status != CitizenStatus.Deceased;
 
         public string FullName => $"{FirstName} {LastName}";
 
         /// <summary>
         /// Main constructor for creating a newborn citizen.
+        /// The medical category and gender are supplied by the caller since
+        /// Domain must not perform its own randomization; probability
+        /// decisions belong to Application.
         /// </summary>
         public Citizen(
             string firstName,
-            string lastName)
+            string lastName,
+            MedicalCategory medicalCategory,
+            Gender gender = Enums.Gender.Male)
         {
             Id = Guid.NewGuid();
 
@@ -52,10 +69,11 @@ namespace MilitaryDraftSystem.Domain.Entities
             Age = 0;
             BirthDate = DateOnly.FromDateTime(DateTime.Now);
 
-            MedicalCategory = GetRandomMedicalCategory();
+            MedicalCategory = medicalCategory;
             Status = CitizenStatus.Newborn;
             HasCriminalRecord = false;
             IsStudent = false;
+            Gender = gender;
         }
 
         /// <summary>
@@ -68,7 +86,8 @@ namespace MilitaryDraftSystem.Domain.Entities
             MedicalCategory medicalCategory,
             CitizenStatus status,
             bool hasCriminalRecord,
-            bool isStudent)
+            bool isStudent,
+            Gender gender = Enums.Gender.Male)
         {
             Id = Guid.NewGuid();
             FirstName = firstName;
@@ -79,6 +98,7 @@ namespace MilitaryDraftSystem.Domain.Entities
             Status = status;
             HasCriminalRecord = hasCriminalRecord;
             IsStudent = isStudent;
+            Gender = gender;
         }
 
         /// <summary>
@@ -93,7 +113,8 @@ namespace MilitaryDraftSystem.Domain.Entities
             MedicalCategory medicalCategory,
             CitizenStatus status,
             bool hasCriminalRecord,
-            bool isStudent)
+            bool isStudent,
+            Gender gender = Enums.Gender.Male)
         {
             Id = id;
             FirstName = firstName;
@@ -104,6 +125,24 @@ namespace MilitaryDraftSystem.Domain.Entities
             Status = status;
             HasCriminalRecord = hasCriminalRecord;
             IsStudent = isStudent;
+            Gender = gender;
+        }
+
+        /// <summary>
+        /// Assigns this citizen's natural lifespan. Must be computed by
+        /// Application using the centralized <c>IRandomProvider</c>, since
+        /// Domain never performs its own randomization. Can only be assigned
+        /// once.
+        /// </summary>
+        public void AssignNaturalLifespan(int years)
+        {
+            if (years <= 0)
+                throw new ArgumentOutOfRangeException(nameof(years), "Natural lifespan must be positive.");
+
+            if (NaturalLifespanYears != 0)
+                return;
+
+            NaturalLifespanYears = years;
         }
 
         public Citizen()
@@ -174,6 +213,16 @@ namespace MilitaryDraftSystem.Domain.Entities
         }
 
         /// <summary>
+        /// Whether this citizen has reached or passed their assigned natural
+        /// lifespan. A citizen whose lifespan was never assigned (zero) can
+        /// never die of old age.
+        /// </summary>
+        public bool HasReachedNaturalLifespan()
+        {
+            return NaturalLifespanYears > 0 && Age >= NaturalLifespanYears;
+        }
+
+        /// <summary>
         /// Marks the citizen as dead. Every death must carry a reason so the
         /// simulation never ends a life without explanation.
         /// </summary>
@@ -189,21 +238,6 @@ namespace MilitaryDraftSystem.Domain.Entities
         }
 
         #region Helpers
-        private MedicalCategory GetRandomMedicalCategory()
-        {
-            // Fit 95%
-            // Limited Fit 4.7%
-            // Permanently Unfit 0.3%
-            var randomValue = Random.Shared.NextDouble();
-
-            if (randomValue < 0.95)
-                return MedicalCategory.Fit;
-            else if (randomValue < 0.997)
-                return MedicalCategory.LimitedFit;
-
-            return MedicalCategory.PermanentlyUnfit;
-        }
-
         private DateOnly GetBirthDate(int age)
         {
             var today = DateOnly.FromDateTime(DateTime.Now);

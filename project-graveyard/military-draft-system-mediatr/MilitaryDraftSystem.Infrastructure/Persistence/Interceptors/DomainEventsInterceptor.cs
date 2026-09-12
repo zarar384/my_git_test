@@ -1,7 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using MilitaryDraftSystem.Application.Common.Mappings;
-using MilitaryDraftSystem.Domain.Entities;
+using MilitaryDraftSystem.Domain.Interfaces;
 
 namespace MilitaryDraftSystem.Infrastructure.Persistence.Interceptors
 {
@@ -24,15 +24,15 @@ namespace MilitaryDraftSystem.Infrastructure.Persistence.Interceptors
             if(context == null)
                 return result;
 
-            // get all entities with domain events
-            var citizens = context.ChangeTracker
-                .Entries<Citizen>()
+            // Get every tracked entity (of any type) that has pending domain events.
+            var entitiesWithEvents = context.ChangeTracker
+                .Entries<IHasDomainEvents>()
                 .Where(x => x.Entity.DomainEvents.Any())
                 .Select(x => x.Entity);
 
-            foreach (var citizen in citizens)
+            foreach (var entity in entitiesWithEvents)
             {
-                foreach(var domainEvent in citizen.DomainEvents)
+                foreach(var domainEvent in entity.DomainEvents)
                 {
                     // map to MediatR event 
                     var notification = DomainEventMapper.Map(domainEvent);
@@ -43,7 +43,7 @@ namespace MilitaryDraftSystem.Infrastructure.Persistence.Interceptors
 
                 // clear domain events
                 // Prevent publishing the same events multiple times.
-                citizen.ClearDomainEvents();
+                entity.ClearDomainEvents();
             }
 
             return result;

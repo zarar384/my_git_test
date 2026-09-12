@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
+using MilitaryDraftSystem.Application.Common.Configuration;
 using MilitaryDraftSystem.Application.Common.Interfaces;
 using MilitaryDraftSystem.Domain.Entities;
 using MilitaryDraftSystem.Domain.Enums;
@@ -13,22 +14,41 @@ namespace MilitaryDraftSystem.Application.Population.Commands.RunPopulationSimul
     public sealed class RunPopulationSimulationCommandHandler
         : IRequestHandler<RunPopulationSimulationCommand>
     {
-        private static readonly Random Random = Random.Shared;
+        private static readonly DeathReason[] DiseaseCauses =
+        [
+            DeathReason.HeartAttack,
+            DeathReason.Cancer,
+            DeathReason.UnknownIllness
+        ];
+
+        private static readonly DeathReason[] AccidentCauses =
+        [
+            DeathReason.TrafficAccident,
+            DeathReason.Drowned,
+            DeathReason.LightningStrike,
+            DeathReason.FellFromStairs
+        ];
+
+        private static readonly DeathReason[] MilitaryCauses =
+        [
+            DeathReason.FriendlyFireDuringTraining,
+            DeathReason.KilledInCombat
+        ];
 
         private readonly IAppDbContext _db;
-        private readonly IMediator _mediator;
         private readonly IWorldNarrator _narrator;
+        private readonly IRandomProvider _random;
         private readonly ILogger<RunPopulationSimulationCommandHandler> _logger;
 
         public RunPopulationSimulationCommandHandler(
             IAppDbContext db,
-            IMediator mediator,
             IWorldNarrator narrator,
+            IRandomProvider random,
             ILogger<RunPopulationSimulationCommandHandler> logger)
         {
             _db = db;
-            _mediator = mediator;
             _narrator = narrator;
+            _random = random;
             _logger = logger;
         }
 
@@ -53,7 +73,7 @@ namespace MilitaryDraftSystem.Application.Population.Commands.RunPopulationSimul
                 var changed = false;
 
                 // Small chance of a birthday happening during this simulation tick.
-                if (Chance(5))
+                if (_random.Chance(SimulationProbabilities.Birthday.OccursPercent))
                 {
                     citizen.HaveBirthday();
                     changed = true;
@@ -87,17 +107,9 @@ namespace MilitaryDraftSystem.Application.Population.Commands.RunPopulationSimul
                 }
             }
 
+            // Persist changes. Domain events raised above are published automatically
+            // by DomainEventsInterceptor as part of this call.
             await _db.SaveChangesAsync(cancellationToken);
-
-            foreach (var citizen in affectedCitizens)
-            {
-                foreach (var domainEvent in citizen.DomainEvents)
-                {
-                    await _mediator.Publish(domainEvent, cancellationToken);
-                }
-
-                citizen.ClearDomainEvents();
-            }
 
             _logger.LogInformation(
                 "Population simulation finished. {AffectedCount} citizen(s) changed.",
@@ -108,53 +120,44 @@ namespace MilitaryDraftSystem.Application.Population.Commands.RunPopulationSimul
         /// Rolls the dice of fate for a single citizen and, if death occurs,
         /// returns the reason. Returns null if the citizen survives this tick.
         /// </summary>
-        private static DeathReason? TryDetermineDeathReason(Citizen citizen)
+        private DeathReason? TryDetermineDeathReason(Citizen citizen)
         {
-            // Old age becomes an increasing risk past 70.
-            if (citizen.Age > 70 && Chance(1 + (citizen.Age - 70)))
+            // Old age is triggered once the citizen reaches their individually
+            // assigned natural lifespan, which already accounts for gender
+            // differences in life expectancy and is never a fixed age.
+            if (citizen.HasReachedNaturalLifespan() &&
+                _random.Chance(
+                    SimulationProbabilities.Death.OldAgeBasePercent +
+                    ((citizen.Age - citizen.NaturalLifespanYears) * SimulationProbabilities.Death.OldAgePercentPerYearOver)))
             {
                 return DeathReason.OldAge;
             }
 
             // Disease can strike at any age, but rarely.
-            if (Chance(1))
+            if (_random.Chance(SimulationProbabilities.Death.DiseasePercent))
             {
-                return Pick(DeathReason.HeartAttack, DeathReason.Cancer, DeathReason.UnknownIllness);
+                return _random.Pick(DiseaseCauses);
             }
 
             // Accidents can happen to anyone.
-            if (Chance(1))
+            if (_random.Chance(SimulationProbabilities.Death.AccidentPercent))
             {
-                return Pick(
-                    DeathReason.TrafficAccident,
-                    DeathReason.Drowned,
-                    DeathReason.LightningStrike,
-                    DeathReason.FellFromStairs);
+                return _random.Pick(AccidentCauses);
             }
 
             // Military service carries its own unique risks.
-            if (citizen.Status == CitizenStatus.Drafted && Chance(2))
+            if (citizen.Status == CitizenStatus.Drafted && _random.Chance(SimulationProbabilities.Death.MilitaryPercent))
             {
-                return Pick(DeathReason.FriendlyFireDuringTraining, DeathReason.KilledInCombat);
+                return _random.Pick(MilitaryCauses);
             }
 
             // Life is not always kind.
-            if (Chance(1))
+            if (_random.Chance(SimulationProbabilities.Death.SuicidePercent))
             {
                 return DeathReason.Suicide;
             }
 
             return null;
-        }
-
-        private static bool Chance(int percent)
-        {
-            return Random.Next(100) < percent;
-        }
-
-        private static DeathReason Pick(params DeathReason[] reasons)
-        {
-            return reasons[Random.Next(reasons.Length)];
         }
     }
 }

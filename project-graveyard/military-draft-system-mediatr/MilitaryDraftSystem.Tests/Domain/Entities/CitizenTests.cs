@@ -17,7 +17,7 @@ namespace MilitaryDraftSystem.Tests.Domain.Entities
             var today = DateOnly.FromDateTime(DateTime.Now);
 
             // Act
-            var citizen = new Citizen(firstName, lastName);
+            var citizen = new Citizen(firstName, lastName, MedicalCategory.Fit);
 
             // Assert
             Assert.NotEqual(Guid.Empty, citizen.Id);

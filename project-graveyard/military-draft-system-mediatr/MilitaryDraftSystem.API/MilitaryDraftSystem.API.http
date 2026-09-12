@@ -1,24 +1,20 @@
 @MilitaryDraftSystem.API_HostAddress = http://localhost:5008
+@apiKey = dev-local-api-key
+@citizenId = 00000000-0000-0000-0000-000000000000
+@officerId = 00000000-0000-0000-0000-000000000000
 
+### Manually draft a citizen through a recruitment officer
 
-### Send Summons
+POST {{MilitaryDraftSystem.API_HostAddress}}/draft/citizens/{{citizenId}}/officers/{{officerId}}
+X-Api-Key: {{apiKey}}
 
-POST {{MilitaryDraftSystem.API_HostAddress}}/draft/summons
-Content-Type: application/json
+### Manually draft a citizen without an API key (expected: 401 Unauthorized)
 
-{
-"citizenId": "{{citizenId}}",
-"date": "2026-05-01T10:00:00Z"
-}
+POST {{MilitaryDraftSystem.API_HostAddress}}/draft/citizens/{{citizenId}}/officers/{{officerId}}
 
-### Send Summons (invalid date => validation)
+### Get a recruitment officer's draft history, morale and retirement status
 
-POST {{MilitaryDraftSystem.API_HostAddress}}/draft/summons
-Content-Type: application/json
-
-{
-"citizenId": "{{citizenId}}",
-"date": "2020-01-01T10:00:00Z"
-}
+GET {{MilitaryDraftSystem.API_HostAddress}}/draft/officers/{{officerId}}/stats
+X-Api-Key: {{apiKey}}
 
 ###

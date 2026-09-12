@@ -13,7 +13,7 @@ namespace MilitaryDraftSystem.Application.Draft.Behaviors
             _logger = logger;
         }
 
-        public Task<TResponse> Handle(
+        public async Task<TResponse> Handle(
             TRequest request, 
             RequestHandlerDelegate<TResponse> next, 
             CancellationToken cancellationToken)
@@ -21,12 +21,12 @@ namespace MilitaryDraftSystem.Application.Draft.Behaviors
             // Log the request details
             _logger.LogInformation("Handling {RequestName} with content: {@Request}", typeof(TRequest).Name, request);
 
-            var response = next();
+            var response = await next();
 
             // Log the response details
             _logger.LogInformation("Handled {RequestName} with response: {@Response}", typeof(TRequest).Name, response);
 
-            return next();
+            return response;
         }
     }
 }

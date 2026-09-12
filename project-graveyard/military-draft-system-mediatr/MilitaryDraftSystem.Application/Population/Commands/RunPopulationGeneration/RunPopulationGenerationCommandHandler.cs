@@ -12,20 +12,17 @@ namespace MilitaryDraftSystem.Application.Population.Commands.RunPopulationGener
         : IRequestHandler<RunPopulationGenerationCommand>
     {
         private readonly IAppDbContext _db;
-        private readonly IMediator _mediator;
         private readonly IPopulationGenerationService _populationGenerationService;
         private readonly IWorldNarrator _narrator;
         private readonly ILogger<RunPopulationGenerationCommandHandler> _logger;
 
         public RunPopulationGenerationCommandHandler(
             IAppDbContext db,
-            IMediator mediator,
             IPopulationGenerationService populationGenerationService,
             IWorldNarrator narrator,
             ILogger<RunPopulationGenerationCommandHandler> logger)
         {
             _db = db;
-            _mediator = mediator;
             _populationGenerationService = populationGenerationService;
             _narrator = narrator;
             _logger = logger;
@@ -61,19 +58,9 @@ namespace MilitaryDraftSystem.Application.Population.Commands.RunPopulationGener
             // Update generation timestamp.
             god.MarkExecuted(DateTimeOffset.UtcNow);
 
-            // Persist generated citizens.
+            // Persist generated citizens. Any domain events raised during generation
+            // are published automatically by DomainEventsInterceptor as part of this call.
             await _db.SaveChangesAsync(cancellationToken);
-
-            // Publish generated domain events.
-            foreach (var citizen in citizens)
-            {
-                foreach (var domainEvent in citizen.DomainEvents)
-                {
-                    await _mediator.Publish(domainEvent, cancellationToken);
-                }
-
-                citizen.ClearDomainEvents();
-            }
 
             _logger.LogInformation(
                 "Population generation finished. {CitizenCount} citizen(s) created.",

@@ -1,6 +1,7 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MilitaryDraftSystem.API.Auth;
 using MilitaryDraftSystem.Application.Common;
 using MilitaryDraftSystem.Application.Common.Interfaces;
 using MilitaryDraftSystem.Application.Draft.Behaviors;
@@ -24,6 +25,19 @@ builder.Services.AddControllers();
 
 #endregion
 
+#region Authentication
+
+// Register API key authentication used to protect the draft endpoints.
+builder.Services
+    .AddAuthentication(ApiKeyAuthenticationOptions.SchemeName)
+    .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(
+        ApiKeyAuthenticationOptions.SchemeName,
+        _ => { });
+
+builder.Services.AddAuthorization();
+
+#endregion
+
 #region Application
 
 // Register MediatR handlers.
@@ -34,6 +48,9 @@ builder.Services.AddValidatorsFromAssembly(typeof(AssemblyReference).Assembly);
 
 // Register application services.
 builder.Services.AddScoped<IPopulationGenerationService, PopulationGenerationService>();
+
+// Register the centralized random provider used by all simulation randomness.
+builder.Services.AddSingleton<IRandomProvider, SystemRandomProvider>();
 
 // Register world narration for lively console output.
 builder.Services.AddSingleton<IWorldNarrator, ConsoleWorldNarrator>();
@@ -75,6 +92,12 @@ builder.Services.AddHostedService<AutomaticRecruitmentHostedService>();
 // Simulate the passage of time for the living population.
 builder.Services.AddHostedService<PopulationSimulationHostedService>();
 
+// Simulate the passage of time for active recruitment officers.
+builder.Services.AddHostedService<OfficerLifeSimulationHostedService>();
+
+// Physically purge deceased citizens once their retention window elapses.
+builder.Services.AddHostedService<CitizenCleanupHostedService>();
+
 #endregion
 
 #region Pipeline Behaviors
@@ -105,6 +128,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 

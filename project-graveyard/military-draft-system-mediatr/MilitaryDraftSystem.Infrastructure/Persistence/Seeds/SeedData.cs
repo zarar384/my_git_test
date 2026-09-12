@@ -12,6 +12,12 @@
 
             // Seed God
             await GodSeeder.SeedAsync(context);
+
+            // Seed the current player
+            await PlayerSeeder.SeedAsync(context);
+
+            // Seed recruitment officers
+            await RecruitmentOfficerSeeder.SeedAsync(context);
         }
     }
 }

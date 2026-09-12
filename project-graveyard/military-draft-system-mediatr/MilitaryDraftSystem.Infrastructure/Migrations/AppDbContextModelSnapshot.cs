@@ -37,6 +37,36 @@ namespace MilitaryDraftSystem.Infrastructure.Migrations
                     b.ToTable("AutomaticRecruitmentAgents");
                 });
 
+            modelBuilder.Entity("MilitaryDraftSystem.Domain.Entities.CemeteryRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("DiedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("OriginalRecordDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Reason")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SubjectType")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CemeteryRecords");
+                });
+
             modelBuilder.Entity("MilitaryDraftSystem.Domain.Entities.Citizen", b =>
                 {
                     b.Property<Guid>("Id")
@@ -53,6 +83,9 @@ namespace MilitaryDraftSystem.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Gender")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("HasCriminalRecord")
                         .HasColumnType("INTEGER");
 
@@ -66,12 +99,35 @@ namespace MilitaryDraftSystem.Infrastructure.Migrations
                     b.Property<int>("MedicalCategory")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("NaturalLifespanYears")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
                     b.ToTable("Citizens");
+                });
+
+            modelBuilder.Entity("MilitaryDraftSystem.Domain.Entities.DeathStatistic", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Count")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Reason")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SubjectType")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DeathStatistics");
                 });
 
             modelBuilder.Entity("MilitaryDraftSystem.Domain.Entities.God", b =>
@@ -112,6 +168,24 @@ namespace MilitaryDraftSystem.Infrastructure.Migrations
                     b.ToTable("Gods");
                 });
 
+            modelBuilder.Entity("MilitaryDraftSystem.Domain.Entities.Player", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Players");
+                });
+
             modelBuilder.Entity("MilitaryDraftSystem.Domain.Entities.RecruitmentOfficer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -122,8 +196,29 @@ namespace MilitaryDraftSystem.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("DraftedCitizensCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("EndReason")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("FullName")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("GuiltIncidentsCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MoralePercent")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("PlayerId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset?>("StatusChangedAt")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -160,6 +255,23 @@ namespace MilitaryDraftSystem.Infrastructure.Migrations
                     b.ToTable("Summonses");
                 });
 
+            modelBuilder.Entity("MilitaryDraftSystem.Domain.Entities.WorkerLifecycleStatistic", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Count")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Reason")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("WorkerLifecycleStatistics");
+                });
+
             modelBuilder.Entity("MilitaryDraftSystem.Domain.Entities.Citizen", b =>
                 {
                     b.OwnsOne("MilitaryDraftSystem.Domain.ValueObjects.Death", "Death", b1 =>
@@ -179,6 +291,30 @@ namespace MilitaryDraftSystem.Infrastructure.Migrations
 
                             b1.WithOwner()
                                 .HasForeignKey("CitizenId");
+                        });
+
+                    b.Navigation("Death");
+                });
+
+            modelBuilder.Entity("MilitaryDraftSystem.Domain.Entities.RecruitmentOfficer", b =>
+                {
+                    b.OwnsOne("MilitaryDraftSystem.Domain.ValueObjects.Death", "Death", b1 =>
+                        {
+                            b1.Property<Guid>("RecruitmentOfficerId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<DateTimeOffset>("OccurredAt")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<int>("Reason")
+                                .HasColumnType("INTEGER");
+
+                            b1.HasKey("RecruitmentOfficerId");
+
+                            b1.ToTable("RecruitmentOfficers");
+
+                            b1.WithOwner()
+                                .HasForeignKey("RecruitmentOfficerId");
                         });
 
                     b.Navigation("Death");

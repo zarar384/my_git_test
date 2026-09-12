@@ -11,18 +11,15 @@ namespace MilitaryDraftSystem.Application.Draft.Commands.RunAutomaticRecruitment
     public class RunAutomaticRecruitmentCommandHandler : IRequestHandler<RunAutomaticRecruitmentCommand>
     {
         private readonly IAppDbContext _db;
-        private readonly IMediator _mediator;
         private readonly IWorldNarrator _narrator;
         private readonly ILogger<RunAutomaticRecruitmentCommandHandler> _logger;
 
         public RunAutomaticRecruitmentCommandHandler(
             IAppDbContext db,
-            IMediator mediator,
             IWorldNarrator narrator,
             ILogger<RunAutomaticRecruitmentCommandHandler> logger)
         {
             _db = db;
-            _mediator = mediator;
             _narrator = narrator;
             _logger = logger;
         }
@@ -65,6 +62,9 @@ namespace MilitaryDraftSystem.Application.Draft.Commands.RunAutomaticRecruitment
 
                 _narrator.CitizenDrafted(citizen, null, agent.Id);
 
+                // Delivery is instantaneous in this simulation.
+                summons.MarkDelivered();
+
                 // Schedule the summons for persistence.
                 _db.AddSummons(summons);
 
@@ -79,20 +79,9 @@ namespace MilitaryDraftSystem.Application.Draft.Commands.RunAutomaticRecruitment
                 agent.MarkExecuted(DateTime.UtcNow);
             }
 
-            // Persist all changes.
+            // Persist all changes. Domain events raised above are published
+            // automatically by DomainEventsInterceptor as part of this call.
             await _db.SaveChangesAsync(cancellationToken);
-
-            // Publish domain events raised during the draft process.
-            foreach (var citizen in draftedCitizens)
-            {
-                foreach (var domainEvent in citizen.DomainEvents)
-                {
-                    await _mediator.Publish(domainEvent, cancellationToken);
-                }
-
-                // Prevent publishing the same events multiple times.
-                citizen.ClearDomainEvents();
-            }
 
             _logger.LogInformation(
                 "Automatic recruitment finished. {DraftedCount} citizen(s) drafted.",
