@@ -1,0 +1,16 @@
+.error-state {
+  padding: var(--space-5);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 45%, var(--color-border));
+  background: var(--color-danger-bg);
+  border-radius: var(--radius-md);
+}
+
+.error-state__title {
+  margin: 0 0 var(--space-2);
+  color: var(--color-danger);
+}
+
+.error-state__message {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text);
+}

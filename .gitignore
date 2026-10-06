@@ -75,6 +75,13 @@ pnpm-debug.log*
 **/.nuxt/
 **/.angular/
 **/.vite/
+**/out-tsc/
+**/.sass-cache/
+**/connect.lock
+**/libpeerconnection.log
+**/testem.log
+**/typings/
+**/__screenshots__/
 
 ################################################################################
 # Go
