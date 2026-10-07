@@ -1,0 +1,96 @@
+<a class="officer-detail__back" routerLink="/officers">&larr; Back to officers</a>
+
+@if (store.loading() && !store.stats()) {
+  <app-loading-state label="Loading officer…" />
+} @else if (store.error(); as error) {
+  <app-error-state [error]="error" (retry)="store.loadStats(officerId())" />
+} @else if (store.stats(); as stats) {
+  <app-card [title]="stats.fullName" [subtitle]="stats.department">
+    <div class="officer-detail__status-row">
+      <app-badge [label]="stats.status" [tone]="tone(stats.status)" />
+      @if (stats.isRetired) {
+        <app-badge label="Retired" tone="neutral" />
+      }
+    </div>
+
+    <dl class="officer-detail__stats">
+      <div class="officer-detail__stat">
+        <dt>Citizens drafted</dt>
+        <dd>{{ stats.draftedCitizensCount }}</dd>
+      </div>
+      <div class="officer-detail__stat">
+        <dt>Morale</dt>
+        <dd>{{ stats.moralePercent }}%</dd>
+      </div>
+      <div class="officer-detail__stat">
+        <dt>Guilt incidents</dt>
+        <dd>{{ stats.guiltIncidentsCount }}</dd>
+      </div>
+    </dl>
+
+    @if (store.actionError(); as actionError) {
+      <p class="officer-detail__action-error" role="alert">{{ actionError.message }}</p>
+    }
+
+    @if (!stats.hasEndedCareer) {
+      <div class="officer-detail__actions">
+        @if (stats.status === 'Active') {
+          <app-button
+            variant="secondary"
+            [busy]="store.pendingAction() === 'leave'"
+            [disabled]="store.isBusy()"
+            (pressed)="goOnLeave()"
+          >
+            Go on leave
+          </app-button>
+        }
+        @if (stats.status === 'OnLeave') {
+          <app-button
+            variant="secondary"
+            [busy]="store.pendingAction() === 'returnFromLeave'"
+            [disabled]="store.isBusy()"
+            (pressed)="returnFromLeave()"
+          >
+            Return from leave
+          </app-button>
+        }
+        <app-button
+          variant="secondary"
+          [busy]="store.pendingAction() === 'resign'"
+          [disabled]="store.isBusy()"
+          (pressed)="requestDestructiveAction('resign')"
+        >
+          Resign
+        </app-button>
+        <app-button
+          variant="secondary"
+          [busy]="store.pendingAction() === 'retire'"
+          [disabled]="store.isBusy()"
+          (pressed)="requestDestructiveAction('retire')"
+        >
+          Retire
+        </app-button>
+        <app-button
+          variant="danger"
+          [busy]="store.pendingAction() === 'fire'"
+          [disabled]="store.isBusy()"
+          (pressed)="requestDestructiveAction('fire')"
+        >
+          Fire
+        </app-button>
+      </div>
+    }
+  </app-card>
+
+  @if (dialogCopy(); as copy) {
+    <app-confirm-dialog
+      [open]="true"
+      [title]="copy.title"
+      [message]="copy.message"
+      confirmLabel="Confirm"
+      [busy]="store.isBusy()"
+      (confirmed)="confirmDestructiveAction()"
+      (cancelled)="cancelDestructiveAction()"
+    />
+  }
+}

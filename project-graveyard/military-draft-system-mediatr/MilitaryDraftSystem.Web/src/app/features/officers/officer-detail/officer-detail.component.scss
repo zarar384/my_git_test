@@ -1,0 +1,50 @@
+.officer-detail {
+  &__back {
+    display: inline-block;
+    margin-bottom: var(--space-4, 1rem);
+    color: var(--color-text-muted, #aaa);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--color-text, #fff);
+    }
+  }
+
+  &__status-row {
+    display: flex;
+    gap: var(--space-2, 0.5rem);
+    margin-bottom: var(--space-4, 1rem);
+  }
+
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-3, 0.75rem);
+    margin: 0 0 var(--space-4, 1rem);
+
+    dt {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--color-text-muted, #aaa);
+      margin-bottom: 0.25rem;
+    }
+
+    dd {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+  }
+
+  &__action-error {
+    color: var(--color-danger, #e06c6c);
+    margin-bottom: var(--space-3, 0.75rem);
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2, 0.5rem);
+  }
+}

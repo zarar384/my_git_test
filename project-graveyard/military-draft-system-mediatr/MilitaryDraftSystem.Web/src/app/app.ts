@@ -1,12 +1,10 @@
-import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component } from '@angular/core';
+import { ShellComponent } from './shared/components/shell/shell.component';
 
 @Component({
-  imports: [RouterOutlet],
   selector: 'app-root',
-  styleUrl: './app.scss',
-  templateUrl: './app.html',
+  standalone: true,
+  imports: [ShellComponent],
+  template: `<app-shell />`
 })
-export class App {
-  protected readonly title = signal('MilitaryDraftSystem.Web');
-}
+export class App {}

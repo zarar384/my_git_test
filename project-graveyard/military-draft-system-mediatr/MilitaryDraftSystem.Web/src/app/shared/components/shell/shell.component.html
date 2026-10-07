@@ -1,0 +1,23 @@
+<div class="shell">
+  <header class="shell__header">
+    <div class="shell__brand">
+      <span class="shell__brand-mark" aria-hidden="true"></span>
+      <span class="shell__brand-name">Military Draft System</span>
+    </div>
+    <nav class="shell__nav" aria-label="Primary">
+      @for (link of navLinks; track link.path) {
+        <a
+          [routerLink]="link.path"
+          routerLinkActive="shell__nav-link--active"
+          class="shell__nav-link"
+        >
+          {{ link.label }}
+        </a>
+      }
+    </nav>
+  </header>
+
+  <main class="shell__content">
+    <router-outlet />
+  </main>
+</div>

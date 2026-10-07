@@ -1,0 +1,44 @@
+<app-card title="Recruitment Officers" subtitle="Every officer ever created, including those whose careers have ended.">
+  <div class="officers-list__filters">
+    @for (status of statusOptions; track status) {
+      <button
+        type="button"
+        class="officers-list__filter"
+        [class.officers-list__filter--active]="statusFilter() === status"
+        (click)="setFilter(status)"
+      >
+        {{ status }}
+      </button>
+    }
+  </div>
+
+  @if (store.loading() && !store.loaded()) {
+    <app-loading-state label="Loading officers…" />
+  } @else if (store.error(); as error) {
+    <app-error-state [error]="error" (retry)="store.reload()" />
+  } @else if (filteredOfficers().length === 0) {
+    <app-empty-state
+      title="No officers match this filter"
+      description="Try a different status, or check back after the next recruitment career begins."
+    />
+  } @else {
+    <ul class="officers-list__rows">
+      @for (officer of filteredOfficers(); track trackById(officer)) {
+        <li class="officers-list__row">
+          <a class="officers-list__link" [routerLink]="['/officers', officer.id]">
+            <span class="officers-list__name">{{ officer.fullName }}</span>
+            <span class="officers-list__department">{{ officer.department }}</span>
+          </a>
+          <div class="officers-list__meta">
+            @if (officer.playerId) {
+              <span class="officers-list__owner">
+                {{ isMine(officer) ? 'Mine' : 'Other player' }}
+              </span>
+            }
+            <app-badge [label]="officer.status" [tone]="tone(officer.status)" />
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</app-card>
