@@ -1,0 +1,25 @@
+<app-card title="Start a new career" subtitle="Begin service as a recruitment officer for the seeded dev player.">
+  <form [formGroup]="form" (ngSubmit)="submit()" class="start-career__form">
+    <label class="start-career__field">
+      <span>Full name</span>
+      <input type="text" formControlName="fullName" autocomplete="off" />
+      @if (form.controls.fullName.touched && form.controls.fullName.invalid) {
+        <span class="start-career__hint">Full name is required.</span>
+      }
+    </label>
+
+    <label class="start-career__field">
+      <span>Department</span>
+      <input type="text" formControlName="department" autocomplete="off" />
+      @if (form.controls.department.touched && form.controls.department.invalid) {
+        <span class="start-career__hint">Department is required.</span>
+      }
+    </label>
+
+    @if (store.error(); as error) {
+      <app-error-state [error]="error" [showRetry]="false" />
+    }
+
+    <app-button type="submit" [busy]="store.submitting()">Start career</app-button>
+  </form>
+</app-card>

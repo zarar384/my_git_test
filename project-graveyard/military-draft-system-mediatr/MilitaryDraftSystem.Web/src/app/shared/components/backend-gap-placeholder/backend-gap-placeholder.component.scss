@@ -1,0 +1,16 @@
+.placeholder {
+  &__message {
+    color: var(--color-text-muted, #aaa);
+    margin: 0 0 var(--space-2, 0.5rem);
+  }
+
+  &__reference {
+    font-size: 0.8rem;
+    color: var(--color-text-muted, #777);
+    margin: 0;
+
+    code {
+      font-family: var(--font-mono, monospace);
+    }
+  }
+}

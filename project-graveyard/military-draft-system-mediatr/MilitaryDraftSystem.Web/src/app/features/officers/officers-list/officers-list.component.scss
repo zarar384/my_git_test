@@ -1,4 +1,31 @@
 .officers-list {
+  &__start-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3, 0.75rem);
+    padding: var(--space-3, 0.75rem);
+    border: 1px solid var(--color-accent, #8a8a8a);
+    border-radius: var(--radius-md, 6px);
+    margin-bottom: var(--space-4, 1rem);
+
+    p {
+      margin: 0;
+      color: var(--color-text-muted, #aaa);
+    }
+  }
+
+  &__start-link {
+    white-space: nowrap;
+    color: var(--color-text, #fff);
+    text-decoration: none;
+    font-weight: 600;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
   &__filters {
     display: flex;
     flex-wrap: wrap;

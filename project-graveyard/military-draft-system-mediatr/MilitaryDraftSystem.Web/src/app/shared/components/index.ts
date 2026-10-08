@@ -7,3 +7,4 @@ export * from './error-state/error-state.component';
 export * from './confirm-dialog/confirm-dialog.component';
 export * from './shell/shell.component';
 export * from './data-table/data-table.component';
+export * from './backend-gap-placeholder/backend-gap-placeholder.component';

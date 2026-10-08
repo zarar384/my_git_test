@@ -1,0 +1,38 @@
+@if (store.loading() && !store.loaded()) {
+  <app-loading-state label="Loading statistics…" />
+} @else if (store.error(); as error) {
+  <app-error-state [error]="error" (retry)="store.reload()" />
+} @else if (store.statistics(); as stats) {
+  <app-card title="Deaths by reason" subtitle="GET /population/lifecycle-statistics">
+    @if (stats.deathStatistics.length === 0) {
+      <app-empty-state title="No deaths recorded" />
+    } @else {
+      <ul class="statistics__rows">
+        @for (item of stats.deathStatistics; track item.subjectType + item.reason) {
+          <li class="statistics__row">
+            <span class="statistics__label">
+              {{ humanize(item.subjectType) }} &middot;
+              <app-badge [label]="humanize(item.reason)" [tone]="deathTone(item.reason)" />
+            </span>
+            <span class="statistics__count">{{ item.count }}</span>
+          </li>
+        }
+      </ul>
+    }
+  </app-card>
+
+  <app-card title="Worker career endings" subtitle="Why recruitment officers' careers ended.">
+    @if (stats.workerLifecycleStatistics.length === 0) {
+      <app-empty-state title="No career endings recorded" />
+    } @else {
+      <ul class="statistics__rows">
+        @for (item of stats.workerLifecycleStatistics; track item.reason) {
+          <li class="statistics__row">
+            <app-badge [label]="humanize(item.reason)" [tone]="workerTone(item.reason)" />
+            <span class="statistics__count">{{ item.count }}</span>
+          </li>
+        }
+      </ul>
+    }
+  </app-card>
+}

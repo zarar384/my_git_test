@@ -1,0 +1,19 @@
+.cemetery {
+  &__card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  &__name {
+    font-weight: 600;
+    margin: 0;
+  }
+
+  &__type,
+  &__date {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--color-text-muted, #aaa);
+  }
+}

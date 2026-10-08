@@ -1,4 +1,11 @@
 <app-card title="Recruitment Officers" subtitle="Every officer ever created, including those whose careers have ended.">
+  @if (!store.loading() && store.loaded() && !store.hasActiveOfficer()) {
+    <div class="officers-list__start-banner">
+      <p>You have no active career. Start one to begin recruiting citizens.</p>
+      <a routerLink="/player/start-career" class="officers-list__start-link">Start a new career &rarr;</a>
+    </div>
+  }
+
   <div class="officers-list__filters">
     @for (status of statusOptions; track status) {
       <button

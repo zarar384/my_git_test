@@ -1,0 +1,28 @@
+<app-card title="Cemetery" subtitle="Historical death records (GET /population/cemetery).">
+  @if (store.loading() && !store.loaded()) {
+    <app-loading-state label="Loading records…" />
+  } @else if (store.error(); as error) {
+    <app-error-state [error]="error" (retry)="store.reload()" />
+  } @else if (store.records().length === 0) {
+    <app-empty-state title="No records yet" description="No deaths have been recorded in the simulation." />
+  } @else {
+    <app-data-table [columns]="columns" [rows]="store.records()" [trackBy]="trackById">
+      <ng-template #row let-record>
+        <tr>
+          <td>{{ record.fullName }}</td>
+          <td>{{ humanize(record.subjectType) }}</td>
+          <td><app-badge [label]="humanize(record.reason)" [tone]="tone(record.reason)" /></td>
+          <td>{{ record.diedAt | date: 'medium' }}</td>
+        </tr>
+      </ng-template>
+      <ng-template #card let-record>
+        <div class="cemetery__card">
+          <p class="cemetery__name">{{ record.fullName }}</p>
+          <p class="cemetery__type">{{ humanize(record.subjectType) }}</p>
+          <app-badge [label]="humanize(record.reason)" [tone]="tone(record.reason)" />
+          <p class="cemetery__date">{{ record.diedAt | date: 'medium' }}</p>
+        </div>
+      </ng-template>
+    </app-data-table>
+  }
+</app-card>

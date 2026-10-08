@@ -1,0 +1,41 @@
+<app-card title="Welcome, Commander" subtitle="A government-record view of the draft simulation.">
+  @if (officersStore.hasActiveOfficer(); as hasOfficer) {
+    @if (officersStore.currentOfficer(); as officer) {
+      <div class="dashboard__current-officer">
+        <div>
+          <p class="dashboard__label">Current career</p>
+          <p class="dashboard__name">{{ officer.fullName }}</p>
+          <p class="dashboard__department">{{ officer.department }}</p>
+        </div>
+        <app-badge [label]="officer.status" [tone]="tone(officer.status)" />
+      </div>
+      <a class="dashboard__cta" [routerLink]="['/officers', officer.id]">View career details &rarr;</a>
+    }
+  } @else {
+    <p class="dashboard__no-career">You have no active career yet.</p>
+    <a class="dashboard__cta" routerLink="/player/start-career">Start a new career &rarr;</a>
+  }
+</app-card>
+
+<div class="dashboard__links">
+  <a class="dashboard__link" routerLink="/officers">
+    <h3>Officers</h3>
+    <p>Browse every recruitment officer, past and present.</p>
+  </a>
+  <a class="dashboard__link" routerLink="/population">
+    <h3>Population</h3>
+    <p>Citizen records (limited by current backend API).</p>
+  </a>
+  <a class="dashboard__link" routerLink="/cemetery">
+    <h3>Cemetery</h3>
+    <p>Historical death records.</p>
+  </a>
+  <a class="dashboard__link" routerLink="/statistics">
+    <h3>Statistics</h3>
+    <p>Lifecycle statistics across the simulation.</p>
+  </a>
+  <a class="dashboard__link" routerLink="/draft">
+    <h3>Draft</h3>
+    <p>Manual drafting (limited by current backend API).</p>
+  </a>
+</div>
