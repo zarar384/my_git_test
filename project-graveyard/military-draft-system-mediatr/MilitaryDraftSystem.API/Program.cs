@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MilitaryDraftSystem.API.Auth;
+using MilitaryDraftSystem.API.Middleware;
 using MilitaryDraftSystem.Application.Common;
 using MilitaryDraftSystem.Application.Common.Interfaces;
 using MilitaryDraftSystem.Application.Draft.Behaviors;
@@ -11,131 +12,175 @@ using MilitaryDraftSystem.Infrastructure.BackgroundServices;
 using MilitaryDraftSystem.Infrastructure.Persistence;
 using MilitaryDraftSystem.Infrastructure.Persistence.Interceptors;
 using MilitaryDraftSystem.Infrastructure.Services;
+using Serilog;
 
-// Create application builder.
-var builder = WebApplication.CreateBuilder(args);
+// Bootstrap logger: active only until the host's configured Serilog pipeline
+// takes over below, so that failures occurring during host/configuration
+// startup are still captured somewhere instead of being silently lost.
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
 
-#region MVC
-
-// Add MVC controllers.
-builder.Services.AddControllers();
-
-// OpenAPI (Swagger alternative).
-// builder.Services.AddOpenApi();
-
-#endregion
-
-#region Authentication
-
-// Register API key authentication used to protect the draft endpoints.
-builder.Services
-    .AddAuthentication(ApiKeyAuthenticationOptions.SchemeName)
-    .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(
-        ApiKeyAuthenticationOptions.SchemeName,
-        _ => { });
-
-builder.Services.AddAuthorization();
-
-#endregion
-
-#region Application
-
-// Register MediatR handlers.
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AssemblyReference).Assembly));
-
-// Register FluentValidation validators.
-builder.Services.AddValidatorsFromAssembly(typeof(AssemblyReference).Assembly);
-
-// Register application services.
-builder.Services.AddScoped<IPopulationGenerationService, PopulationGenerationService>();
-
-// Register the centralized random provider used by all simulation randomness.
-builder.Services.AddSingleton<IRandomProvider, SystemRandomProvider>();
-
-// Register world narration for lively console output.
-builder.Services.AddSingleton<IWorldNarrator, ConsoleWorldNarrator>();
-
-#endregion
-
-#region Infrastructure
-
-// Register domain events interceptor.
-builder.Services.AddScoped<DomainEventsInterceptor>();
-
-// Register Entity Framework Core.
-builder.Services.AddDbContext<AppDbContext>((sp, options) =>
+try
 {
-    options.UseSqlite(
-        builder.Configuration.GetConnectionString("DefaultConnection"));
+    Log.Information("Starting MilitaryDraftSystem.API.");
 
-    // Register EF Core interceptors.
-    options.AddInterceptors(
-        sp.GetRequiredService<DomainEventsInterceptor>());
-});
+    // Create application builder.
+    var builder = WebApplication.CreateBuilder(args);
 
-// Register database abstraction.
-builder.Services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+    // Replace the default logging providers with Serilog, configured entirely
+    // from appsettings.json / appsettings.{Environment}.json (see the
+    // "Serilog" section). Console/file sinks, minimum levels and file
+    // retention are all controlled by configuration, not code.
+    builder.Host.UseSerilog((context, services, configuration) =>
+        configuration.ReadFrom.Configuration(context.Configuration));
 
-#endregion
+    #region MVC
 
-#region Hosted Services
+    // Add MVC controllers.
+    builder.Services.AddControllers();
 
-// Initialize the database during application startup.
-builder.Services.AddHostedService<DatabaseInitializationService>();
+    // OpenAPI (Swagger alternative).
+    // builder.Services.AddOpenApi();
 
-// Execute automatic population generation.
-builder.Services.AddHostedService<PopulationGenerationHostedService>();
+    #endregion
 
-// Execute automatic military recruitment.
-builder.Services.AddHostedService<AutomaticRecruitmentHostedService>();
+    #region Authentication
 
-// Simulate the passage of time for the living population.
-builder.Services.AddHostedService<PopulationSimulationHostedService>();
+    // Register API key authentication used to protect the draft endpoints.
+    builder.Services
+        .AddAuthentication(ApiKeyAuthenticationOptions.SchemeName)
+        .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(
+            ApiKeyAuthenticationOptions.SchemeName,
+            _ => { });
 
-// Simulate the passage of time for active recruitment officers.
-builder.Services.AddHostedService<OfficerLifeSimulationHostedService>();
+    builder.Services.AddAuthorization();
 
-// Physically purge deceased citizens once their retention window elapses.
-builder.Services.AddHostedService<CitizenCleanupHostedService>();
+    #endregion
 
-#endregion
+    #region Application
 
-#region Pipeline Behaviors
+    // Register MediatR handlers.
+    builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AssemblyReference).Assembly));
 
-// Register MediatR pipeline behaviors executed before and after each request.
-builder.Services.AddTransient(
-    typeof(IPipelineBehavior<,>),
-    typeof(ValidationBehavior<,>));
+    // Register FluentValidation validators.
+    builder.Services.AddValidatorsFromAssembly(typeof(AssemblyReference).Assembly);
 
-builder.Services.AddTransient(
-    typeof(IPipelineBehavior<,>),
-    typeof(LoggingBehavior<,>));
+    // Register application services.
+    builder.Services.AddScoped<IPopulationGenerationService, PopulationGenerationService>();
 
-builder.Services.AddTransient(
-    typeof(IPipelineBehavior<,>),
-    typeof(TransactionBehavior<,>));
+    // Register the centralized random provider used by all simulation randomness.
+    builder.Services.AddSingleton<IRandomProvider, SystemRandomProvider>();
 
-#endregion
+    // Register world narration for lively console output.
+    builder.Services.AddSingleton<IWorldNarrator, ConsoleWorldNarrator>();
 
-// Build the application.
-var app = builder.Build();
+    #endregion
 
-#region HTTP Pipeline
+    #region Infrastructure
 
-if (app.Environment.IsDevelopment())
-{
-    // app.MapOpenApi();
+    // Register domain events interceptor.
+    builder.Services.AddScoped<DomainEventsInterceptor>();
+
+    // Register Entity Framework Core.
+    builder.Services.AddDbContext<AppDbContext>((sp, options) =>
+    {
+        options.UseSqlite(
+            builder.Configuration.GetConnectionString("DefaultConnection"));
+
+        // Register EF Core interceptors.
+        options.AddInterceptors(
+            sp.GetRequiredService<DomainEventsInterceptor>());
+    });
+
+    // Register database abstraction.
+    builder.Services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+
+    #endregion
+
+    #region Hosted Services
+
+    // Initialize the database during application startup.
+    builder.Services.AddHostedService<DatabaseInitializationService>();
+
+    // Execute automatic population generation.
+    builder.Services.AddHostedService<PopulationGenerationHostedService>();
+
+    // Execute automatic military recruitment.
+    builder.Services.AddHostedService<AutomaticRecruitmentHostedService>();
+
+    // Simulate the passage of time for the living population.
+    builder.Services.AddHostedService<PopulationSimulationHostedService>();
+
+    // Simulate the passage of time for active recruitment officers.
+    builder.Services.AddHostedService<OfficerLifeSimulationHostedService>();
+
+    // Physically purge deceased citizens once their retention window elapses.
+    builder.Services.AddHostedService<CitizenCleanupHostedService>();
+
+    #endregion
+
+    #region Pipeline Behaviors
+
+    // Register MediatR pipeline behaviors executed before and after each request.
+    builder.Services.AddTransient(
+        typeof(IPipelineBehavior<,>),
+        typeof(ValidationBehavior<,>));
+
+    builder.Services.AddTransient(
+        typeof(IPipelineBehavior<,>),
+        typeof(LoggingBehavior<,>));
+
+    builder.Services.AddTransient(
+        typeof(IPipelineBehavior<,>),
+        typeof(TransactionBehavior<,>));
+
+    #endregion
+
+    // Build the application.
+    var app = builder.Build();
+
+    #region HTTP Pipeline
+
+    // Single place where unhandled exceptions are caught, logged once with
+    // full stack trace, and turned into a safe HTTP response. Must run
+    // before any other middleware that could throw.
+    app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+    // Structured per-request completion logging (method, path, status code,
+    // elapsed time) tagged with ASP.NET Core's built-in TraceIdentifier, so
+    // related log entries for a single HTTP request can be correlated
+    // without a custom correlation mechanism.
+    app.UseSerilogRequestLogging();
+
+    if (app.Environment.IsDevelopment())
+    {
+        // app.MapOpenApi();
+    }
+
+    app.UseHttpsRedirection();
+
+    app.UseAuthentication();
+
+    app.UseAuthorization();
+
+    app.MapControllers();
+
+    #endregion
+
+    Log.Information("MilitaryDraftSystem.API started successfully.");
+
+    // Start the application.
+    app.Run();
+
+    Log.Information("MilitaryDraftSystem.API shut down gracefully.");
 }
-
-app.UseHttpsRedirection();
-
-app.UseAuthentication();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-#endregion
-
-// Start the application.
-app.Run();
+catch (Exception ex)
+{
+    Log.Fatal(ex, "MilitaryDraftSystem.API terminated unexpectedly during startup.");
+}
+finally
+{
+    // Ensure all buffered log events are flushed to every sink before exit.
+    Log.CloseAndFlush();
+}

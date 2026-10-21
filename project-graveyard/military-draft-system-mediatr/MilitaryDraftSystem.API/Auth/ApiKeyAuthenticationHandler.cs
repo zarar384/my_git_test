@@ -38,6 +38,11 @@ namespace MilitaryDraftSystem.API.Auth
         {
             if (!Request.Headers.TryGetValue(ApiKeyAuthenticationOptions.HeaderName, out var providedKey))
             {
+                Logger.LogWarning(
+                    "Authentication failed for {Path}: missing '{HeaderName}' header.",
+                    Request.Path,
+                    ApiKeyAuthenticationOptions.HeaderName);
+
                 return Task.FromResult(AuthenticateResult.Fail(
                     $"Missing '{ApiKeyAuthenticationOptions.HeaderName}' header."));
             }
@@ -46,12 +51,20 @@ namespace MilitaryDraftSystem.API.Auth
 
             if (string.IsNullOrWhiteSpace(configuredKey))
             {
+                Logger.LogError(
+                    "Authentication is misconfigured: no API key is configured on the server.");
+
                 return Task.FromResult(AuthenticateResult.Fail(
                     "No API key is configured on the server."));
             }
 
+            // Never log the provided or configured key values themselves.
             if (!string.Equals(providedKey.ToString(), configuredKey, StringComparison.Ordinal))
             {
+                Logger.LogWarning(
+                    "Authentication failed for {Path}: invalid API key provided.",
+                    Request.Path);
+
                 return Task.FromResult(AuthenticateResult.Fail("Invalid API key."));
             }
 
