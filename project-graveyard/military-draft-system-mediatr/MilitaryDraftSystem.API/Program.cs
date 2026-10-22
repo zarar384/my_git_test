@@ -45,6 +45,17 @@ try
 
     #endregion
 
+    #region Exception Handling
+
+    // Standard ASP.NET Core exception-handling pipeline: uncaught exceptions
+    // are routed to GlobalExceptionHandler and rendered as RFC 7807
+    // ProblemDetails. AddProblemDetails() also ensures framework-generated
+    // responses (e.g. 404 for unmatched routes) use the same contract.
+    builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+    builder.Services.AddProblemDetails();
+
+    #endregion
+
     #region Authentication
 
     // Register API key authentication used to protect the draft endpoints.
@@ -142,10 +153,10 @@ try
 
     #region HTTP Pipeline
 
-    // Single place where unhandled exceptions are caught, logged once with
-    // full stack trace, and turned into a safe HTTP response. Must run
-    // before any other middleware that could throw.
-    app.UseMiddleware<ExceptionHandlingMiddleware>();
+    // Single place where unhandled exceptions are caught, logged once, and
+    // turned into a standardized ProblemDetails response. Must run before
+    // any other middleware that could throw.
+    app.UseExceptionHandler();
 
     // Structured per-request completion logging (method, path, status code,
     // elapsed time) tagged with ASP.NET Core's built-in TraceIdentifier, so

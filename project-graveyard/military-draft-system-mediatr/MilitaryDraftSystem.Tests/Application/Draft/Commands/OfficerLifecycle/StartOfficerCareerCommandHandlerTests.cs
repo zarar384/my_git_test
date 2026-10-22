@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Moq;
+using MilitaryDraftSystem.Application.Common.Exceptions;
 using MilitaryDraftSystem.Application.Common.Interfaces;
 using MilitaryDraftSystem.Application.Draft.Commands.OfficerLifecycle;
 using MilitaryDraftSystem.Domain.Entities;
@@ -60,7 +61,7 @@ namespace MilitaryDraftSystem.Tests.Application.Draft.Commands.OfficerLifecycle
                 Mock.Of<ILogger<StartOfficerCareerCommandHandler>>());
 
             // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            await Assert.ThrowsAsync<NotFoundException>(() =>
                 sut.Handle(
                     new StartOfficerCareerCommand(playerId, "Alan Turing", "Central Recruitment Office"),
                     CancellationToken.None));

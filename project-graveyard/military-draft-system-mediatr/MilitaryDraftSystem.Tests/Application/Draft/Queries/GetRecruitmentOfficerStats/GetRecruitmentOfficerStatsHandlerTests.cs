@@ -1,4 +1,5 @@
 using Moq;
+using MilitaryDraftSystem.Application.Common.Exceptions;
 using MilitaryDraftSystem.Application.Common.Interfaces;
 using MilitaryDraftSystem.Application.Draft.Queries.GetRecruitmentOfficerStats;
 using MilitaryDraftSystem.Domain.Entities;
@@ -46,7 +47,7 @@ namespace MilitaryDraftSystem.Tests.Application.Draft.Queries.GetRecruitmentOffi
             var sut = new GetRecruitmentOfficerStatsHandler(dbMock.Object);
 
             // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            await Assert.ThrowsAsync<NotFoundException>(() =>
                 sut.Handle(new GetRecruitmentOfficerStatsQuery(officerId), CancellationToken.None));
         }
     }

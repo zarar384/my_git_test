@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Moq;
+using MilitaryDraftSystem.Application.Common.Exceptions;
 using MilitaryDraftSystem.Application.Common.Interfaces;
 using MilitaryDraftSystem.Application.Draft.Commands.DraftCitizen;
 using MilitaryDraftSystem.Domain.Entities;
@@ -73,7 +74,7 @@ namespace MilitaryDraftSystem.Tests.Application.Draft.Commands.DraftCitizen
                 Mock.Of<ILogger<DraftCitizenCommandHandler>>());
 
             // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            await Assert.ThrowsAsync<NotFoundException>(() =>
                 sut.Handle(new DraftCitizenCommand(citizen.Id, officerId), CancellationToken.None));
         }
 
@@ -96,7 +97,7 @@ namespace MilitaryDraftSystem.Tests.Application.Draft.Commands.DraftCitizen
                 Mock.Of<ILogger<DraftCitizenCommandHandler>>());
 
             // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            await Assert.ThrowsAsync<NotFoundException>(() =>
                 sut.Handle(new DraftCitizenCommand(citizenId, officer.Id), CancellationToken.None));
         }
 

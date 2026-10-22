@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
+using MilitaryDraftSystem.Application.Common.Exceptions;
 using MilitaryDraftSystem.Application.Common.Interfaces;
 
 namespace MilitaryDraftSystem.Application.Draft.Commands.OfficerLifecycle
@@ -18,7 +19,7 @@ namespace MilitaryDraftSystem.Application.Draft.Commands.OfficerLifecycle
         public async Task Handle(GoOnLeaveCommand request, CancellationToken cancellationToken)
         {
             var officer = await _db.GetRecruitmentOfficer(request.RecruitmentOfficerId, cancellationToken)
-                ?? throw new InvalidOperationException($"Recruitment officer {request.RecruitmentOfficerId} was not found.");
+                ?? throw new NotFoundException($"Recruitment officer {request.RecruitmentOfficerId} was not found.");
 
             officer.GoOnLeave(DateTimeOffset.UtcNow);
 
@@ -42,7 +43,7 @@ namespace MilitaryDraftSystem.Application.Draft.Commands.OfficerLifecycle
         public async Task Handle(ReturnFromLeaveCommand request, CancellationToken cancellationToken)
         {
             var officer = await _db.GetRecruitmentOfficer(request.RecruitmentOfficerId, cancellationToken)
-                ?? throw new InvalidOperationException($"Recruitment officer {request.RecruitmentOfficerId} was not found.");
+                ?? throw new NotFoundException($"Recruitment officer {request.RecruitmentOfficerId} was not found.");
 
             officer.ReturnFromLeave(DateTimeOffset.UtcNow);
 
@@ -66,7 +67,7 @@ namespace MilitaryDraftSystem.Application.Draft.Commands.OfficerLifecycle
         public async Task Handle(ResignCommand request, CancellationToken cancellationToken)
         {
             var officer = await _db.GetRecruitmentOfficer(request.RecruitmentOfficerId, cancellationToken)
-                ?? throw new InvalidOperationException($"Recruitment officer {request.RecruitmentOfficerId} was not found.");
+                ?? throw new NotFoundException($"Recruitment officer {request.RecruitmentOfficerId} was not found.");
 
             officer.Resign(DateTimeOffset.UtcNow);
 
@@ -90,7 +91,7 @@ namespace MilitaryDraftSystem.Application.Draft.Commands.OfficerLifecycle
         public async Task Handle(RetireCommand request, CancellationToken cancellationToken)
         {
             var officer = await _db.GetRecruitmentOfficer(request.RecruitmentOfficerId, cancellationToken)
-                ?? throw new InvalidOperationException($"Recruitment officer {request.RecruitmentOfficerId} was not found.");
+                ?? throw new NotFoundException($"Recruitment officer {request.RecruitmentOfficerId} was not found.");
 
             officer.RetireVoluntarily(DateTimeOffset.UtcNow);
 
@@ -114,7 +115,7 @@ namespace MilitaryDraftSystem.Application.Draft.Commands.OfficerLifecycle
         public async Task Handle(FireOfficerCommand request, CancellationToken cancellationToken)
         {
             var officer = await _db.GetRecruitmentOfficer(request.RecruitmentOfficerId, cancellationToken)
-                ?? throw new InvalidOperationException($"Recruitment officer {request.RecruitmentOfficerId} was not found.");
+                ?? throw new NotFoundException($"Recruitment officer {request.RecruitmentOfficerId} was not found.");
 
             officer.Fire(DateTimeOffset.UtcNow);
 
@@ -138,7 +139,7 @@ namespace MilitaryDraftSystem.Application.Draft.Commands.OfficerLifecycle
         public async Task<Guid> Handle(StartOfficerCareerCommand request, CancellationToken cancellationToken)
         {
             var player = await _db.GetPlayer(request.PlayerId, cancellationToken)
-                ?? throw new InvalidOperationException($"Player {request.PlayerId} was not found.");
+                ?? throw new NotFoundException($"Player {request.PlayerId} was not found.");
 
             var existingActiveOfficer = await _db.GetActiveRecruitmentOfficerByPlayer(player.Id, cancellationToken);
 

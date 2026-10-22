@@ -1,4 +1,5 @@
 using MediatR;
+using MilitaryDraftSystem.Application.Common.Exceptions;
 using MilitaryDraftSystem.Application.Common.Interfaces;
 
 namespace MilitaryDraftSystem.Application.Draft.Queries.GetRecruitmentOfficerStats
@@ -18,7 +19,7 @@ namespace MilitaryDraftSystem.Application.Draft.Queries.GetRecruitmentOfficerSta
             CancellationToken cancellationToken)
         {
             var officer = await _db.GetRecruitmentOfficer(request.RecruitmentOfficerId, cancellationToken)
-                ?? throw new InvalidOperationException($"Recruitment officer {request.RecruitmentOfficerId} was not found.");
+                ?? throw new NotFoundException($"Recruitment officer {request.RecruitmentOfficerId} was not found.");
 
             return new RecruitmentOfficerStatsDto(
                 officer.Id,

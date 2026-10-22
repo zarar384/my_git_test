@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
+using MilitaryDraftSystem.Application.Common.Exceptions;
 using MilitaryDraftSystem.Application.Common.Interfaces;
 using MilitaryDraftSystem.Domain.Enums;
 
@@ -29,13 +30,13 @@ namespace MilitaryDraftSystem.Application.Draft.Commands.DraftCitizen
         public async Task Handle(DraftCitizenCommand request, CancellationToken cancellationToken)
         {
             var officer = await _db.GetRecruitmentOfficer(request.RecruitmentOfficerId, cancellationToken)
-                ?? throw new InvalidOperationException($"Recruitment officer {request.RecruitmentOfficerId} was not found.");
+                ?? throw new NotFoundException($"Recruitment officer {request.RecruitmentOfficerId} was not found.");
 
             if (!officer.IsActive)
                 throw new InvalidOperationException($"Recruitment officer {officer.Id} is not active ({officer.Status}) and cannot draft citizens.");
 
             var citizen = await _db.GetCitizen(request.CitizenId, cancellationToken)
-                ?? throw new InvalidOperationException($"Citizen {request.CitizenId} was not found.");
+                ?? throw new NotFoundException($"Citizen {request.CitizenId} was not found.");
 
             // Execute domain logic and create a summons. Citizen.Draft enforces eligibility.
             var summons = citizen.Draft(
