@@ -1,5 +1,6 @@
 using FluentValidation;
 using MediatR;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using MilitaryDraftSystem.API.Auth;
 using MilitaryDraftSystem.API.Middleware;
@@ -109,6 +110,17 @@ try
 
     #endregion
 
+    #region Health Checks
+
+    // "database" check is tagged "ready" so it only gates readiness, not
+    // liveness: the process itself is alive even if SQLite is temporarily
+    // unavailable. The DbContext check only verifies connectivity (opens a
+    // connection); it does not run business queries or migrations.
+    builder.Services.AddHealthChecks()
+        .AddDbContextCheck<AppDbContext>("database", tags: new[] { "ready" });
+
+    #endregion
+
     #region Hosted Services
 
     // Initialize the database during application startup.
@@ -161,8 +173,15 @@ try
     // Structured per-request completion logging (method, path, status code,
     // elapsed time) tagged with ASP.NET Core's built-in TraceIdentifier, so
     // related log entries for a single HTTP request can be correlated
-    // without a custom correlation mechanism.
-    app.UseSerilogRequestLogging();
+    // without a custom correlation mechanism. Health endpoints are excluded
+    // so frequent monitoring/orchestrator polling doesn't spam the logs.
+    app.UseSerilogRequestLogging(options =>
+    {
+        options.GetLevel = (httpContext, _, _) =>
+            httpContext.Request.Path.StartsWithSegments("/health")
+                ? Serilog.Events.LogEventLevel.Verbose
+                : Serilog.Events.LogEventLevel.Information;
+    });
 
     if (app.Environment.IsDevelopment())
     {
@@ -176,6 +195,22 @@ try
     app.UseAuthorization();
 
     app.MapControllers();
+
+    // Infrastructure endpoints for process monitoring/orchestration, not
+    // protected by API-key authentication so Docker/deployment health
+    // probes can reach them. Liveness never depends on external
+    // dependencies; readiness also checks the ones tagged "ready" (e.g.
+    // the database).
+    app.MapHealthChecks("/health/live", new HealthCheckOptions
+    {
+        Predicate = _ => false
+    });
+
+    app.MapHealthChecks("/health/ready", new HealthCheckOptions
+    {
+        Predicate = check => check.Tags.Contains("ready"),
+        ResponseWriter = HealthCheckResponseWriter.WriteAsync
+    });
 
     #endregion
 
@@ -194,4 +229,10 @@ finally
 {
     // Ensure all buffered log events are flushed to every sink before exit.
     Log.CloseAndFlush();
+}
+
+// Exposes the implicit top-level Program class to WebApplicationFactory<Program>
+// for integration testing.
+public partial class Program
+{
 }

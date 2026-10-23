@@ -38,8 +38,11 @@ namespace MilitaryDraftSystem.API.Auth
         {
             if (!Request.Headers.TryGetValue(ApiKeyAuthenticationOptions.HeaderName, out var providedKey))
             {
-                Logger.LogWarning(
-                    "Authentication failed for {Path}: missing '{HeaderName}' header.",
+                // ASP.NET Core authenticates the default scheme for every
+                // request, even anonymous ones (health checks, etc.), so a
+                // missing header here is routine, not a security event.
+                Logger.LogDebug(
+                    "Authentication skipped for {Path}: missing '{HeaderName}' header.",
                     Request.Path,
                     ApiKeyAuthenticationOptions.HeaderName);
 
