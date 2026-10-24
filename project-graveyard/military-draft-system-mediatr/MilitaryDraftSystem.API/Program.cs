@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using MilitaryDraftSystem.API.Auth;
 using MilitaryDraftSystem.API.Middleware;
+using MilitaryDraftSystem.API.Options;
+using Microsoft.Extensions.Options;
 using MilitaryDraftSystem.Application.Common;
 using MilitaryDraftSystem.Application.Common.Interfaces;
 using MilitaryDraftSystem.Application.Draft.Behaviors;
@@ -57,6 +59,28 @@ try
 
     #endregion
 
+    #region Configuration Validation
+
+    // Critical configuration is validated eagerly so the process fails fast
+    // at startup with a clear error instead of surfacing the problem later
+    // inside a request handler or hosted service.
+    builder.Services
+        .AddOptions<ConnectionStringsOptions>()
+        .Bind(builder.Configuration.GetSection(ConnectionStringsOptions.SectionName))
+        .ValidateDataAnnotations()
+        .ValidateOnStart();
+
+    builder.Services
+        .AddOptions<MilitaryDraftSystem.API.Options.AuthenticationOptions>()
+        .Bind(builder.Configuration.GetSection(MilitaryDraftSystem.API.Options.AuthenticationOptions.SectionName))
+        .ValidateDataAnnotations()
+        .ValidateOnStart();
+
+    builder.Services.AddSingleton<IValidateOptions<MilitaryDraftSystem.API.Options.AuthenticationOptions>,
+        AuthenticationOptionsProductionValidator>();
+
+    #endregion
+
     #region Authentication
 
     // Register API key authentication used to protect the draft endpoints.
@@ -97,8 +121,9 @@ try
     // Register Entity Framework Core.
     builder.Services.AddDbContext<AppDbContext>((sp, options) =>
     {
-        options.UseSqlite(
-            builder.Configuration.GetConnectionString("DefaultConnection"));
+        var connectionStrings = sp.GetRequiredService<IOptions<ConnectionStringsOptions>>().Value;
+
+        options.UseSqlite(connectionStrings.DefaultConnection);
 
         // Register EF Core interceptors.
         options.AddInterceptors(

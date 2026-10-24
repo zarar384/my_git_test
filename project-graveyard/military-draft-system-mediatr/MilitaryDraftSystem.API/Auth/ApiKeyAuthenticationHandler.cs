@@ -1,9 +1,9 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MilitaryDraftSystem.API.Options;
 
 namespace MilitaryDraftSystem.API.Auth
 {
@@ -22,16 +22,16 @@ namespace MilitaryDraftSystem.API.Auth
 
     public sealed class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthenticationOptions>
     {
-        private readonly IConfiguration _configuration;
+        private readonly MilitaryDraftSystem.API.Options.AuthenticationOptions _authenticationOptions;
 
         public ApiKeyAuthenticationHandler(
             IOptionsMonitor<ApiKeyAuthenticationOptions> options,
             ILoggerFactory logger,
             UrlEncoder encoder,
-            IConfiguration configuration)
+            IOptions<MilitaryDraftSystem.API.Options.AuthenticationOptions> authenticationOptions)
             : base(options, logger, encoder)
         {
-            _configuration = configuration;
+            _authenticationOptions = authenticationOptions.Value;
         }
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -50,16 +50,7 @@ namespace MilitaryDraftSystem.API.Auth
                     $"Missing '{ApiKeyAuthenticationOptions.HeaderName}' header."));
             }
 
-            var configuredKey = _configuration["Authentication:ApiKey"];
-
-            if (string.IsNullOrWhiteSpace(configuredKey))
-            {
-                Logger.LogError(
-                    "Authentication is misconfigured: no API key is configured on the server.");
-
-                return Task.FromResult(AuthenticateResult.Fail(
-                    "No API key is configured on the server."));
-            }
+            var configuredKey = _authenticationOptions.ApiKey;
 
             // Never log the provided or configured key values themselves.
             if (!string.Equals(providedKey.ToString(), configuredKey, StringComparison.Ordinal))
