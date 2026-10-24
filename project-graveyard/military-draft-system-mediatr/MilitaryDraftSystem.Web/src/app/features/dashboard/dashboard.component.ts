@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { OfficersStore } from '../officers/data/officers.store';
-import { BadgeComponent, CardComponent } from '../../shared/components';
+import { BadgeComponent, CardComponent, LoadingStateComponent, ErrorStateComponent } from '../../shared/components';
 import { officerStatusTone } from '../../shared/utils/enum-display';
 
 /**
@@ -13,7 +13,7 @@ import { officerStatusTone } from '../../shared/utils/enum-display';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink, BadgeComponent, CardComponent],
+  imports: [RouterLink, BadgeComponent, CardComponent, LoadingStateComponent, ErrorStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'

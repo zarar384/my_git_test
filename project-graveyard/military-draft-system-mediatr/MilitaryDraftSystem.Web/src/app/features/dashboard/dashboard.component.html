@@ -1,5 +1,9 @@
 <app-card title="Welcome, Commander" subtitle="A government-record view of the draft simulation.">
-  @if (officersStore.hasActiveOfficer(); as hasOfficer) {
+  @if (officersStore.loading() && !officersStore.loaded()) {
+    <app-loading-state label="Loading your career…" />
+  } @else if (officersStore.error(); as error) {
+    <app-error-state [error]="error" (retry)="officersStore.reload()" />
+  } @else if (officersStore.hasActiveOfficer()) {
     @if (officersStore.currentOfficer(); as officer) {
       <div class="dashboard__current-officer">
         <div>
