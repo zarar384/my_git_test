@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using MilitaryDraftSystem.API.Auth;
 using MilitaryDraftSystem.API.Middleware;
+using MilitaryDraftSystem.API.OpenApi;
 using MilitaryDraftSystem.API.Options;
 using Microsoft.Extensions.Options;
 using MilitaryDraftSystem.Application.Common;
@@ -43,8 +44,13 @@ try
     // Add MVC controllers.
     builder.Services.AddControllers();
 
-    // OpenAPI (Swagger alternative).
-    // builder.Services.AddOpenApi();
+    // Built-in ASP.NET Core OpenAPI document generation. The document is
+    // only mapped in Development (see the HTTP pipeline below) so
+    // Production never publishes API shape information unnecessarily.
+    builder.Services.AddOpenApi(options =>
+    {
+        options.AddDocumentTransformer<ApiKeySecuritySchemeTransformer>();
+    });
 
     #endregion
 
@@ -210,7 +216,7 @@ try
 
     if (app.Environment.IsDevelopment())
     {
-        // app.MapOpenApi();
+        app.MapOpenApi();
     }
 
     app.UseHttpsRedirection();

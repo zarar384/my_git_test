@@ -8,6 +8,7 @@ namespace MilitaryDraftSystem.Tests.Api.HealthChecks
     /// depends on external dependencies, readiness reflects real database
     /// connectivity, and failure responses never leak internal details.
     /// </summary>
+    [Collection(MilitaryDraftSystem.Tests.Api.WebApplicationFactoryCollection.Name)]
     public class HealthCheckEndpointTests : IClassFixture<HealthCheckWebApplicationFactory>
     {
         private readonly HealthCheckWebApplicationFactory _factory;
