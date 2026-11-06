@@ -1,3 +1,11 @@
+> [!IMPORTANT]
+> **This project has moved.**
+>
+> Active development continues in the new repository:  
+> [zarar384/MilitaryDraftSystem](https://github.com/zarar384/MilitaryDraftSystem)
+>
+> This version is kept only for historical reference.
+
 # Military Draft System
 
 This is a small simulation built with .NET 10, ASP.NET Core, MediatR and EF Core (SQLite). It models a population of citizens who are born, age, die of old age or misfortune, and — if they meet certain conditions — get drafted into military service, either automatically by "recruitment agents" or manually by a human recruitment officer through the API. Recruitment officers themselves have a full life cycle too: a player can take one on leave, resign, retire, be fired, or have them die, and every citizen or officer death leaves a permanent historical trace even after the underlying row is eventually purged. There is no UI; the interesting part of the system runs entirely in the background as a set of hosted services that keep ticking for as long as the process is alive.
